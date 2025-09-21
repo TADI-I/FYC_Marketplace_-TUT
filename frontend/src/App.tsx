@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingBag, MessageCircle, Plus, Search, User, Star, DollarSign, Tag, Filter, X } from 'lucide-react';
+import { ShoppingBag, MessageCircle, Plus, Search, User, Star, Tag, Filter, X } from 'lucide-react';
 import './App.css';
 
 const App = () => {
@@ -270,14 +270,16 @@ const App = () => {
           placeholder="TUT Email Address"
           className="w-full p-3 border rounded mb-4"
           value={loginData.email}
-          onChange={(e) => setLoginData({...loginData, email: e.target.value})}
+          onChange={e => setLoginData(prev => ({ ...prev, email: e.target.value }))}
+          autoFocus
         />
         <input
           type="password"
           placeholder="Password"
           className="w-full p-3 border rounded mb-4"
           value={loginData.password}
-          onChange={(e) => setLoginData({...loginData, password: e.target.value})}
+          onChange={e => setLoginData(prev => ({ ...prev, password: e.target.value }))}
+          onFocus={(e) => e.target.select()}
         />
         <div className="flex gap-2">
           <button onClick={handleLogin} className="flex-1 bg-blue-600 text-white p-3 rounded hover:bg-blue-700">
@@ -308,19 +310,23 @@ const App = () => {
       <div className="bg-white rounded-lg p-6 w-96">
         <h2 className="text-xl font-bold mb-4">Register for TUT Marketplace</h2>
         <input
-          type="text"
-          placeholder="Full Name"
-          className="w-full p-3 border rounded mb-4"
-          value={registerData.name}
-          onChange={(e) => setRegisterData({...registerData, name: e.target.value})}
-        />
-        <input
-          type="email"
-          placeholder="TUT Email Address"
-          className="w-full p-3 border rounded mb-4"
-          value={registerData.email}
-          onChange={(e) => setRegisterData({...registerData, email: e.target.value})}
-        />
+        type="text"
+        placeholder="Full Name"
+        className="w-full p-3 border rounded mb-4"
+        value={registerData.name}
+        onChange={e =>
+          setRegisterData(prev => ({ ...prev, name: e.target.value }))
+        }
+      />
+      <input
+        type="email"
+        placeholder="TUT Email Address"
+        className="w-full p-3 border rounded mb-4"
+        value={registerData.email}
+        onChange={e =>
+          setRegisterData(prev => ({ ...prev, email: e.target.value }))
+        }
+      />
         <select 
           className="w-full p-3 border rounded mb-4"
           value={registerData.campus}
