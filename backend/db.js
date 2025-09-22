@@ -1,18 +1,21 @@
-import mongoose from "mongoose";
+// db.js
+import mongoose from 'mongoose';
+import dotenv from 'dotenv';
+dotenv.config();
 
 const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGODB_URI, {
-      dbName: process.env.DB_NAME,
+      dbName: process.env.DB_NAME || 'tut_marketplace',
       useNewUrlParser: true,
       useUnifiedTopology: true,
-      ssl: true,
-      tls: true,
+      tls: true,                      // enforce TLS
+      tlsAllowInvalidCertificates: true, // Render workaround for TLS
     });
 
-    console.log("✅ MongoDB connected successfully on Render");
+    console.log('✅ MongoDB connected successfully on Render');
   } catch (err) {
-    console.error("❌ MongoDB connection failed:", err.message);
+    console.error('❌ MongoDB connection failed:', err.message);
     process.exit(1);
   }
 };
