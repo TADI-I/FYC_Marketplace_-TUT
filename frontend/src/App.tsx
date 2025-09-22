@@ -826,6 +826,29 @@ const App = () => {
               ))}
             </div>
 
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center mt-8 space-x-4">
+                <button
+                  className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+                  onClick={() => fetchProducts(currentPage - 1)}
+                  disabled={!hasPrev}
+                >
+                  Previous
+                </button>
+                <span className="font-semibold">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <button
+                  className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+                  onClick={() => fetchProducts(currentPage + 1)}
+                  disabled={!hasNext}
+                >
+                  Next
+                </button>
+              </div>
+            )}
+
             {filteredProducts.length === 0 && (
               <div className="text-center py-20">
                 <ShoppingBag className="h-16 w-16 text-gray-300 mx-auto mb-4" />
