@@ -16,12 +16,25 @@ const apiCall = async (endpoint, options = {}) => {
     ...options,
   };
 
+  // Add body if it exists (for POST, PUT requests)
+  if (options.body) {
+    config.body = options.body;
+  }
+
   try {
     const response = await fetch(`${API_BASE}${endpoint}`, config);
-    const data = await response.json();
+    
+    // Handle cases where response might not be JSON
+    let data;
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      data = await response.text();
+    }
 
     if (!response.ok) {
-      throw new Error(data.error || `HTTP error! status: ${response.status}`);
+      throw new Error(data.error || data.message || `HTTP error! status: ${response.status}`);
     }
 
     return data;
@@ -159,7 +172,7 @@ export const getProducts = async (filters = {}) => {
     
     const response = await apiCall(endpoint);
     
-    console.log(`✅ Retrieved ${response.products.length} products`);
+    console.log(`✅ Retrieved ${response.products ? response.products.length : 0} products`);
     
     return response;
   } catch (error) {
@@ -274,7 +287,7 @@ export const deleteProduct = async (productId) => {
 };
 
 // ==============================================
-// MESSAGE API FUNCTIONS
+// MESSAGE API FUNCTIONS (Backend Version)
 // ==============================================
 
 /**
@@ -287,12 +300,13 @@ export const getMessages = async (conversationId) => {
     
     const response = await apiCall(`/messages/${conversationId}`);
     
-    console.log(`✅ Retrieved ${response.messages.length} messages`);
+    console.log(`✅ Retrieved ${response.messages ? response.messages.length : 0} messages`);
     
-    return response;
+    return response.messages || [];
   } catch (error) {
     console.error('❌ Failed to get messages:', error);
-    throw new Error(error.message || 'Failed to retrieve messages');
+    // Fallback to mock data if API fails
+    return getMockMessages(conversationId);
   }
 };
 
@@ -317,7 +331,98 @@ export const sendMessage = async (messageData) => {
     return response;
   } catch (error) {
     console.error('❌ Failed to send message:', error);
+    // Fallback to mock function if API fails
+    return sendMockMessage(messageData);
+  }
+};
+
+// ==============================================
+// MOCK MESSAGE FUNCTIONS (Fallback)
+// ==============================================
+
+// Mock database for messages (fallback when backend is unavailable)
+let messagesDB = [
+  {
+    id: 1,
+    senderId: 1,
+    receiverId: 2,
+    text: "Hi there! Is this item still available?",
+    timestamp: "2024-01-15T10:30:00Z",
+    read: true
+  },
+  {
+    id: 2,
+    senderId: 2,
+    receiverId: 1,
+    text: "Yes, it's still available!",
+    timestamp: "2024-01-15T10:35:00Z",
+    read: true
+  },
+  {
+    id: 3,
+    senderId: 1,
+    receiverId: 2,
+    text: "Great! Can we meet on campus tomorrow?",
+    timestamp: "2024-01-15T10:40:00Z",
+    read: false
+  }
+];
+
+let nextMessageId = 4;
+
+// Simulate API delay
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Mock message functions
+const sendMockMessage = async (messageData) => {
+  await delay(500);
+
+  try {
+    if (!messageData.senderId || !messageData.receiverId || !messageData.text.trim()) {
+      throw new Error('Missing required message fields');
+    }
+
+    const newMessage = {
+      id: nextMessageId++,
+      senderId: messageData.senderId,
+      receiverId: messageData.receiverId,
+      text: messageData.text.trim(),
+      timestamp: messageData.timestamp || new Date().toISOString(),
+      read: false
+    };
+
+    messagesDB.push(newMessage);
+    console.log('✅ Mock message sent:', newMessage);
+    return newMessage;
+
+  } catch (error) {
+    console.error('❌ Failed to send mock message:', error);
     throw new Error(error.message || 'Failed to send message');
+  }
+};
+
+const getMockMessages = async (conversationId) => {
+  await delay(300);
+
+  try {
+    // Parse user IDs from conversationId (format: "userId1-userId2")
+    const [userId1, userId2] = conversationId.split('-').map(Number);
+    
+    const conversationMessages = messagesDB.filter(message =>
+      (message.senderId === userId1 && message.receiverId === userId2) ||
+      (message.senderId === userId2 && message.receiverId === userId1)
+    );
+
+    const sortedMessages = conversationMessages.sort((a, b) => 
+      new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+
+    console.log(`✅ Loaded ${sortedMessages.length} mock messages`);
+    return sortedMessages;
+
+  } catch (error) {
+    console.error('❌ Failed to get mock messages:', error);
+    return [];
   }
 };
 
@@ -339,7 +444,53 @@ export const getSubscriptionStatus = async () => {
     return response;
   } catch (error) {
     console.error('❌ Failed to get subscription status:', error);
-    throw new Error(error.message || 'Failed to get subscription status');
+    // Return mock subscription status
+    return { subscribed: false, type: 'customer' };
+  }
+};
+
+/**
+ * Get user profile
+ */
+export const getUserProfile = async (userId) => {
+  try {
+    const response = await apiCall(`/users/${userId}`);
+    return response;
+  } catch (error) {
+    console.error('❌ Failed to get user profile:', error);
+    throw new Error(error.message || 'Failed to get user profile');
+  }
+};
+
+/**
+ * Update user profile
+ */
+export const updateUserProfile = async (userId, updateData) => {
+  try {
+    const response = await apiCall(`/users/${userId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updateData),
+    });
+    return response;
+  } catch (error) {
+    console.error('❌ Failed to update profile:', error);
+    throw new Error(error.message || 'Failed to update profile');
+  }
+};
+
+/**
+ * Upgrade user to seller
+ */
+export const upgradeUserToSeller = async (userId, subscriptionType = 'monthly') => {
+  try {
+    const response = await apiCall(`/users/${userId}/upgrade`, {
+      method: 'POST',
+      body: JSON.stringify({ subscriptionType }),
+    });
+    return response;
+  } catch (error) {
+    console.error('❌ Failed to upgrade account:', error);
+    throw new Error(error.message || 'Failed to upgrade account');
   }
 };
 
@@ -353,19 +504,19 @@ export const getSubscriptionStatus = async () => {
 export const getCampuses = async () => {
   try {
     const response = await apiCall('/campuses');
-    return response.campuses;
+    return response.campuses || [];
   } catch (error) {
     console.error('❌ Failed to get campuses:', error);
     // Return default campuses if API fails
     return [
-      { id: 'pretoria-main', name: 'Pretoria Main ' },
-      { id: 'soshanguve', name: 'Soshanguve ' },
-      { id: 'ga-rankuwa', name: 'Ga-Rankuwa ' },
-      { id: 'pretoria-west', name: 'Pretoria West ' },
-      { id: 'arts', name: 'Arts ' },
-      { id: 'emalahleni', name: 'eMalahleni ' },
-      { id: 'mbombela', name: 'Mbombela ' },
-      { id: 'polokwane', name: 'Polokwane ' }
+      { id: 'pretoria-main', name: 'Pretoria Main' },
+      { id: 'soshanguve', name: 'Soshanguve' },
+      { id: 'ga-rankuwa', name: 'Ga-Rankuwa' },
+      { id: 'pretoria-west', name: 'Pretoria West' },
+      { id: 'arts', name: 'Arts' },
+      { id: 'emalahleni', name: 'eMalahleni' },
+      { id: 'mbombela', name: 'Mbombela' },
+      { id: 'polokwane', name: 'Polokwane' }
     ];
   }
 };
@@ -376,7 +527,7 @@ export const getCampuses = async () => {
 export const getCategories = async () => {
   try {
     const response = await apiCall('/categories');
-    return response.categories;
+    return response.categories || [];
   } catch (error) {
     console.error('❌ Failed to get categories:', error);
     // Return default categories if API fails
@@ -428,36 +579,79 @@ export const generateConversationId = (userId1, userId2) => {
   return `${ids[0]}-${ids[1]}`;
 };
 
-export const getUserProfile = async (userId) => {
+// Additional messaging utility functions (for mock data)
+export const getConversations = async (userId) => {
+  await delay(400);
+
   try {
-    const response = await apiCall(`/users/${userId}`);
-    return response;
+    const conversationPartners = new Set();
+    
+    messagesDB.forEach(message => {
+      if (message.senderId === userId) conversationPartners.add(message.receiverId);
+      if (message.receiverId === userId) conversationPartners.add(message.senderId);
+    });
+
+    const conversations = Array.from(conversationPartners).map(partnerId => {
+      const messagesWithPartner = messagesDB.filter(msg =>
+        (msg.senderId === userId && msg.receiverId === partnerId) ||
+        (msg.senderId === partnerId && msg.receiverId === userId)
+      );
+
+      const lastMessage = messagesWithPartner.reduce((latest, current) => 
+        new Date(current.timestamp) > new Date(latest.timestamp) ? current : latest
+      );
+
+      const unreadCount = messagesWithPartner.filter(msg => 
+        msg.receiverId === userId && !msg.read
+      ).length;
+
+      return {
+        userId: partnerId,
+        lastMessage,
+        unreadCount
+      };
+    });
+
+    return conversations.sort((a, b) => 
+      new Date(b.lastMessage.timestamp).getTime() - new Date(a.lastMessage.timestamp).getTime()
+    );
+
   } catch (error) {
-    throw new Error(error.message || 'Failed to get user profile');
+    console.error('❌ Failed to get conversations:', error);
+    throw new Error('Failed to load conversations');
   }
 };
 
-export const updateUserProfile = async (userId, updateData) => {
+export const markMessagesAsRead = async (userId, partnerId) => {
+  await delay(200);
+
   try {
-    const response = await apiCall(`/users/${userId}`, {
-      method: 'PUT',
-      body: JSON.stringify(updateData),
+    messagesDB = messagesDB.map(message => {
+      if (message.senderId === partnerId && message.receiverId === userId && !message.read) {
+        return { ...message, read: true };
+      }
+      return message;
     });
-    return response;
+
+    console.log(`✅ Marked messages from ${partnerId} as read for user ${userId}`);
   } catch (error) {
-    throw new Error(error.message || 'Failed to update profile');
+    console.error('❌ Failed to mark messages as read:', error);
+    throw new Error('Failed to mark messages as read');
   }
 };
 
-export const upgradeUserToSeller = async (userId, subscriptionType = 'monthly') => {
+export const getUnreadMessageCount = async (userId) => {
+  await delay(100);
+
   try {
-    const response = await apiCall(`/users/${userId}/upgrade`, {
-      method: 'POST',
-      body: JSON.stringify({ subscriptionType }),
-    });
-    return response;
+    const unreadMessages = messagesDB.filter(message => 
+      message.receiverId === userId && !message.read
+    );
+    
+    return unreadMessages.length;
   } catch (error) {
-    throw new Error(error.message || 'Failed to upgrade account');
+    console.error('❌ Failed to get unread message count:', error);
+    return 0;
   }
 };
 
@@ -480,9 +674,15 @@ export default {
   // Messages
   getMessages,
   sendMessage,
+  getConversations,
+  markMessagesAsRead,
+  getUnreadMessageCount,
   
   // User
   getSubscriptionStatus,
+  getUserProfile,
+  updateUserProfile,
+  upgradeUserToSeller,
   
   // Reference Data
   getCampuses,

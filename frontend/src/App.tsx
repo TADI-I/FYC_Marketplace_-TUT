@@ -14,11 +14,12 @@ import {
   getSubscriptionStatus,
   getUserProfile,          // New
   updateUserProfile,       // New  
-  upgradeUserToSeller      // New
+  upgradeUserToSeller     // New
 } from './api';
 import LoginForm from './LoginForm';
 import RegisterForm from './RegisterForm';
 import AddProductForm from './AddProduct';
+import ChatWindow from './ChatWindow';
 
 // ... rest of your React component
 
@@ -50,10 +51,12 @@ const App = () => {
   type Message = {
     id: number;
     senderId: number;
-    senderName: string;
+    receiverId: number;
     text: string;
     timestamp: string;
+    read: boolean;
   };
+  
 
   type MessageMap = {
     [key: string]: Message[];
@@ -72,11 +75,8 @@ const App = () => {
   const [chatWith, setChatWith] = useState<number | null>(null);
   const [messages, setMessages] = useState<MessageMap>({});
   const [newMessage, setNewMessage] = useState('');
-  const [loginData, setLoginData] = useState({ email: '', password: '' });
-  const [registerData, setRegisterData] = useState({ name: '', email: '', password: '', userType: '', campus: '' });
-  const [productData, setProductData] = useState({
-    title: '', description: '', price: '', category: '', type: 'product'
-  });
+  const [users, setUsers] = useState<User[]>([]); // Add users state
+ 
 
   const [products, setProducts] = useState<Product[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -192,30 +192,6 @@ const App = () => {
   };
 
 
-  const sendMessage = (receiverId: number) => {
-    if (newMessage.trim() && currentUser) {
-      const messageKey = `${currentUser.id}-${receiverId}`;
-      const reverseKey = `${receiverId}-${currentUser.id}`;
-      const currentMessages = messages[messageKey] || messages[reverseKey] || [];
-
-      const newMessageObj: Message = {
-        id: Date.now(),
-        senderId: currentUser.id,
-        senderName: currentUser.name,
-        text: newMessage,
-        timestamp: new Date().toLocaleTimeString()
-      };
-
-      setMessages({
-        ...messages,
-        [messageKey]: [...currentMessages, newMessageObj]
-      });
-      setNewMessage('');
-    }
-  };
-
- 
-
   const filteredProducts = products.filter(product => {
     const matchesSearch =
       (product.title?.toLowerCase() ?? '').includes(searchTerm.toLowerCase()) ||
@@ -259,68 +235,26 @@ const App = () => {
   );
 
 
+  const handleNewMessage = (message: Message) => {
+  if (!currentUser || !chatWith) return;
+  
+  const key = `${Math.min(currentUser.id, chatWith)}-${Math.max(currentUser.id, chatWith)}`;
+  setMessages(prev => ({
+    ...prev,
+    [key]: [...(prev[key] || []), message]
+  }));
+};
 
-  const ChatWindow = () => {
-    if (!currentUser || !chatWith) return <div>Please log in to view messages.</div>;
+    const handleLoadMessages = (loadedMessages: Message[]) => {
+      if (!currentUser || !chatWith) return;
+      
+      const key = `${Math.min(currentUser.id, chatWith)}-${Math.max(currentUser.id, chatWith)}`;
+      setMessages(prev => ({
+        ...prev,
+        [key]: loadedMessages
+      }));
+    };
 
-    const otherUser = null; // Replace with actual user lookup logic
-    const messageKey = `${currentUser.id}-${chatWith}`;
-    const reverseKey = `${chatWith}-${currentUser.id}`;
-    const chatMessages = messages[messageKey] || messages[reverseKey] || [];
-
-    return (
-      <div className="max-w-2xl mx-auto p-6">
-        <div className="bg-white rounded-lg shadow-lg">
-          <div className="p-4 border-b bg-blue-600 text-white rounded-t-lg flex justify-between items-center">
-            <h3 className="font-semibold">Chat with {otherUser}</h3>
-            <button onClick={() => setChatWith(null)} className="text-white hover:text-gray-200">
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-          <div className="h-96 p-4 overflow-y-auto bg-gray-50">
-            {chatMessages.length === 0 ? (
-              <div className="text-center text-gray-500 py-10">
-                No messages yet. Start the conversation!
-              </div>
-            ) : (
-              chatMessages.map(msg => (
-                <div key={msg.id} className={`mb-4 ${msg.senderId === currentUser.id ? 'text-right' : 'text-left'}`}>
-                  <div className={`inline-block p-3 rounded-lg max-w-xs ${
-                    msg.senderId === currentUser.id
-                      ? 'bg-blue-600 text-white' 
-                      : 'bg-gray-200 text-gray-800'
-                  }`}>
-                    <p>{msg.text}</p>
-                    <small className="opacity-75 block mt-1 text-xs">{msg.timestamp}</small>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-          <div className="p-4 border-t">
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                placeholder="Type your message..."
-                className="flex-1 p-3 border rounded"
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') sendMessage(chatWith);
-                }}
-              />
-              <button 
-                onClick={() => sendMessage(chatWith)}
-                className="bg-blue-600 text-white px-4 py-3 rounded hover:bg-blue-700"
-              >
-                Send
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -387,7 +321,15 @@ const App = () => {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-8">
         {chatWith ? (
-          <ChatWindow />
+           // In App.tsx - Remove the messages prop
+          <ChatWindow
+            currentUser={currentUser}
+            chatWith={chatWith}
+            users={users}
+            onCloseChat={() => setChatWith(null)}
+            onNewMessage={handleNewMessage}
+            onLoadMessages={handleLoadMessages}
+          />
         ) : currentView === 'add-product' ? (
           currentUser?.type === 'seller' && currentUser?.subscribed ? (
              <AddProductForm 
