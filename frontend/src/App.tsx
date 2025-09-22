@@ -1,6 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingBag, MessageCircle, Plus, Search, User, Star, Tag, Filter, X } from 'lucide-react';
 import './App.css';
+import {
+  registerUser,
+  loginUser,
+  logoutUser,
+  getCurrentUser,
+  isAuthenticated,
+  getProducts,
+  createProduct,
+  sendMessage,
+  getMessages,
+  generateConversationId,
+  testConnection,
+  getSubscriptionStatus,
+  getUserProfile,          // New
+  updateUserProfile,       // New  
+  upgradeUserToSeller      // New
+} from './api';
+
+// ... rest of your React component
 
 const App = () => {
   
@@ -39,6 +58,8 @@ const App = () => {
     [key: string]: Message[];
   };
 
+  const [error, setError] = useState<string>('');
+  const [loading, setLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [currentView, setCurrentView] = useState('home');
   const [showLogin, setShowLogin] = useState(false);
@@ -51,7 +72,7 @@ const App = () => {
   const [messages, setMessages] = useState<MessageMap>({});
   const [newMessage, setNewMessage] = useState('');
   const [loginData, setLoginData] = useState({ email: '', password: '' });
-  const [registerData, setRegisterData] = useState({ name: '', email: '', userType: '', campus: '' });
+  const [registerData, setRegisterData] = useState({ name: '', email: '', password: '', userType: '', campus: '' });
   const [productData, setProductData] = useState({
     title: '', description: '', price: '', category: '', type: 'product'
   });
@@ -63,47 +84,45 @@ const App = () => {
     { id: 3, name: 'Mike Johnson', email: 'mike@tut.ac.za', type: 'seller', subscribed: true, campus: 'ga-rankuwa' }
   ]);
 
-  const [products, setProducts] = useState<Product[]>([
-    {
-      id: 1,
-      title: 'Engineering Textbooks Bundle',
-      description: 'Complete set of engineering textbooks for first year students',
-      price: 1500,
-      category: 'books',
-      sellerId: 1,
-      sellerName: 'John Doe',
-      sellerCampus: 'pretoria-main',
-      image: '/api/placeholder/300/200',
-      rating: 4.8,
-      type: 'product'
-    },
-    {
-      id: 2,
-      title: 'Math Tutoring Services',
-      description: 'One-on-one mathematics tutoring for all levels',
-      price: 200,
-      category: 'services',
-      sellerId: 3,
-      sellerName: 'Mike Johnson',
-      sellerCampus: 'ga-rankuwa',
-      image: '/api/placeholder/300/200',
-      rating: 4.9,
-      type: 'service'
-    },
-    {
-      id: 3,
-      title: 'Laptop - Dell Inspiron',
-      description: 'Used Dell Inspiron laptop, perfect for programming and assignments',
-      price: 8500,
-      category: 'electronics',
-      sellerId: 1,
-      sellerName: 'John Doe',
-      sellerCampus: 'pretoria-main',
-      image: '/api/placeholder/300/200',
-      rating: 4.5,
-      type: 'product'
+  const [products, setProducts] = useState<Product[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalProducts, setTotalProducts] = useState(0);
+  const [hasNext, setHasNext] = useState(false);
+  const [hasPrev, setHasPrev] = useState(false);
+
+  const fetchProducts = async (page = 1, filters = {}) => {
+    try {
+      setLoading(true);
+      const response = await getProducts({
+        page,
+        limit: 12,
+        category: selectedCategory !== 'all' ? selectedCategory : '',
+        campus: selectedCampus !== 'all' ? selectedCampus : '',
+        search: searchTerm || '',
+        ...filters
+      });
+
+      setProducts(response.products);
+      setCurrentPage(response.pagination.currentPage);
+      setTotalPages(response.pagination.totalPages);
+      setTotalProducts(response.pagination.totalProducts);
+      setHasNext(response.pagination.hasNext);
+      setHasPrev(response.pagination.hasPrev);
+      setError('');
+    } catch (err: any) {
+      setError(err.message || 'Failed to fetch products');
+      console.error('Error fetching products:', err);
+    } finally {
+      setLoading(false);
     }
-  ]);
+  };
+
+  // Initial load
+  useEffect(() => {
+    fetchProducts(1);
+    // eslint-disable-next-line
+  }, []);
 
   const categories = [
     { id: 'all', name: 'All Items' },
@@ -115,15 +134,15 @@ const App = () => {
   ];
 
   const campuses = [
-    { id: 'all', name: 'All Campuses' },
-    { id: 'pretoria-main', name: 'Pretoria Main Campus' },
-    { id: 'soshanguve', name: 'Soshanguve Campus' },
-    { id: 'ga-rankuwa', name: 'Ga-Rankuwa Campus' },
-    { id: 'pretoria-west', name: 'Pretoria West Campus' },
-    { id: 'arts', name: 'Arts Campus' },
-    { id: 'emalahleni', name: 'eMalahleni Campus' },
-    { id: 'mbombela', name: 'Mbombela Campus' },
-    { id: 'polokwane', name: 'Polokwane Campus' }
+    { id: 'all', name: 'All Locations' },
+    { id: 'pretoria-main', name: 'Pretoria Main ' },
+    { id: 'soshanguve', name: 'Soshanguve ' },
+    { id: 'ga-rankuwa', name: 'Ga-Rankuwa ' },
+    { id: 'pretoria-west', name: 'Pretoria West ' },
+    { id: 'arts', name: 'Arts ' },
+    { id: 'emalahleni', name: 'eMalahleni ' },
+    { id: 'mbombela', name: 'Mbombela ' },
+    { id: 'polokwane', name: 'Polokwane ' }
   ];
 
   // Load data from localStorage on component mount
@@ -156,55 +175,154 @@ const App = () => {
     localStorage.setItem('tutMarketplaceCurrentUser', JSON.stringify(currentUser));
   }, [currentUser]);
 
-  const handleLogin = () => {
-    const user = users.find(u => u.email === loginData.email);
-    if (user) {
-      setCurrentUser(user);
-      setShowLogin(false);
-      setLoginData({ email: '', password: '' });
-    } else {
-      alert('User not found. Please register first.');
+  const handleLogin = async () => {
+  if (!loginData.email || !loginData.password) {
+    setError('Please fill in all fields');
+    return;
+  }
+
+  setLoading(true);
+  setError('');
+
+  try {
+    console.log('🔑 Attempting login for:', loginData.email);
+    
+    const response = await loginUser({
+      email: loginData.email,
+      password: loginData.password
+    });
+
+    console.log('✅ Login successful:', response.user.name);
+    
+    setCurrentUser(response.user);
+    setShowLogin(false);
+    setLoginData({ email: '', password: '' });
+    
+    // Show success message
+    setTimeout(() => {
+      alert(`Welcome back, ${response.user.name}!`);
+    }, 100);
+
+  } catch (error) {
+    let errorMessage = 'Login failed. Please try again.';
+    if (error && typeof error === 'object' && 'message' in error) {
+      errorMessage = (error as { message: string }).message;
     }
+    console.error('❌ Login failed:', errorMessage);
+    setError(errorMessage);
+  } finally {
+    setLoading(false);
+  }
+};
+
+  
+ const handleRegister = async () => {
+  if (!registerData.name || !registerData.email || !registerData.password || 
+      !registerData.userType || !registerData.campus) {
+    setError('Please fill in all fields');
+    return;
+  }
+
+  if (!registerData.email.endsWith('@tut.ac.za')) {
+    setError('Please use a valid TUT email address (@tut.ac.za)');
+    return;
+  }
+
+  if (registerData.password.length < 8) {
+    setError('Password must be at least 8 characters long');
+    return;
+  }
+
+  setLoading(true);
+  setError('');
+
+  try {
+    console.log('📝 Attempting registration for:', registerData.email);
+    
+    const response = await registerUser({
+      name: registerData.name,
+      email: registerData.email,
+      password: registerData.password,
+      userType: registerData.userType,
+      campus: registerData.campus
+    });
+
+    console.log('✅ Registration successful:', response.user.name);
+    
+    setCurrentUser(response.user);
+    setShowRegister(false);
+    setRegisterData({ name: '', email: '', password: '', userType: '', campus: '' });
+    
+    // Show welcome message
+    setTimeout(() => {
+      const accountType = response.user.type === 'seller' ? 'seller' : 'customer';
+      alert(`Welcome to TUT Marketplace, ${response.user.name}! Your ${accountType} account has been created successfully.`);
+    }, 100);
+
+  } catch (error) {
+    let errorMessage = 'Registration failed. Please try again.';
+    if (error && typeof error === 'object' && 'message' in error) {
+      errorMessage = (error as { message: string }).message;
+    }
+    console.error('❌ Registration failed:', errorMessage);
+    setError(errorMessage);
+  } finally {
+    setLoading(false);
+  }
   };
 
-  const handleRegister = () => {
-    if (registerData.name && registerData.email && registerData.userType && registerData.campus) {
-      // Check if email already exists
-      if (users.some(u => u.email === registerData.email)) {
-        alert('This email is already registered. Please login instead.');
-        return;
-      }
-      
-      const newUser: User = {
-        id: users.length + 1,
-        name: registerData.name,
-        email: registerData.email,
-        type: registerData.userType,
-        subscribed: registerData.userType === 'seller',
-        campus: registerData.campus
-      };
-      setUsers([...users, newUser]);
-      setCurrentUser(newUser);
-      setShowRegister(false);
-      setRegisterData({ name: '', email: '', userType: '', campus: '' });
-    } else {
-      alert('Please fill all fields.');
+  const handleUpgrade = async () => {
+  if (!currentUser) {
+    setError('User not found');
+    return;
+  }
+
+  setLoading(true);
+  setError('');
+
+  try {
+    console.log('⬆️ Upgrading user to seller:', currentUser.name);
+    
+    const response = await upgradeUserToSeller(currentUser.id, 'monthly');
+    
+    console.log('✅ Upgrade successful:', response);
+
+    // Update the current user state
+    const updatedUser = {
+      ...currentUser,
+      type: 'seller',
+      subscribed: true,
+      subscriptionStatus: 'active',
+      subscriptionStartDate: new Date(),
+      subscriptionEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
+    };
+
+    setCurrentUser(updatedUser);
+    
+    // Update localStorage
+    localStorage.setItem('user_data', JSON.stringify(updatedUser));
+    
+    setShowUpgrade(false);
+    
+    // Show success message
+    setTimeout(() => {
+      alert('Congratulations! Your account has been upgraded to a seller account. You can now add products and services.');
+    }, 100);
+
+  } catch (error) {
+    let errorMessage = 'Upgrade failed. Please try again.';
+    if (error && typeof error === 'object' && 'message' in error) {
+      errorMessage = (error as { message: string }).message;
     }
+    console.error('❌ Upgrade failed:', errorMessage);
+    setError(errorMessage);
+  } finally {
+    setLoading(false);
+  }
   };
 
-  const handleUpgrade = () => {
-    if (currentUser) {
-      setUsers(users.map(u => 
-        u.id === currentUser.id 
-          ? { ...u, type: 'seller', subscribed: true }
-          : u
-      ));
-      setCurrentUser({ ...currentUser, type: 'seller', subscribed: true });
-      setShowUpgrade(false);
-    }
-  };
-
-  const handleAddProduct = () => {
+ const handleAddProduct = async () => {
+  try {
     if (
       productData.title &&
       productData.description &&
@@ -212,24 +330,39 @@ const App = () => {
       productData.category &&
       currentUser
     ) {
-      const newProduct: Product = {
-        id: products.length + 1,
+      // Create product data with seller information
+      const productToCreate = {
         ...productData,
         price: parseFloat(productData.price),
         sellerId: currentUser.id,
         sellerName: currentUser.name,
         sellerCampus: currentUser.campus,
         rating: 0,
-        image: '/api/placeholder/300/200'
+        image: '/api/placeholder/300/200',
+        type: productData.type || 'product'
       };
 
-      setProducts([...products, newProduct]);
+      // Call the API to create the product
+      const createdProduct = await createProduct(productToCreate);
+
+      // Update local state with the product returned from the API
+      setProducts([...products, createdProduct]);
       setCurrentView('home');
       setProductData({ title: '', description: '', price: '', category: '', type: 'product' });
+      
+      console.log('✅ Product added successfully');
     } else {
       alert('Please fill all required fields.');
     }
-  };
+  } catch (error) {
+    console.error('❌ Failed to add product:', error);
+    alert(
+      error && typeof error === 'object' && 'message' in error
+        ? (error as { message: string }).message
+        : 'Failed to add product. Please try again.'
+    );
+  }
+};
 
   const sendMessage = (receiverId: number) => {
     if (newMessage.trim() && currentUser) {
@@ -253,9 +386,12 @@ const App = () => {
     }
   };
 
+ 
+
   const filteredProducts = products.filter(product => {
-    const matchesSearch = product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch =
+      (product.title?.toLowerCase() ?? '').includes(searchTerm.toLowerCase()) ||
+      (product.description?.toLowerCase() ?? '').includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
     const matchesCampus = selectedCampus === 'all' || product.sellerCampus === selectedCampus;
     return matchesSearch && matchesCategory && matchesCampus;
@@ -264,7 +400,8 @@ const App = () => {
   const LoginForm = () => (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-96">
-        <h2 className="text-xl font-bold mb-4">Login to TUT Marketplace</h2>
+        <h2 className="text-xl font-bold mb-4">Login to FYC Marketplace</h2>
+        <p className="text-red-600 mb-4">{error}</p>
         <input
           type="email"
           placeholder="TUT Email Address"
@@ -308,7 +445,8 @@ const App = () => {
   const RegisterForm = () => (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-96">
-        <h2 className="text-xl font-bold mb-4">Register for TUT Marketplace</h2>
+        <h2 className="text-xl font-bold mb-4">Register for FYC Marketplace</h2>
+        <p className="text-red-600 mb-4">{error}</p>
         <input
         type="text"
         placeholder="Full Name"
@@ -327,6 +465,16 @@ const App = () => {
           setRegisterData(prev => ({ ...prev, email: e.target.value }))
         }
       />
+      <input 
+        type="password" 
+        placeholder="Password (min 8 characters)"
+        className="w-full p-3 border rounded mb-4"
+        value={registerData.password}
+        onChange={e => 
+          setRegisterData(prev => ({ ...prev, password: e.target.value }))
+        }
+        onFocus={(e) => e.target.select()}  
+        />  
         <select 
           className="w-full p-3 border rounded mb-4"
           value={registerData.campus}
@@ -523,7 +671,7 @@ const App = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <ShoppingBag className="h-8 w-8 text-blue-600" />
-              <h1 className="text-2xl font-bold text-gray-900">TUT Marketplace</h1>
+              <h1 className="text-2xl font-bold text-gray-900">FYC Marketplace</h1>
             </div>
             
             {currentUser ? (
@@ -697,3 +845,5 @@ const App = () => {
 };
 
 export default App;
+
+
