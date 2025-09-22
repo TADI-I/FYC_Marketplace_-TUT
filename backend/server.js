@@ -13,6 +13,19 @@ const PORT = process.env.PORT || 5001;
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+// MongoDB connection using Mongoose
+
+mongoose.connect(process.env.MONGODB_URI, {
+  dbName: process.env.DB_NAME,
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  tls: true,
+  tlsAllowInvalidCertificates: true,
+})
+.then(() => console.log("✅ MongoDB connected"))
+.catch(err => console.error("❌ MongoDB connection error:", err));
+
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 // MongoDB connection
 const uri = process.env.MONGODB_URI || "mongodb+srv://tadiwasongore_db_user:BigdaddyT@sales.o3ww0ii.mongodb.net/tut_marketplace?retryWrites=true&w=majority&appName=sales";
