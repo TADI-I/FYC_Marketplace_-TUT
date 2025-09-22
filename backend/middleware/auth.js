@@ -161,9 +161,9 @@ const requireAdmin = async (req, res, next) => {
 const validateTUTEmail = (req, res, next) => {
   const { email } = req.body;
   
-  if (!email || !email.endsWith('@tut.ac.za')) {
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return res.status(400).json({ 
-      error: 'Please use a valid TUT email address (@tut.ac.za)',
+      error: 'Please provide a valid email address',
       code: 'INVALID_EMAIL'
     });
   }

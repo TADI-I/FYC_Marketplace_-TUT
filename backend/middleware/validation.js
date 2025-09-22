@@ -139,8 +139,8 @@ const validateRegistration = validateFields({
   },
   email: {
     required: true,
-    validate: (email) => isValidEmail(email) && email.endsWith('@tut.ac.za'),
-    message: 'Please provide a valid TUT email address'
+    validate: (email) => isValidEmail(email),
+    message: 'Please provide a valid email address'
   },
   password: {
     required: true,

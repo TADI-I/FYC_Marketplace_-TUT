@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { ShoppingBag, MessageCircle, Plus, Search, User, Star, Tag, Filter, X } from 'lucide-react';
 import './App.css';
 import {
-  registerUser,
-  loginUser,
   logoutUser,
   getCurrentUser,
   isAuthenticated,
@@ -18,6 +16,9 @@ import {
   updateUserProfile,       // New  
   upgradeUserToSeller      // New
 } from './api';
+import LoginForm from './LoginForm';
+import RegisterForm from './RegisterForm';
+import AddProductForm from './AddProduct';
 
 // ... rest of your React component
 
@@ -76,13 +77,6 @@ const App = () => {
   const [productData, setProductData] = useState({
     title: '', description: '', price: '', category: '', type: 'product'
   });
-
-  // Sample data
-  const [users, setUsers] = useState<User[]>([
-    { id: 1, name: 'John Doe', email: 'john@tut.ac.za', type: 'seller', subscribed: true, campus: 'pretoria-main' },
-    { id: 2, name: 'Sarah Smith', email: 'sarah@tut.ac.za', type: 'customer', subscribed: false, campus: 'soshanguve' },
-    { id: 3, name: 'Mike Johnson', email: 'mike@tut.ac.za', type: 'seller', subscribed: true, campus: 'ga-rankuwa' }
-  ]);
 
   const [products, setProducts] = useState<Product[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -146,131 +140,7 @@ const App = () => {
   ];
 
   // Load data from localStorage on component mount
-  useEffect(() => {
-    const savedUsers = localStorage.getItem('tutMarketplaceUsers');
-    const savedProducts = localStorage.getItem('tutMarketplaceProducts');
-    const savedMessages = localStorage.getItem('tutMarketplaceMessages');
-    const savedCurrentUser = localStorage.getItem('tutMarketplaceCurrentUser');
-    
-    if (savedUsers) setUsers(JSON.parse(savedUsers));
-    if (savedProducts) setProducts(JSON.parse(savedProducts));
-    if (savedMessages) setMessages(JSON.parse(savedMessages));
-    if (savedCurrentUser) setCurrentUser(JSON.parse(savedCurrentUser));
-  }, []);
-
-  // Save data to localStorage whenever it changes
-  useEffect(() => {
-    localStorage.setItem('tutMarketplaceUsers', JSON.stringify(users));
-  }, [users]);
-
-  useEffect(() => {
-    localStorage.setItem('tutMarketplaceProducts', JSON.stringify(products));
-  }, [products]);
-
-  useEffect(() => {
-    localStorage.setItem('tutMarketplaceMessages', JSON.stringify(messages));
-  }, [messages]);
-
-  useEffect(() => {
-    localStorage.setItem('tutMarketplaceCurrentUser', JSON.stringify(currentUser));
-  }, [currentUser]);
-
-  const handleLogin = async () => {
-  if (!loginData.email || !loginData.password) {
-    setError('Please fill in all fields');
-    return;
-  }
-
-  setLoading(true);
-  setError('');
-
-  try {
-    console.log('🔑 Attempting login for:', loginData.email);
-    
-    const response = await loginUser({
-      email: loginData.email,
-      password: loginData.password
-    });
-
-    console.log('✅ Login successful:', response.user.name);
-    
-    setCurrentUser(response.user);
-    setShowLogin(false);
-    setLoginData({ email: '', password: '' });
-    
-    // Show success message
-    setTimeout(() => {
-      alert(`Welcome back, ${response.user.name}!`);
-    }, 100);
-
-  } catch (error) {
-    let errorMessage = 'Login failed. Please try again.';
-    if (error && typeof error === 'object' && 'message' in error) {
-      errorMessage = (error as { message: string }).message;
-    }
-    console.error('❌ Login failed:', errorMessage);
-    setError(errorMessage);
-  } finally {
-    setLoading(false);
-  }
-};
-
   
- const handleRegister = async () => {
-  if (!registerData.name || !registerData.email || !registerData.password || 
-      !registerData.userType || !registerData.campus) {
-    setError('Please fill in all fields');
-    return;
-  }
-
-  if (!registerData.email.endsWith('@tut.ac.za')) {
-    setError('Please use a valid TUT email address (@tut.ac.za)');
-    return;
-  }
-
-  if (registerData.password.length < 8) {
-    setError('Password must be at least 8 characters long');
-    return;
-  }
-
-  setLoading(true);
-  setError('');
-
-  try {
-    console.log('📝 Attempting registration for:', registerData.email);
-    
-    const response = await registerUser({
-      name: registerData.name,
-      email: registerData.email,
-      password: registerData.password,
-      userType: registerData.userType,
-      campus: registerData.campus
-    });
-
-    console.log('✅ Registration successful:', response.user.name);
-    
-    setCurrentUser(response.user);
-    setShowRegister(false);
-    setRegisterData({ name: '', email: '', password: '', userType: '', campus: '' });
-    
-    // Show welcome message
-    setTimeout(() => {
-      const accountType = response.user.type === 'seller' ? 'seller' : 'customer';
-      alert(`Welcome to TUT Marketplace, ${response.user.name}! Your ${accountType} account has been created successfully.`);
-    }, 100);
-
-  } catch (error) {
-    let errorMessage = 'Registration failed. Please try again.';
-    if (error && typeof error === 'object' && 'message' in error) {
-      errorMessage = (error as { message: string }).message;
-    }
-    console.error('❌ Registration failed:', errorMessage);
-    setError(errorMessage);
-  } finally {
-    setLoading(false);
-  }
-  };
-
   const handleUpgrade = async () => {
   if (!currentUser) {
     setError('User not found');
@@ -321,48 +191,6 @@ const App = () => {
   }
   };
 
- const handleAddProduct = async () => {
-  try {
-    if (
-      productData.title &&
-      productData.description &&
-      productData.price &&
-      productData.category &&
-      currentUser
-    ) {
-      // Create product data with seller information
-      const productToCreate = {
-        ...productData,
-        price: parseFloat(productData.price),
-        sellerId: currentUser.id,
-        sellerName: currentUser.name,
-        sellerCampus: currentUser.campus,
-        rating: 0,
-        image: '/api/placeholder/300/200',
-        type: productData.type || 'product'
-      };
-
-      // Call the API to create the product
-      const createdProduct = await createProduct(productToCreate);
-
-      // Update local state with the product returned from the API
-      setProducts([...products, createdProduct]);
-      setCurrentView('home');
-      setProductData({ title: '', description: '', price: '', category: '', type: 'product' });
-      
-      console.log('✅ Product added successfully');
-    } else {
-      alert('Please fill all required fields.');
-    }
-  } catch (error) {
-    console.error('❌ Failed to add product:', error);
-    alert(
-      error && typeof error === 'object' && 'message' in error
-        ? (error as { message: string }).message
-        : 'Failed to add product. Please try again.'
-    );
-  }
-};
 
   const sendMessage = (receiverId: number) => {
     if (newMessage.trim() && currentUser) {
@@ -397,126 +225,12 @@ const App = () => {
     return matchesSearch && matchesCategory && matchesCampus;
   });
 
-  const LoginForm = () => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-96">
-        <h2 className="text-xl font-bold mb-4">Login to FYC Marketplace</h2>
-        <p className="text-red-600 mb-4">{error}</p>
-        <input
-          type="email"
-          placeholder="TUT Email Address"
-          className="w-full p-3 border rounded mb-4"
-          value={loginData.email}
-          onChange={e => setLoginData(prev => ({ ...prev, email: e.target.value }))}
-          autoFocus
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          className="w-full p-3 border rounded mb-4"
-          value={loginData.password}
-          onChange={e => setLoginData(prev => ({ ...prev, password: e.target.value }))}
-          onFocus={(e) => e.target.select()}
-        />
-        <div className="flex gap-2">
-          <button onClick={handleLogin} className="flex-1 bg-blue-600 text-white p-3 rounded hover:bg-blue-700">
-            Login
-          </button>
-          <button onClick={() => setShowLogin(false)} className="flex-1 bg-gray-300 p-3 rounded hover:bg-gray-400">
-            Cancel
-          </button>
-        </div>
-        <p className="text-center mt-4 text-sm text-gray-600">
-          Don't have an account?{' '}
-          <button 
-            className="text-blue-600 hover:underline"
-            onClick={() => {
-              setShowLogin(false);
-              setShowRegister(true);
-            }}
-          >
-            Register here
-          </button>
-        </p>
-      </div>
-    </div>
-  );
 
-  const RegisterForm = () => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-96">
-        <h2 className="text-xl font-bold mb-4">Register for FYC Marketplace</h2>
-        <p className="text-red-600 mb-4">{error}</p>
-        <input
-        type="text"
-        placeholder="Full Name"
-        className="w-full p-3 border rounded mb-4"
-        value={registerData.name}
-        onChange={e =>
-          setRegisterData(prev => ({ ...prev, name: e.target.value }))
-        }
-      />
-      <input
-        type="email"
-        placeholder="TUT Email Address"
-        className="w-full p-3 border rounded mb-4"
-        value={registerData.email}
-        onChange={e =>
-          setRegisterData(prev => ({ ...prev, email: e.target.value }))
-        }
-      />
-      <input 
-        type="password" 
-        placeholder="Password (min 8 characters)"
-        className="w-full p-3 border rounded mb-4"
-        value={registerData.password}
-        onChange={e => 
-          setRegisterData(prev => ({ ...prev, password: e.target.value }))
-        }
-        onFocus={(e) => e.target.select()}  
-        />  
-        <select 
-          className="w-full p-3 border rounded mb-4"
-          value={registerData.campus}
-          onChange={(e) => setRegisterData({...registerData, campus: e.target.value})}
-        >
-          <option value="">Select Your Campus</option>
-          {campuses.slice(1).map(campus => (
-            <option key={campus.id} value={campus.id}>{campus.name}</option>
-          ))}
-        </select>
-        <select 
-          className="w-full p-3 border rounded mb-4"
-          value={registerData.userType}
-          onChange={(e) => setRegisterData({...registerData, userType: e.target.value})}
-        >
-          <option value="">Select Account Type</option>
-          <option value="customer">Customer (Free)</option>
-          <option value="seller">Seller (R99/month)</option>
-        </select>
-        <div className="flex gap-2">
-          <button onClick={handleRegister} className="flex-1 bg-green-600 text-white p-3 rounded hover:bg-green-700">
-            Register
-          </button>
-          <button onClick={() => setShowRegister(false)} className="flex-1 bg-gray-300 p-3 rounded hover:bg-gray-400">
-            Cancel
-          </button>
-        </div>
-        <p className="text-center mt-4 text-sm text-gray-600">
-          Already have an account?{' '}
-          <button 
-            className="text-blue-600 hover:underline"
-            onClick={() => {
-              setShowRegister(false);
-              setShowLogin(true);
-            }}
-          >
-            Login here
-          </button>
-        </p>
-      </div>
-    </div>
-  );
+ const handleLoginSuccess = (user: User) => {
+    setCurrentUser(user);
+    setShowLogin(false);
+  };
+ 
 
   const UpgradeModal = () => (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -531,7 +245,7 @@ const App = () => {
             <li>• Priority listing placement</li>
           </ul>
         </div>
-        <p className="text-lg font-semibold mb-4">Monthly Subscription: R99</p>
+        <p className="text-lg font-semibold mb-4">Monthly Subscription: R25</p>
         <div className="flex gap-2">
           <button onClick={handleUpgrade} className="flex-1 bg-orange-600 text-white p-3 rounded hover:bg-orange-700">
             Subscribe Now
@@ -544,67 +258,12 @@ const App = () => {
     </div>
   );
 
-  const AddProductForm = () => (
-    <div className="max-w-2xl mx-auto p-6">
-      <h2 className="text-2xl font-bold mb-6">Add New Product/Service</h2>
-      <div className="grid md:grid-cols-2 gap-4 mb-4">
-        <input
-          type="text"
-          placeholder="Product/Service Title"
-          className="p-3 border rounded"
-          value={productData.title}
-          onChange={(e) => setProductData({...productData, title: e.target.value})}
-        />
-        <select 
-          className="p-3 border rounded" 
-          value={productData.category}
-          onChange={(e) => setProductData({...productData, category: e.target.value})}
-        >
-          <option value="">Select Category</option>
-          {categories.slice(1).map(cat => (
-            <option key={cat.id} value={cat.id}>{cat.name}</option>
-          ))}
-        </select>
-      </div>
-      <textarea
-        placeholder="Detailed description"
-        className="w-full p-3 border rounded mb-4"
-        rows={4}
-        value={productData.description}
-        onChange={(e) => setProductData({...productData, description: e.target.value})}
-      />
-      <div className="grid md:grid-cols-2 gap-4 mb-6">
-        <input
-          type="number"
-          placeholder="Price (R)"
-          className="p-3 border rounded"
-          value={productData.price}
-          onChange={(e) => setProductData({...productData, price: e.target.value})}
-        />
-        <select 
-          className="p-3 border rounded" 
-          value={productData.type}
-          onChange={(e) => setProductData({...productData, type: e.target.value})}
-        >
-          <option value="product">Physical Product</option>
-          <option value="service">Service</option>
-        </select>
-      </div>
-      <div className="flex gap-2">
-        <button onClick={handleAddProduct} className="bg-green-600 text-white px-6 py-3 rounded hover:bg-green-700">
-          Add Listing
-        </button>
-        <button onClick={() => setCurrentView('home')} className="bg-gray-300 px-6 py-3 rounded hover:bg-gray-400">
-          Cancel
-        </button>
-      </div>
-    </div>
-  );
+
 
   const ChatWindow = () => {
     if (!currentUser || !chatWith) return <div>Please log in to view messages.</div>;
 
-    const otherUser = users.find(u => u.id === chatWith);
+    const otherUser = null; // Replace with actual user lookup logic
     const messageKey = `${currentUser.id}-${chatWith}`;
     const reverseKey = `${chatWith}-${currentUser.id}`;
     const chatMessages = messages[messageKey] || messages[reverseKey] || [];
@@ -613,7 +272,7 @@ const App = () => {
       <div className="max-w-2xl mx-auto p-6">
         <div className="bg-white rounded-lg shadow-lg">
           <div className="p-4 border-b bg-blue-600 text-white rounded-t-lg flex justify-between items-center">
-            <h3 className="font-semibold">Chat with {otherUser?.name}</h3>
+            <h3 className="font-semibold">Chat with {otherUser}</h3>
             <button onClick={() => setChatWith(null)} className="text-white hover:text-gray-200">
               <X className="h-5 w-5" />
             </button>
@@ -731,7 +390,14 @@ const App = () => {
           <ChatWindow />
         ) : currentView === 'add-product' ? (
           currentUser?.type === 'seller' && currentUser?.subscribed ? (
-            <AddProductForm />
+             <AddProductForm 
+        currentUser={currentUser}
+        onProductAdded={(newProduct) => {
+          setProducts(prev => [...prev, newProduct]);
+          setCurrentView('home');
+        }}
+        onCancel={() => setCurrentView('home')}
+      />
           ) : (
             <div className="text-center py-20">
               <p className="text-xl text-gray-600">You need a seller subscription to add listings.</p>
@@ -860,13 +526,29 @@ const App = () => {
       </main>
 
       {/* Modals */}
-      {showLogin && <LoginForm />}
-      {showRegister && <RegisterForm />}
+      {showLogin && (
+        <LoginForm
+          onLoginSuccess={handleLoginSuccess}
+          onShowRegister={() => setShowRegister(true)}
+          onClose={() => setShowLogin(false)}
+        />
+      )}
+      {showRegister && (
+        <RegisterForm
+          onRegisterSuccess={(user) => {
+            setCurrentUser(user);
+            setShowRegister(false);
+          }}
+          onShowLogin={() => {
+            setShowRegister(false);
+            setShowLogin(true);
+          }}
+          onClose={() => setShowRegister(false)}
+        />
+      )}
       {showUpgrade && <UpgradeModal />}
     </div>
   );
 };
 
 export default App;
-
-

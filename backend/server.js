@@ -181,9 +181,9 @@ app.post('/api/auth/register', async (req, res) => {
       });
     }
 
-    if (!email.endsWith('@tut.ac.za')) {
+    if (!email) {
       return res.status(400).json({ 
-        error: 'Please use a valid TUT email address',
+        error: 'Please use a valid email address',
         success: false
       });
     }
