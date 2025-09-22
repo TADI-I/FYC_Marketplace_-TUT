@@ -1,7 +1,7 @@
 // api.js - Complete API integration functions for React frontend
 
-//const API_BASE = 'https://fyc-marketplace-tut.onrender.com/api'; // Update with your backend URL
-const API_BASE = 'http://localhost:5001/api'; // Local development
+const API_BASE = 'https://fyc-marketplace-tut.onrender.com/api'; // Update with your backend URL
+//const API_BASE = 'http://localhost:5001/api'; // Local development
 
 // API Helper function
 const apiCall = async (endpoint, options = {}) => {
