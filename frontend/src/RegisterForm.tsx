@@ -21,6 +21,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onRegisterSuccess, onShowLo
     name: '', 
     email: '', 
     password: '', 
+    confirmPassword: '',
     userType: '', 
     campus: '' 
   });
@@ -68,7 +69,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onRegisterSuccess, onShowLo
       console.log('✅ Registration successful:', response.user.name);
       
       onRegisterSuccess(response.user);
-      setRegisterData({ name: '', email: '', password: '', userType: '', campus: '' });
+      setRegisterData({ name: '', email: '', password: '',confirmPassword: '', userType: '', campus: '' });
       
       // Show success message
       setTimeout(() => {
@@ -117,16 +118,39 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onRegisterSuccess, onShowLo
           disabled={loading}
         />
         
-        <input 
-          type="password" 
-          placeholder="Password (min 8 characters)"
-          className="w-full p-3 border rounded mb-4"
-          value={registerData.password}
-          onChange={e => setRegisterData(prev => ({ ...prev, password: e.target.value }))}
-          onFocus={(e) => e.target.select()}
-          disabled={loading}
-        />  
-        
+       <input 
+  type="password" 
+  placeholder="Password (min 8 characters)"
+  className="w-full p-3 border rounded mb-1"
+  onChange={e => setRegisterData(prev => ({ ...prev, password: e.target.value }))}
+  onFocus={(e) => e.target.select()}
+  disabled={loading}
+/>
+{registerData.password && registerData.password.length < 8 && (
+  <p className="text-red-500 text-sm mb-2">Password must be at least 8 characters</p>
+)}
+
+<input 
+  type="password" 
+  placeholder="Confirm Password"
+  className={`w-full p-3 border rounded mb-1 ${
+    registerData.confirmPassword && 
+    registerData.password !== registerData.confirmPassword 
+      ? 'border-red-500' 
+      : registerData.password === registerData.confirmPassword 
+        ? 'border-green-500' 
+        : ''
+  }`}
+  onChange={e => setRegisterData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+  onFocus={(e) => e.target.select()}
+  disabled={loading}
+/>
+{registerData.confirmPassword && registerData.password !== registerData.confirmPassword && (
+  <p className="text-red-500 text-sm mb-2">Passwords do not match</p>
+)}
+{registerData.confirmPassword && registerData.password === registerData.confirmPassword && (
+  <p className="text-green-500 text-sm mb-2">Passwords match!</p>
+)}
         <select 
           className="w-full p-3 border rounded mb-4"
           value={registerData.campus}

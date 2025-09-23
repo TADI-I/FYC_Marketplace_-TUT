@@ -390,6 +390,7 @@ const App = () => {
               onClick={() => setCurrentView('my-products')}
               style={{
                 backgroundColor: '#7e22ce',
+                alignItems: 'right',
                 color: 'white',
                 padding: '0.5rem 1rem',
                 borderRadius: '0.5rem',
