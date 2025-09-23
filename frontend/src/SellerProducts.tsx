@@ -17,8 +17,9 @@ type Product = {
   type: string;
 };
 
-const getProductId = (product: Product): number | string => {
-  return product.id || product._id || 0;
+const getProductId = (product: Product): string => {
+  // Always return string for API calls
+  return product._id ? product._id.toString() : product.id.toString();
 };
 
 type User = {
@@ -59,16 +60,6 @@ const SellerProducts: React.FC<SellerProductsProps> = ({
   const [fetching, setFetching] = useState(true);
   const [error, setError] = useState('');
 
- /* console.log('🎯 SellerProducts component RENDERED');
-  console.log('👤 Current user:', currentUser);
-  console.log('🔄 Fetching state:', fetching);
-
-    useEffect(() => {
-    console.log('🎯 useEffect TRIGGERED');
-    console.log('👤 Current user in useEffect:', currentUser);
-  }, [currentUser]);
-  */
-
   // Fetch seller's products when component mounts or currentUser changes
   useEffect(() => {
     const fetchSellerProducts = async () => {
@@ -80,13 +71,10 @@ const SellerProducts: React.FC<SellerProductsProps> = ({
       try {
         setFetching(true);
         setError('');
-        //console.log('🔄 Fetching products for seller:', currentUser._id);
         
         const sellerProducts = await getProductsBySeller(currentUser._id.toString());
-        //console.log('✅ Fetched products:', sellerProducts);
         setProducts(sellerProducts);
       } catch (err) {
-        //console.error('❌ Failed to fetch seller products:', err);
         setError('Failed to load your products. Please try again.');
       } finally {
         setFetching(false);
@@ -122,6 +110,12 @@ const SellerProducts: React.FC<SellerProductsProps> = ({
   const handleUpdateProduct = async () => {
     if (!editingProduct) return;
 
+    const productId = getProductId(editingProduct);
+    if (!productId) {
+      setError('Invalid product ID');
+      return;
+    }
+
     if (!editFormData.title || !editFormData.description || !editFormData.price || !editFormData.category) {
       setError('Please fill all required fields.');
       return;
@@ -136,18 +130,18 @@ const SellerProducts: React.FC<SellerProductsProps> = ({
     setError('');
 
     try {
-      // Convert productId to string to match API expectation
-      const updatedProduct = await updateProduct(editingProduct.id.toString(), {
+      const updatedProduct = await updateProduct(productId, {
         title: editFormData.title,
         description: editFormData.description,
         price: parseFloat(editFormData.price),
         category: editFormData.category,
-        type: editFormData.type
+        type: editFormData.type,
+        image: editingProduct.image || null
       });
 
       // Update local state
       setProducts(prev => prev.map(p => 
-        p.id === editingProduct.id ? { ...p, ...updatedProduct } : p
+        getProductId(p) === productId ? { ...p, ...updatedProduct } : p
       ));
       
       onEditProduct(updatedProduct);
@@ -159,10 +153,7 @@ const SellerProducts: React.FC<SellerProductsProps> = ({
         category: '',
         type: ''
       });
-      
-      console.log('✅ Product updated successfully');
     } catch (error) {
-      console.error('❌ Failed to update product:', error);
       const errorMessage = error && typeof error === 'object' && 'message' in error
         ? (error as { message: string }).message
         : 'Failed to update product. Please try again.';
@@ -172,49 +163,37 @@ const SellerProducts: React.FC<SellerProductsProps> = ({
     }
   };
 
-const handleDeleteClick = async (product: Product) => {
-  const productId = getProductId(product);
-  
-  if (!productId) {
-    console.error('❌ No valid product ID found:', product);
-    alert('Invalid product. Please try again.');
-    return;
-  }
+  const handleDeleteClick = async (product: Product) => {
+    const productId = getProductId(product);
+    
+    if (!productId) {
+      alert('Invalid product. Please try again.');
+      return;
+    }
 
-  if (!window.confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
-    return;
-  }
+    if (!window.confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
+      return;
+    }
 
-  setLoading(true);
-  try {
-   // console.log('🗑️ Attempting to delete product:', product);
-    //console.log('🗑️ Product ID to delete:', productId);
-    //console.log('🗑️ Product ID type:', typeof productId);
-    
-    // Convert to string for API call
-    const productIdString = productId.toString();
-    
-    await deleteProduct(productIdString);
-    
-    // Update local state - remove by both possible ID types
-    setProducts(prev => prev.filter(p => 
-      getProductId(p) !== productId
-    ));
-    
-    onDeleteProduct(typeof productId === 'number' ? productId : 0);
-    
-    console.log('✅ Product deleted successfully');
-  } catch (error) {
-    console.error('❌ Failed to delete product:', error);
-    const errorMessage = error instanceof Error 
-      ? error.message 
-      : 'Failed to delete product. Please try again.';
-    alert(errorMessage);
-  } finally {
-    setLoading(false);
-  }
-};
-
+    setLoading(true);
+    try {
+      await deleteProduct(productId);
+      
+      // Update local state
+      setProducts(prev => prev.filter(p => getProductId(p) !== productId));
+      
+      // Convert string ID back to number for the callback if needed
+      const numericId = product.id || parseInt(productId) || 0;
+      onDeleteProduct(numericId);
+    } catch (error) {
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'Failed to delete product. Please try again.';
+      alert(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (!currentUser || currentUser.type !== 'seller') {
     return (
@@ -373,7 +352,7 @@ const handleDeleteClick = async (product: Product) => {
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {products.map(product => (
-            <div key={product.id} className="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200">
+            <div key={getProductId(product)} className="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200">
               <img 
                 src={product.image} 
                 alt={product.title}
@@ -399,19 +378,19 @@ const handleDeleteClick = async (product: Product) => {
                 <div className="flex gap-2">
                   <button 
                     onClick={() => handleEditClick(product)}
-                    disabled={loading}
+                    disabled={loading || editingProduct !== null}
                     className="flex-1 flex items-center justify-center gap-1 bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed"
                   >
                     <Edit className="h-4 w-4" />
                     Edit
                   </button>
                   <button 
-                onClick={() => handleDeleteClick(product)}
-                disabled={loading}
-                className="flex items-center justify-center gap-1 bg-red-600 text-white px-3 py-2 rounded hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed"
-                >
-                <Trash2 className="h-4 w-4 color:red-600" />
-                </button>
+                    onClick={() => handleDeleteClick(product)}
+                    disabled={loading}
+                    className="flex items-center justify-center gap-1 bg-red-600 text-white px-3 py-2 rounded hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 </div>
               </div>
             </div>

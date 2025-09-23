@@ -284,6 +284,7 @@ router.put('/:id', authenticateToken, validateObjectId('id'), requireOwnership('
     if (category) updateData.category = category;
     if (type) updateData.type = type;
     if (status) updateData.status = status;
+    id
 
     const result = await db.collection('products').updateOne(
       { _id: new ObjectId(productId) },
