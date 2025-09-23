@@ -16,8 +16,7 @@ import AddProductForm from './AddProduct';
 import ChatWindow from './ChatWindow';
 import SellerProducts from './SellerProducts';
 import UserProfile from './UserProfile';
-
-// ... rest of your React component
+import logo from './assets/facicon.png';
 
 const App = () => {
   
@@ -274,7 +273,7 @@ const App = () => {
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <ShoppingBag className="h-8 w-8 text-blue-600" />
+              <img className="h-8 w-8" src={logo} alt="FYC Marketplace Logo" />
               <h1 className="text-2xl font-bold text-gray-900">FYC Marketplace</h1>
             </div>
             
@@ -385,14 +384,29 @@ const App = () => {
       <>
         {/* Header with My Products button */}
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">FYC Marketplace</h1>
+          
           {currentUser?.type === 'seller' && (
             <button 
               onClick={() => setCurrentView('my-products')}
-              className="color-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700"
+              style={{
+                backgroundColor: '#7e22ce',
+                color: 'white',
+                padding: '0.5rem 1rem',
+                borderRadius: '0.5rem',
+                border: 'none',
+                cursor: 'pointer',
+                transition: 'background-color 0.3s ease'
+              }}
+              onMouseEnter={(e) => {
+                (e.target as HTMLButtonElement).style.backgroundColor = '#6b21a8';
+              }}
+              onMouseLeave={(e) => {
+                (e.target as HTMLButtonElement).style.backgroundColor = '#7e22ce';
+              }}
             >
               My Products
             </button>
+
           )}
         </div>
 

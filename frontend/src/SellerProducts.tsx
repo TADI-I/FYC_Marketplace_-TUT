@@ -392,14 +392,38 @@ const SellerProducts: React.FC<SellerProductsProps> = ({
                     <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
                     <span>Edit</span>
                   </button>
-                  <button 
+                  <button
                     onClick={() => handleDeleteClick(product)}
                     disabled={loading}
-                    className="flex items-center justify-center gap-1 bg-red-600 text-white px-2 py-2 rounded hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed text-sm"
-                  >
-                    <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
-                    <span >Delete</span>
-                  </button>
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.25rem',
+                        backgroundColor: loading ? '#f87171' : '#dc2626', // red-400 if disabled, red-600 otherwise
+                        color: 'white',
+                        padding: '0.5rem',
+                        borderRadius: '0.5rem',
+                        fontSize: '0.875rem',
+                        border: 'none',
+                        cursor: loading ? 'not-allowed' : 'pointer',
+                        transition: 'background-color 0.3s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                        if (!loading) {
+                        (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#b91c1c'; // red-700
+                        }
+                    }}
+                    onMouseLeave={(e) => {
+                        if (!loading) {
+                        (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#dc2626'; // red-600
+                        }
+                    }}
+                    >
+                    <Trash2 style={{ width: '0.75rem', height: '0.75rem' }} />
+                    <span>Delete</span>
+                    </button>
+
                 </div>
               </div>
             </div>
