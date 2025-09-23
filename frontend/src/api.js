@@ -495,13 +495,30 @@ export const getSubscriptionStatus = async () => {
 /**
  * Get user profile
  */
+// api.js - Fix the getUserProfile function
 export const getUserProfile = async (userId) => {
   try {
-    const response = await apiCall(`/users/${userId}`);
-    return response;
+    console.log('Fetching profile for user ID:', userId);
+    
+    const response = await fetch(`/api/users/${userId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        // Add authorization header if needed
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch user profile: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('User profile API response:', data);
+    return data;
   } catch (error) {
-    console.error('❌ Failed to get user profile:', error);
-    throw new Error(error.message || 'Failed to get user profile');
+    console.error('Error in getUserProfile:', error);
+    throw error;
   }
 };
 

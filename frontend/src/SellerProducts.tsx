@@ -398,7 +398,7 @@ const SellerProducts: React.FC<SellerProductsProps> = ({
                     className="flex items-center justify-center gap-1 bg-red-600 text-white px-2 py-2 rounded hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed text-sm"
                   >
                     <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
-                    <span className="hidden xs:inline">Delete</span>
+                    <span >Delete</span>
                   </button>
                 </div>
               </div>

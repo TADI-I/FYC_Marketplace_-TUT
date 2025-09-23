@@ -7,10 +7,7 @@ import {
   isAuthenticated,
   getProducts,
   generateConversationId,
-  testConnection,
-  getSubscriptionStatus,
-  getUserProfile,          // New
-  updateUserProfile,       // New  
+  testConnection,    // New  
   upgradeUserToSeller     // New
 } from './api';
 import LoginForm from './LoginForm';
@@ -18,7 +15,7 @@ import RegisterForm from './RegisterForm';
 import AddProductForm from './AddProduct';
 import ChatWindow from './ChatWindow';
 import SellerProducts from './SellerProducts';
-import Profile from './Profile';
+import UserProfile from './UserProfile';
 
 // ... rest of your React component
 
@@ -190,7 +187,24 @@ const App = () => {
   }
   };
 
+    const handleLogout = () => {
+    logoutUser();
+    setCurrentUser(null);
+    setCurrentView('home');
+  };
 
+  const renderCurrentView = () => {
+    switch (currentView) {
+      case 'my-profile':
+        return (
+          <UserProfile 
+            currentUser={currentUser}
+            onLogout={handleLogout}
+            onBack={() => setCurrentView('home')}
+          />
+        );
+    }
+  };
   const filteredProducts = products.filter(product => {
     const matchesSearch =
       (product.title?.toLowerCase() ?? '').includes(searchTerm.toLowerCase()) ||
@@ -265,7 +279,7 @@ const App = () => {
     };
 
 
-  return (
+return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white shadow-sm border-b sticky top-0 z-40">
@@ -287,17 +301,18 @@ const App = () => {
                     <Plus className="h-4 w-4" />
                     <span className="hidden md:inline">Add Listing</span>
                   </button>
-                  
                 )}
-                {currentUser.type === 'customer' && (
-                  <button 
-                    onClick={() => setShowUpgrade(true)}
-                    className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700"
-                  >
-                    <span className="hidden md:inline">Become a Seller</span>
-                    <span className="md:hidden">Upgrade</span>
-                  </button>
-                )}
+              
+                {/* Profile Icon Button */}
+                <button 
+                  onClick={() => setCurrentView('my-profile')}
+                  className="p-2 rounded-lg hover:bg-gray-100 transition-colors group"
+                  title="My Profile"
+                >
+                  <User className="h-6 w-6 text-gray-600 group-hover:text-blue-600 transition-colors" />
+                
+                </button>
+
                 <button 
                   onClick={() => {
                     setCurrentUser(null);
@@ -308,7 +323,7 @@ const App = () => {
                   Logout
                 </button>
               </div>
-            ) : (
+            )  : (
               <div className="space-x-2">
                 <button 
                   onClick={() => setShowLogin(true)}
@@ -369,7 +384,15 @@ const App = () => {
         onBack={() => setCurrentView('home')}
         onAddProduct={() => setCurrentView('add-product')}
       />
-    ) : (
+    ) : currentView === 'my-profile' ? (
+      <UserProfile 
+        currentUser={currentUser}
+        onLogout={handleLogout}
+        onBack={() => setCurrentView('home')}
+      />
+    ) :
+    
+    (
       // Home View (default)
       <>
         {/* Header with My Products button */}
@@ -378,7 +401,7 @@ const App = () => {
           {currentUser?.type === 'seller' && (
             <button 
               onClick={() => setCurrentView('my-products')}
-              className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700"
+              className="color-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700"
             >
               My Products
             </button>
