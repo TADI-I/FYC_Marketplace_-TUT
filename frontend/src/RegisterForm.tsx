@@ -133,7 +133,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onRegisterSuccess, onShowLo
           onChange={(e) => setRegisterData(prev => ({ ...prev, campus: e.target.value }))}
           disabled={loading}
         >
-          <option value="">Select Your Campus</option>
+          <option value="">Select Your Location</option>
           {campuses.slice(1).map(campus => (
             <option key={campus.id} value={campus.id}>{campus.name}</option>
           ))}

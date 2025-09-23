@@ -18,6 +18,7 @@ import RegisterForm from './RegisterForm';
 import AddProductForm from './AddProduct';
 import ChatWindow from './ChatWindow';
 import SellerProducts from './SellerProducts';
+import Profile from './Profile';
 
 // ... rest of your React component
 
@@ -286,6 +287,7 @@ const App = () => {
                     <Plus className="h-4 w-4" />
                     <span className="hidden md:inline">Add Listing</span>
                   </button>
+                  
                 )}
                 {currentUser.type === 'customer' && (
                   <button 
