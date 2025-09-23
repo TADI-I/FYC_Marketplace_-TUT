@@ -193,18 +193,6 @@ const App = () => {
     setCurrentView('home');
   };
 
-  const renderCurrentView = () => {
-    switch (currentView) {
-      case 'my-profile':
-        return (
-          <UserProfile 
-            currentUser={currentUser}
-            onLogout={handleLogout}
-            onBack={() => setCurrentView('home')}
-          />
-        );
-    }
-  };
   const filteredProducts = products.filter(product => {
     const matchesSearch =
       (product.title?.toLowerCase() ?? '').includes(searchTerm.toLowerCase()) ||
@@ -279,7 +267,7 @@ const App = () => {
     };
 
 
-return (
+  return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white shadow-sm border-b sticky top-0 z-40">
