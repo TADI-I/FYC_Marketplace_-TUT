@@ -201,6 +201,49 @@ export const getProduct = async (productId) => {
 };
 
 /**
+ * Get products by seller ID
+ * @param {string} sellerId - Seller user ID
+ */
+export const getProductsBySeller = async (sellerId) => {
+  try {
+    console.log('📦 Getting products for seller _id:', sellerId);
+    console.log('🔗 API endpoint:', `/products/seller/${sellerId}`);
+    
+    const response = await apiCall(`/products/seller/${sellerId}`);
+    
+    console.log('📊 Full API response:', response);
+    console.log('📦 Products array:', response.products);
+    console.log(`✅ Retrieved ${response.products ? response.products.length : 0} products for seller ${sellerId}`);
+    
+    return response.products || [];
+  } catch (error) {
+    console.error('❌ Failed to get seller products:', error);
+    
+    // Fallback: filter from all products if specific endpoint fails
+    try {
+      console.log('🔄 Attempting fallback method...');
+      const allProductsResponse = await getProducts();
+      console.log('📊 All products response:', allProductsResponse);
+      
+      const allProducts = allProductsResponse.products || allProductsResponse || [];
+      // Fix: Compare with both _id and sellerId since your data might use different field names
+      const sellerProducts = allProducts.filter(p => 
+        p.sellerId === sellerId || 
+        p.sellerId === parseInt(sellerId) ||
+        p.seller?._id === sellerId ||
+        p.sellerId === sellerId
+      );
+      
+      console.log(`✅ Retrieved ${sellerProducts.length} products using fallback method`);
+      return sellerProducts;
+    } catch (fallbackError) {
+      console.error('❌ Fallback also failed:', fallbackError);
+      throw new Error(error.message || 'Failed to retrieve seller products');
+    }
+  }
+};
+
+/**
  * Create a new product (requires seller subscription)
  * @param {Object} productData - Product data
  * @param {string} productData.title - Product title
@@ -670,6 +713,7 @@ export default {
   createProduct,
   updateProduct,
   deleteProduct,
+  getProductsBySeller,
   
   // Messages
   getMessages,
