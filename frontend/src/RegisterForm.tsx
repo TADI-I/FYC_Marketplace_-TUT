@@ -178,7 +178,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onRegisterSuccess, onShowLo
           <button 
             onClick={handleRegister} 
             disabled={loading}
-            className="flex-1 bg-green-600 text-white p-3 rounded hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed"
+            className="flex-1 bg-orange-600 text-white p-3 rounded hover:bg-orange-700 disabled:bg-orange-400 disabled:cursor-not-allowed"
           >
             {loading ? 'Registering...' : 'Register'}
           </button>

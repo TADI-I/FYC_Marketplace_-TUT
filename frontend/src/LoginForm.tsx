@@ -92,7 +92,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess, onShowRegister, o
           <button 
             onClick={handleLogin} 
             disabled={loading}
-            className="flex-1 bg-blue-600 text-white p-3 rounded hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed"
+            className="flex-1 bg-orange-600 text-white p-3 rounded hover:bg-orange-700 disabled:bg-orange-400 disabled:cursor-not-allowed"
           >
             {loading ? 'Logging in...' : 'Login'}
           </button>
