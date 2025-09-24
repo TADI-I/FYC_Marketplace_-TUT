@@ -149,7 +149,7 @@ const isValidEmail = (email) => {
 
 const isValidCampus = (campus) => {
   const validCampuses = [
-    'pretoria-main', 'soshanguve', 'ga-rankuwa', 'pretoria-west',
+    'pretoria-main', 'soshanguve-S','soshanguve-N', 'ga-rankuwa', 'pretoria-west',
     'arts', 'emalahleni', 'mbombela', 'polokwane'
   ];
   return validCampuses.includes(campus);
