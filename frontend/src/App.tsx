@@ -457,9 +457,9 @@ const App = () => {
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredProducts.map(product => (
             <div key={product.id} className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-              <div className="h-48 bg-gray-200 flex items-center justify-center">
+              {/*<div className="h-48 bg-gray-200 flex items-center justify-center">
                 <Tag className="h-12 w-12 text-gray-400" />
-              </div>
+              </div>*/}
               <div className="p-6">
                 <div className="flex justify-between items-start mb-2">
                   <h3 className="text-lg font-semibold text-gray-900 line-clamp-2">{product.title}</h3>
