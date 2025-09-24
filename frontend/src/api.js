@@ -593,7 +593,8 @@ export const getCampuses = async () => {
     // Return default campuses if API fails
     return [
       { id: 'pretoria-main', name: 'Pretoria Main' },
-      { id: 'soshanguve', name: 'Soshanguve' },
+      { id: 'soshanguve-S', name: 'Soshanguve South' },
+      { id: 'soshanguve-N', name: 'Soshanguve North' },
       { id: 'ga-rankuwa', name: 'Ga-Rankuwa' },
       { id: 'pretoria-west', name: 'Pretoria West' },
       { id: 'arts', name: 'Arts' },
