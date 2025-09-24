@@ -31,8 +31,8 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onRegisterSuccess, onShowLo
   const campuses = [
     { id: 'all', name: 'All Locations' },
     { id: 'pretoria-main', name: 'Pretoria Central' },
-    { id: 'soshanguve', name: 'Soshanguve South' },
-    { id: 'soshanguve', name: 'Soshanguve North' },
+    { id: 'soshanguve-S', name: 'Soshanguve South' },
+    { id: 'soshanguve-N', name: 'Soshanguve North' },
     { id: 'ga-rankuwa', name: 'Ga-Rankuwa' },
     { id: 'pretoria-west', name: 'Pretoria Arcadia' },
     { id: 'arts', name: 'Arts' },
