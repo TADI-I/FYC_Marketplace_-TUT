@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingBag, MessageCircle, Plus, Search, User, Star, Tag, Filter, X } from 'lucide-react';
+import { ShoppingBag, MessageCircle, Plus, Search, User, Star, Tag, Filter, X, Locate } from 'lucide-react';
 import './App.css';
 import {
   logoutUser,
@@ -469,7 +469,14 @@ const App = () => {
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center text-sm text-gray-500">
                     <User className="h-4 w-4 mr-1" />
-                    <span>{product.sellerName}</span>
+                    <span>{product.sellerName} </span>
+                  </div> 
+                  
+                  <div>
+                    <div className="flex items-center text-sm text-gray-500">
+                        <Locate className="h-4 w-4 mr-1" />
+                        <span>{product.sellerCampus}</span>
+                      </div>
                   </div>
                   {product.rating > 0 && (
                     <div className="flex items-center">
