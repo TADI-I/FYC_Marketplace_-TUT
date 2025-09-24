@@ -485,7 +485,7 @@ const App = () => {
                     </div>
                   )}
                 </div>
-                {currentUser && currentUser.id !== product.sellerId && (
+                {/*currentUser && currentUser.id !== product.sellerId && (
                   <button 
                     onClick={() => setChatWith(product.sellerId)}
                     className="w-full mt-4 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 flex items-center justify-center space-x-2"
@@ -493,7 +493,7 @@ const App = () => {
                     <MessageCircle className="h-4 w-4" />
                     <span>Contact Seller</span>
                   </button>
-                )}
+                )*/}
               </div>
             </div>
           ))}
