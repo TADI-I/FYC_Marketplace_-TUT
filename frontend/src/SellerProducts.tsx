@@ -240,7 +240,7 @@ const SellerProducts: React.FC<SellerProductsProps> = ({
         <button 
           onClick={onAddProduct}
           disabled={loading}
-          className="flex items-center justify-center gap-2 bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed w-full sm:w-auto"
+          className="flex items-center justify-center gap-2 bg-orange-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 disabled:bg-orange-400 disabled:cursor-not-allowed w-full sm:w-auto"
         >
           <Plus className="h-4 w-4" />
           Add New Product

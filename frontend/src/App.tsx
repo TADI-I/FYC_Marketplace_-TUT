@@ -16,7 +16,7 @@ import AddProductForm from './AddProduct';
 import ChatWindow from './ChatWindow';
 import SellerProducts from './SellerProducts';
 import UserProfile from './UserProfile';
-import logo from './assets/facicon.png';
+import logo from './assets/facicon.jpeg';
 
 const App = () => {
   
@@ -283,7 +283,7 @@ const App = () => {
                 {currentUser.type === 'seller' && currentUser.subscribed && (
                   <button 
                     onClick={() => setCurrentView('add-product')}
-                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center space-x-2"
+                    className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 flex items-center space-x-2"
                   >
                     <Plus className="h-4 w-4" />
                     <span className="hidden md:inline">Add Listing</span>
@@ -305,22 +305,38 @@ const App = () => {
                     setCurrentUser(null);
                     setCurrentView('home');
                   }}
-                  className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600"
+                  style={{
+                    backgroundColor: '#ef4444', // Tailwind's bg-red-500
+                    color: 'white',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '0.5rem',
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.3s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#4b5563'; // Tailwind's bg-gray-600
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#ef4444'; // Reset to red-500
+                  }}
                 >
                   Logout
                 </button>
+
+               
               </div>
             )  : (
               <div className="space-x-2">
                 <button 
                   onClick={() => setShowLogin(true)}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+                  className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700"
                 >
                   Login
                 </button>
                 <button 
                   onClick={() => setShowRegister(true)}
-                  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
+                  className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700"
                 >
                   Register
                 </button>
@@ -389,7 +405,7 @@ const App = () => {
             <button 
               onClick={() => setCurrentView('my-products')}
               style={{
-                backgroundColor: '#7e22ce',
+                backgroundColor: 'orange',
                 alignItems: 'right',
                 color: 'white',
                 padding: '0.5rem 1rem',
@@ -399,10 +415,10 @@ const App = () => {
                 transition: 'background-color 0.3s ease'
               }}
               onMouseEnter={(e) => {
-                (e.target as HTMLButtonElement).style.backgroundColor = '#6b21a8';
+                (e.target as HTMLButtonElement).style.backgroundColor = 'orange';
               }}
               onMouseLeave={(e) => {
-                (e.target as HTMLButtonElement).style.backgroundColor = '#7e22ce';
+                (e.target as HTMLButtonElement).style.backgroundColor = 'orange';
               }}
             >
               My Products

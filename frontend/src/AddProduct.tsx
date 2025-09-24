@@ -37,11 +37,11 @@ interface AddProductFormProps {
 
 const categories: Category[] = [
   { id: 'all', name: 'All Items' },
-    { id: 'books', name: 'Books' },
-    { id: 'electronics', name: 'Electronics' },
-    { id: 'services', name: 'Services' },
-    { id: 'clothing', name: 'Clothing' },
-    { id: 'food', name: 'Food' }
+  { id: 'books', name: 'Books' },
+  { id: 'electronics', name: 'Electronics' },
+  { id: 'services', name: 'Services' },
+  { id: 'clothing', name: 'Clothing' },
+  { id: 'food', name: 'Food' }
 ];
 
 const AddProductForm: React.FC<AddProductFormProps> = ({ currentUser, onProductAdded, onCancel }) => {
@@ -52,8 +52,44 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ currentUser, onProductA
     category: '', 
     type: 'product'
   });
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Handle image selection
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setError('Please select an image file (JPEG, PNG, etc.)');
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Image size must be less than 5MB');
+        return;
+      }
+
+      setImageFile(file);
+      setError('');
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Remove selected image
+  const handleRemoveImage = () => {
+    setImageFile(null);
+    setImagePreview('');
+  };
 
   const handleAddProduct = async () => {
     if (!currentUser) {
@@ -75,6 +111,13 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ currentUser, onProductA
     setError('');
 
     try {
+      let imageUrl = '/api/placeholder/300/200'; // Default placeholder
+
+      // If an image was selected, upload it first
+      if (imageFile) {
+        imageUrl = await uploadImage(imageFile);
+      }
+
       // Create product data with seller information
       const productToCreate = {
         ...productData,
@@ -83,7 +126,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ currentUser, onProductA
         sellerName: currentUser.name,
         sellerCampus: currentUser.campus,
         rating: 0,
-        image: '/api/placeholder/300/200',
+        image: imageUrl,
         type: productData.type || 'product'
       };
 
@@ -95,6 +138,8 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ currentUser, onProductA
       
       // Reset form
       setProductData({ title: '', description: '', price: '', category: '', type: 'product' });
+      setImageFile(null);
+      setImagePreview('');
       
       console.log('✅ Product added successfully');
       
@@ -109,6 +154,19 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ currentUser, onProductA
     }
   };
 
+  // Simulate image upload - replace this with your actual upload API
+  const uploadImage = async (file: File): Promise<string> => {
+    // This is a mock implementation. Replace with your actual image upload logic
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        // In a real app, you would upload to a service like Cloudinary, AWS S3, or your backend
+        // For now, we'll use a placeholder and store the file locally
+        const mockImageUrl = URL.createObjectURL(file);
+        resolve(mockImageUrl);
+      }, 1000);
+    });
+  };
+
   const handleInputChange = (field: string, value: string) => {
     setProductData(prev => ({ ...prev, [field]: value }));
   };
@@ -119,6 +177,52 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ currentUser, onProductA
       
       {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">{error}</div>}
       
+      {/* Image Upload Section */}
+      <div className="mb-6">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Product Image
+        </label>
+        <div className="flex items-center gap-4">
+          <div className="flex-1">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+              disabled={loading}
+              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              JPEG, PNG, WebP accepted. Max 5MB.
+            </p>
+          </div>
+          
+          {imagePreview && (
+            <div className="relative">
+              <img 
+  src={imagePreview} 
+  alt="Preview" 
+  style={{
+    width: '7rem',           // Tailwind's w-8
+    height: '7rem',          // Tailwind's h-8
+    objectFit: 'cover',      // Tailwind's object-cover
+    borderRadius: '0.5rem',  // Tailwind's rounded
+    border: '1px solid #ccc' // Tailwind's border
+  }}
+/>
+
+              <button
+                type="button"
+                onClick={handleRemoveImage}
+                disabled={loading}
+                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+              >
+                ×
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
       <div className="grid md:grid-cols-2 gap-4 mb-4">
         <input
           type="text"
@@ -176,7 +280,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ currentUser, onProductA
         <button 
           onClick={handleAddProduct} 
           disabled={loading}
-          className="bg-green-600 text-white px-6 py-3 rounded hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed"
+          className="bg-orange-600 text-white px-6 py-3 rounded hover:bg-orange-700 disabled:bg-orange-400 disabled:cursor-not-allowed"
         >
           {loading ? 'Adding...' : 'Add Listing'}
         </button>
