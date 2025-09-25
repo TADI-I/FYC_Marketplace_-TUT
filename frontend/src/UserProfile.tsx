@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { getSubscriptionStatus, getUserProfile, updateUserProfile, upgradeUserToSeller } from './api'; 
+import { getSubscriptionStatus, updateUserProfile, upgradeUserToSeller,getCurrentUser } from './api'; 
 import { User, ArrowLeft, Mail, Building, CreditCard, Edit3, Save, X, Zap } from 'lucide-react';
 
 type User = {
@@ -23,7 +23,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
   const [user, setUser] = useState<User | null>(null);  
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState({
-    name: '',
+    name: user?.name ||'',
     email: '',
     campus: '',
 
@@ -35,41 +35,30 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
 
   useEffect(() => {
     if (currentUser) {
-      fetchUserProfile();
+      fetchCurrentUser();
       fetchSubscriptionStatus();
     }
   }, [currentUser]);
 
-  const fetchUserProfile = async () => {
-    if (!currentUser) return;
 
-    setLoading(true);
-    setError('');
+  const fetchCurrentUser = async () => {
+  try {
+    const user = await getCurrentUser(); // now refers to the API version
+    console.log(user);
+    setUser(user);
+    return user;
+  } catch (error) {
+    console.error('Failed to fetch current user:', error);
+    return null;
+  }
+};
 
-    try {
-      const profile = await getUserProfile(currentUser.id);
-      setUser(profile);
-      setFormData({
-        name: profile.name || '',
-        email: profile.email || '',
-        campus: profile.campus || '',
-       
-      });
-    } catch (error) {
-      let errorMessage = 'Failed to load profile. Please try again.';
-      if (error && typeof error === 'object' && 'message' in error) {
-        errorMessage = (error as { message: string }).message;
-      }
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
 
     const campuses = [
     { id: 'all', name: 'All Locations' },
     { id: 'pretoria-main', name: 'Pretoria Central' },
-    { id: 'soshanguve', name: 'Soshanguve' },
+    { id: 'soshanguve-S', name: 'Soshanguve South' },
+    { id: 'soshanguve-N', name: 'Soshanguve North' },
     { id: 'ga-rankuwa', name: 'Ga-Rankuwa' },
     { id: 'pretoria-west', name: 'Pretoria Arcadia' },
     { id: 'arts', name: 'Arts' },
@@ -112,31 +101,52 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
     }));
   };
 
-  const handleProfileUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!currentUser || !user) return;
+const handleProfileUpdate = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!currentUser || !user) return;
 
-    setLoading(true);
-    setError('');
+  // Validation
+  if (!formData.email?.includes('@')) {
+    setError('Please enter a valid email address');
+    return;
+  }
 
-    try {
-      const updatedProfile = await updateUserProfile(currentUser.id, formData);
-      setUser(updatedProfile);
-      setEditing(false);
-      setSuccessMessage('Profile updated successfully!');
-      
-      // Clear success message after 3 seconds
-      setTimeout(() => setSuccessMessage(''), 3000);
-    } catch (error) {
-      let errorMessage = 'Failed to update profile. Please try again.';
-      if (error && typeof error === 'object' && 'message' in error) {
-        errorMessage = (error as { message: string }).message;
-      }
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
+  if (!formData.name?.trim()) {
+    setError('Name is required');
+    return;
+  }
+
+  setLoading(true);
+  setError('');
+
+  try {
+    const userId = String(currentUser.id);
+    
+    const updatedProfile = await updateUserProfile(userId, {
+      name: formData.name.trim(),
+      campus: formData.campus,
+      email: formData.email.toLowerCase().trim()
+    });
+    
+    setUser(updatedProfile);
+    setEditing(false);
+    setSuccessMessage('Profile updated successfully!');
+    
+    setTimeout(() => setSuccessMessage(''), 3000);
+  } catch (error) {
+    console.error('Update error details:', error);
+    
+    const errorMessage = error instanceof Error 
+      ? error.message 
+      : 'Failed to update profile. Please try again.';
+    
+    setError(errorMessage);
+  } finally {
+    setLoading(false);
+  }
+};
+
+
 
   const handleUpgradeToSeller = async () => {
     if (!currentUser) return;
@@ -259,7 +269,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
                           type="text"
                           id="name"
                           name="name"
-                          value={user.name || formData.name}
+                          value={ user.name || formData.name}
                           onChange={handleInputChange}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                           required
@@ -273,7 +283,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
                           type="email"
                           id="email"
                           name="email"
-                          value={user.email || formData.email}
+                          value={formData.email}
                           onChange={handleInputChange}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                           required
@@ -283,26 +293,13 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                          Phone Number
-                        </label>
-                        <input
-                          type="tel"
-                          id="phone"
-                          name="phone"
-                          onChange={handleInputChange}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="+27 123 456 7890"
-                        />
-                      </div>
-                      <div>
                         <label htmlFor="campus" className="block text-sm font-medium text-gray-700 mb-1">
                           Location
                         </label>
                         <select
                             id="campus"
                             name="campus"
-                            value={user.campus || formData.campus}
+                            value={ formData.campus}
                             onChange={handleInputChange}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                             required
@@ -316,21 +313,6 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
                             </select>
 
                       </div>
-                    </div>
-
-                    <div>
-                      <label htmlFor="bio" className="block text-sm font-medium text-gray-700 mb-1">
-                        Bio
-                      </label>
-                      <textarea
-                        id="bio"
-                        name="bio"
-
-                        onChange={handleInputChange}
-                        rows={3}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Tell us a bit about yourself..."
-                      />
                     </div>
 
                     <div className="flex space-x-3 pt-4">
@@ -387,9 +369,6 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
                       </div>
                     </div>
 
-               
-                    
-                    )
                   </div>
                 )}
               </div>

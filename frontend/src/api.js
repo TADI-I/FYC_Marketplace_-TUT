@@ -496,71 +496,27 @@ export const getSubscriptionStatus = async () => {
  * Get user profile
  */
 // api.js - Fix the getUserProfile function
-export const getUserProfile = async (userId) => {
-  try {
-    console.log('Fetching profile for user ID:', userId);
-    
-    const response = await fetch(`/api/users/${userId}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      },
-    });
 
-    // First, check the content type to see if we're getting HTML instead of JSON
-    const contentType = response.headers.get('content-type');
-    
-    if (contentType && contentType.includes('text/html')) {
-      // We got an HTML error page instead of JSON
-      const text = await response.text();
-      console.error('Server returned HTML error page:', text.substring(0, 500));
-      
-      // Return mock data for development
-
-    }
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch user profile: ${response.status}`);
-    }
-
-    const data = await response.json();
-    console.log('User profile API response:', data);
-    return data;
-  } catch (error) {
-    console.error('Error in getUserProfile:', error);
-    
-    // Return mock data for development when API fails
-    console.log('API call failed, returning mock data for development');
-    return {
-      id: userId,
-      name: 'Demo User',
-      email: 'user@example.com',
-      type: 'customer',
-      subscribed: false,
-      campus: 'campus-a',
-      phone: '+1 (555) 123-4567',
-      bio: 'This is a demo user profile for development purposes.'
-    };
-  }
-};
 
 /**
  * Update user profile
  */
+// In your api.ts file
 export const updateUserProfile = async (userId, updateData) => {
   try {
     const response = await apiCall(`/users/${userId}`, {
       method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify(updateData),
     });
-    return response;
+    return response.user; // Your backend returns { user: updatedUser }
   } catch (error) {
     console.error('❌ Failed to update profile:', error);
     throw new Error(error.message || 'Failed to update profile');
   }
 };
-
 /**
  * Upgrade user to seller
  */
@@ -765,7 +721,7 @@ export default {
   
   // User
   getSubscriptionStatus,
-  getUserProfile,
+  //getUserProfile,
   updateUserProfile,
   upgradeUserToSeller,
   

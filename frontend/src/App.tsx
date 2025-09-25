@@ -1,13 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingBag, MessageCircle, Plus, Search, User, Star, Tag, Filter, X, Locate } from 'lucide-react';
+import { ShoppingBag, Plus, Search, User, Star, Filter, Locate } from 'lucide-react';
 import './App.css';
 import {
   logoutUser,
-  getCurrentUser,
-  isAuthenticated,
-  getProducts,
-  generateConversationId,
-  testConnection,    // New  
+  getProducts,   // New  
   upgradeUserToSeller     // New
 } from './api';
 import LoginForm from './LoginForm';

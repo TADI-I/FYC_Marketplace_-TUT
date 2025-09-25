@@ -131,7 +131,7 @@ router.get('/:id', authenticateToken, validateObjectId('id'), async (req, res) =
 router.put('/:id', authenticateToken, validateObjectId('id'), requireOwnership('user'), validateProfileUpdate, async (req, res) => {
   try {
     const userId = req.params.id;
-    const { name, campus, bio, phone } = req.body;
+    const { name, campus, email} = req.body;
 
     // Build update object
     const updateData = {
@@ -140,8 +140,7 @@ router.put('/:id', authenticateToken, validateObjectId('id'), requireOwnership('
 
     if (name) updateData.name = name.trim();
     if (campus) updateData.campus = campus;
-    if (bio !== undefined) updateData.bio = bio ? bio.trim() : null;
-    if (phone !== undefined) updateData.phone = phone ? phone.trim() : null;
+    if (email) updateData.email = email.trim().toLowerCase();
 
     const result = await db.collection('users').updateOne(
       { _id: new ObjectId(userId) },
