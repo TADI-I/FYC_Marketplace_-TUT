@@ -349,7 +349,7 @@ const SellerProducts: React.FC<SellerProductsProps> = ({
         <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {products.map(product => (
             <div key={getProductId(product)} className="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200 flex flex-col h-full">
-              {/* Image section */}
+              {/* Image section 
               <div className="flex-shrink-0">
                 <img 
                   src={product.image} 
@@ -360,6 +360,7 @@ const SellerProducts: React.FC<SellerProductsProps> = ({
                   }}
                 />
               </div>
+              */}
               
               {/* Content section */}
               <div className="p-3 sm:p-4 flex flex-col flex-grow">
