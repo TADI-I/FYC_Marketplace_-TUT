@@ -1,7 +1,7 @@
 // api.js - Complete API integration functions for React frontend
 
-const API_BASE = 'https://fyc-marketplace-tut.onrender.com/api'; // Update with your backend URL
-//const API_BASE = 'http://localhost:5001/api'; // Local development
+//const API_BASE = 'https://fyc-marketplace-tut.onrender.com/api'; // Update with your backend URL
+const API_BASE = 'http://localhost:5001/api'; // Local development
 
 // API Helper function
 const apiCall = async (endpoint, options = {}) => {
@@ -501,9 +501,11 @@ export const getSubscriptionStatus = async () => {
 /**
  * Update user profile
  */
-// In your api.ts file
+
 export const updateUserProfile = async (userId, updateData) => {
   try {
+    console.log('🌐 Updating profile for user ID:', userId);
+    
     const response = await apiCall(`/users/${userId}`, {
       method: 'PUT',
       headers: {
@@ -511,9 +513,24 @@ export const updateUserProfile = async (userId, updateData) => {
       },
       body: JSON.stringify(updateData),
     });
-    return response.user; // Your backend returns { user: updatedUser }
+    
+    console.log('✅ Profile update response:', response);
+    return response.user;
+    
   } catch (error) {
     console.error('❌ Failed to update profile:', error);
+    
+    // Enhanced error handling based on backend codes
+    if (error.status === 409) {
+      throw new Error('Email already exists. Please use a different email.');
+    } else if (error.status === 404) {
+      throw new Error('User not found. Please log in again.');
+    } else if (error.status === 400) {
+      throw new Error(error.message || 'Validation failed');
+    } else if (error.status === 403) {
+      throw new Error('You do not have permission to update this profile.');
+    }
+    
     throw new Error(error.message || 'Failed to update profile');
   }
 };

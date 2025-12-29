@@ -56,6 +56,19 @@ const sanitizeInput = (input) => {
     .replace(/<[^>]*>/g, '');
 };
 
+
+const requireOwnership = (resourceType) => (req, res, next) => {
+  const requestedUserId = req.params.id;
+  const authenticatedUserId = req.user.id;
+  
+  if (requestedUserId !== authenticatedUserId) {
+    return res.status(403).json({ 
+      error: 'You do not have permission to perform this action',
+      code: 'ACCESS_DENIED'
+    });
+  }
+  next();
+};
 // Generic validation middleware factory
 const validateFields = (rules) => {
   return (req, res, next) => {

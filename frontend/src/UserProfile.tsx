@@ -4,6 +4,7 @@ import { User, ArrowLeft, Mail, Building, CreditCard, Edit3, Save, X, Zap } from
 
 type User = {
   id: number;
+  _id?: string;
   name: string;
   email: string;
   type: string;
@@ -103,7 +104,17 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
 
 const handleProfileUpdate = async (e: React.FormEvent) => {
   e.preventDefault();
-  if (!currentUser || !user) return;
+  if (!currentUser) return;
+
+  // Use _id from MongoDB
+  const userId = currentUser._id;
+  
+  if (!userId) {
+    setError('User ID not found. Please log in again.');
+    return;
+  }
+
+  console.log('✅ Using user ID:', userId);
 
   // Validation
   if (!formData.email?.includes('@')) {
@@ -120,8 +131,6 @@ const handleProfileUpdate = async (e: React.FormEvent) => {
   setError('');
 
   try {
-    const userId = String(currentUser.id);
-    
     const updatedProfile = await updateUserProfile(userId, {
       name: formData.name.trim(),
       campus: formData.campus,
@@ -135,12 +144,7 @@ const handleProfileUpdate = async (e: React.FormEvent) => {
     setTimeout(() => setSuccessMessage(''), 3000);
   } catch (error) {
     console.error('Update error details:', error);
-    
-    const errorMessage = error instanceof Error 
-      ? error.message 
-      : 'Failed to update profile. Please try again.';
-    
-    setError(errorMessage);
+    setError(error instanceof Error ? error.message : 'Failed to update profile');
   } finally {
     setLoading(false);
   }

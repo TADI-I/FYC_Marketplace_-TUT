@@ -756,6 +756,142 @@ app.get('/api/user/subscription-status', authenticateToken, async (req, res) => 
   }
 });
 
+//update user profile
+
+app.put('/api/users/:id', (req, res) => {
+  console.log('🎯 PUT /api/users/:id route HIT!');
+  console.log('Request details:', {
+    method: req.method,
+    url: req.url,
+    originalUrl: req.originalUrl,
+    baseUrl: req.baseUrl,
+    path: req.path,
+    params: req.params,
+    body: req.body
+  });
+  
+  res.json({ 
+    success: true, 
+    message: 'Debug route reached',
+    userId: req.params.id 
+  });
+});
+/*
+app.put('/api/users/:id', authenticateToken, validateObjectId('id'), requireOwnership('user'), async (req, res) => {
+  try {
+    console.log('✏️ Updating user profile for user ID:', req.params.id);
+    console.log('👤 Authenticated user ID:', req.user.id);
+    console.log('📦 Request body:', req.body);
+    
+    const userId = req.params.id;
+    const { name, campus, email } = req.body;
+
+    // Validation
+    if (!name?.trim()) {
+      return res.status(400).json({ 
+        error: 'Name is required',
+        success: false,
+        code: 'NAME_REQUIRED'
+      });
+    }
+
+    if (!email?.includes('@')) {
+      return res.status(400).json({ 
+        error: 'Please enter a valid email address',
+        success: false,
+        code: 'INVALID_EMAIL'
+      });
+    }
+
+    // Add email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ 
+        error: 'Please enter a valid email address',
+        success: false,
+        code: 'INVALID_EMAIL_FORMAT'
+      });
+    }
+
+    if (campus && !isValidCampus(campus)) {
+      return res.status(400).json({ 
+        error: 'Please select a valid campus',
+        success: false,
+        code: 'INVALID_CAMPUS'
+      });
+    }
+
+    // Build update object
+    const updateData = {
+      name: name.trim(),
+      email: email.toLowerCase().trim(),
+      updatedAt: new Date()
+    };
+
+    // Only include campus if provided
+    if (campus) updateData.campus = campus;
+
+    console.log('📤 Update data:', updateData);
+    console.log('🔍 Searching for user with ID:', new ObjectId(userId));
+
+    const result = await db.collection('users').updateOne(
+      { _id: new ObjectId(userId) },
+      { $set: updateData }
+    );
+
+    console.log('✅ MongoDB update result:', result);
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ 
+        error: 'User not found',
+        success: false,
+        code: 'USER_NOT_FOUND'
+      });
+    }
+
+    // Get updated user to return complete data
+    const updatedUser = await db.collection('users').findOne(
+      { _id: new ObjectId(userId) },
+      { projection: { password: 0 } } // Exclude password
+    );
+
+    console.log('✅ User profile updated successfully');
+
+    res.json({
+      success: true,
+      message: 'Profile updated successfully',
+      user: updatedUser // Return the full updated user object
+    });
+
+  } catch (error) {
+    console.error('❌ Update profile error:', error);
+    
+    // Handle duplicate email error
+    if (error.code === 11000 || error.message.includes('duplicate key')) {
+      return res.status(409).json({ 
+        error: 'Email already exists. Please use a different email.',
+        success: false,
+        code: 'EMAIL_EXISTS'
+      });
+    }
+
+    // Handle invalid ObjectId error
+    if (error.message.includes('ObjectId') || error.message.includes('hex string')) {
+      return res.status(400).json({ 
+        error: 'Invalid user ID format',
+        success: false,
+        code: 'INVALID_USER_ID'
+      });
+    }
+
+    res.status(500).json({ 
+      error: 'Failed to update profile',
+      success: false,
+      code: 'UPDATE_FAILED'
+    });
+  }
+});*/
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ 
@@ -793,12 +929,14 @@ app.use((err, req, res, next) => {
 });
 
 // 404 handler
+/*
 app.use((req, res) => {
   res.status(404).json({ 
     error: 'Route not found',
     success: false
   });
 });
+*/
 
 // Start server
 const startServer = async () => {
