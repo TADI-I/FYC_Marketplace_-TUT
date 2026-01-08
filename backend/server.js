@@ -1,11 +1,11 @@
-// server.js - Complete working server with all routes integrated
+// server.js - Fixed version with proper db injection
 const express = require('express');
 const cors = require('cors');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const mongoose = require('mongoose');
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -14,6 +14,40 @@ const PORT = process.env.PORT || 5001;
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadDir = 'uploads/';
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ 
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|gif|webp/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    
+    if (mimetype && extname) {
+      return cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'));
+    }
+  }
+});
+
+// Serve static files from uploads directory
+app.use('/uploads', express.static('uploads'));
 
 // MongoDB connection
 const uri = process.env.MONGODB_URI || "mongodb+srv://tadiwasongore_db_user:BigdaddyT@sales.o3ww0ii.mongodb.net/tut_marketplace?retryWrites=true&w=majority&appName=sales";
@@ -26,20 +60,6 @@ const client = new MongoClient(uri, {
 });
 
 let db;
-
-// MongoDB connection using Mongoose
-
-mongoose.connect(process.env.MONGODB_URI, {
-  dbName: process.env.DB_NAME,
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-  tls: true,
-  tlsAllowInvalidCertificates: true,
-})
-.then(() => console.log("✅ MongoDB connected"))
-.catch(err => console.error("❌ MongoDB connection error:", err));
-
-
 
 // Connect to MongoDB
 async function connectToMongoDB() {
@@ -59,408 +79,96 @@ async function connectToMongoDB() {
       console.log("📝 Indexes already exist or error creating indexes:", indexError.message);
     }
     
+    return db;
   } catch (error) {
     console.error('❌ MongoDB connection error:', error);
     process.exit(1);
   }
 }
 
-// JWT middleware for authentication
-const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+// Database middleware - inject db into all requests
+app.use((req, res, next) => {
+  req.db = db;
+  next();
+});
 
-  if (!token) {
-    return res.status(401).json({ 
-      error: 'Access token required',
-      success: false
-    });
-  }
+// Import controllers
+const authController = require('./controllers/authController');
+const productController = require('./controllers/productController');
+const userController = require('./controllers/userController');
+const messageController = require('./controllers/messageController');
+const referenceController = require('./controllers/referenceController');
+const healthController = require('./controllers/healthController');
 
-  jwt.verify(token, process.env.JWT_SECRET || 'tut_marketplace_secret', (err, user) => {
-    if (err) {
-      return res.status(403).json({ 
-        error: 'Invalid or expired token',
-        success: false
-      });
-    }
-    req.user = user;
-    next();
-  });
+// Import middleware
+const { 
+  authenticateToken, 
+  requireActiveSubscription,
+  validateObjectId,
+  requireOwnership 
+} = require('./middleware/authMiddleware');
+
+// Helper functions for middleware with db
+const withSubscriptionCheck = (req, res, next) => {
+  requireActiveSubscription(req, res, next, req.db);
 };
 
-// Middleware to check if user has active subscription
-const requireActiveSubscription = async (req, res, next) => {
-  try {
-    const user = await db.collection('users').findOne({ _id: new ObjectId(req.user.id) });
-    
-    if (!user) {
-      return res.status(404).json({ 
-        error: 'User not found',
-        success: false
-      });
-    }
-
-    if (user.type !== 'seller' || !user.subscribed) {
-      return res.status(403).json({ 
-        error: 'Active seller subscription required',
-        code: 'SUBSCRIPTION_REQUIRED',
-        success: false
-      });
-    }
-
-    // Check if subscription has expired
-    if (user.subscriptionEndDate && new Date() > new Date(user.subscriptionEndDate)) {
-      await db.collection('users').updateOne(
-        { _id: new ObjectId(req.user.id) },
-        { 
-          $set: { 
-            subscribed: false, 
-            type: 'customer',
-            subscriptionStatus: 'expired'
-          } 
-        }
-      );
-      
-      return res.status(403).json({ 
-        error: 'Subscription has expired',
-        code: 'SUBSCRIPTION_EXPIRED',
-        success: false
-      });
-    }
-
-    req.userProfile = user;
-    next();
-
-  } catch (error) {
-    console.error('Subscription check error:', error);
-    res.status(500).json({ 
-      error: 'Error checking subscription',
-      success: false
-    });
-  }
-};
-
-// Validation helpers
-const isValidEmail = (email) => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-};
-
-const isValidCampus = (campus) => {
-  const validCampuses = [
-    'pretoria-main', 'soshanguve-S','soshanguve-N', 'ga-rankuwa', 'pretoria-west',
-    'arts', 'emalahleni', 'mbombela', 'polokwane'
-  ];
-  return validCampuses.includes(campus);
-};
-
-const isValidCategory = (category) => {
-  const validCategories = [
-    'books', 'electronics', 'services', 'clothing', 'food', 'transport', 'accommodation', 'other'
-  ];
-  return validCategories.includes(category);
+const withOwnershipCheck = (resourceType) => (req, res, next) => {
+  requireOwnership(resourceType)(req, res, next, req.db);
 };
 
 // ==============================================
-// AUTH ROUTES
+// ROUTES
 // ==============================================
 
-// Register
-app.post('/api/auth/register', async (req, res) => {
+// Health checks
+app.get('/api/health', (req, res) => healthController.healthCheck(req, res, req.db));
+app.get('/api/test-db', (req, res) => healthController.testDbConnection(req, res, req.db));
+
+// Auth routes
+app.post('/api/auth/register', (req, res) => authController.register(req, res, req.db));
+app.post('/api/auth/login', (req, res) => authController.login(req, res, req.db));
+
+// User routes
+app.get('/api/users/me', authenticateToken, (req, res) => authController.getCurrentUser(req, res, req.db));
+app.get('/api/users/:id', authenticateToken, validateObjectId('id'), (req, res) => userController.getUserProfile(req, res, req.db));
+app.put('/api/users/:id', authenticateToken, validateObjectId('id'), withOwnershipCheck('user'), (req, res) => userController.updateUserProfile(req, res, req.db));
+app.post('/api/users/:id/upgrade', authenticateToken, validateObjectId('id'), withOwnershipCheck('user'), (req, res) => userController.upgradeUserToSeller(req, res, req.db));
+app.get('/api/user/subscription-status', authenticateToken, (req, res) => userController.getSubscriptionStatus(req, res, req.db));
+
+// Product routes
+app.get('/api/products', (req, res) => productController.getProducts(req, res, req.db));
+app.get('/api/products/:id', validateObjectId('id'), (req, res) => productController.getProductById(req, res, req.db));
+app.get('/api/products/seller/:sellerId', validateObjectId('sellerId'), (req, res) => productController.getProductsBySeller(req, res, req.db));
+
+// ⚠️ REMOVE THIS DUPLICATE ROUTE LINE (LINE 113):
+// app.post('/api/products', authenticateToken, withSubscriptionCheck, (req, res) => productController.createProduct(req, res, req.db));
+
+// ⚠️ KEEP ONLY THIS ONE WITH MULTER UPLOAD:
+app.post('/api/products', authenticateToken, withSubscriptionCheck, upload.single('image'), async (req, res) => {
   try {
-    console.log('📝 Registration attempt:', req.body);
+    console.log('➕ Creating product with FormData:', req.body);
+    console.log('📁 File received:', req.file);
     
-    const { name, email, password, userType, campus } = req.body;
-
-    // Validation
-    if (!name || !email || !password || !userType || !campus) {
-      return res.status(400).json({ 
-        error: 'All fields are required',
-        success: false
-      });
-    }
-
-    if (!email) {
-      return res.status(400).json({ 
-        error: 'Please use a valid email address',
-        success: false
-      });
-    }
-
-    if (!isValidCampus(campus)) {
-      return res.status(400).json({ 
-        error: 'Please select a valid campus',
-        success: false
-      });
-    }
-
-    // Check if user already exists
-    const existingUser = await db.collection('users').findOne({ 
-      email: email.toLowerCase() 
-    });
-    
-    if (existingUser) {
-      return res.status(400).json({ 
-        error: 'User already exists with this email',
-        success: false
-      });
-    }
-
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 12);
-
-    // Create user object
-    const isSellerType = userType === 'seller';
-    const user = {
-      name: name.trim(),
-      email: email.toLowerCase().trim(),
-      password: hashedPassword,
-      type: userType,
-      campus,
-      subscribed: isSellerType,
-      subscriptionStartDate: isSellerType ? new Date() : null,
-      subscriptionEndDate: isSellerType ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : null,
-      subscriptionStatus: isSellerType ? 'active' : null,
-      isActive: true,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-
-    console.log('💾 Inserting user:', { ...user, password: '[HIDDEN]' });
-
-    // Insert user
-    const result = await db.collection('users').insertOne(user);
-    console.log('✅ User insertion result:', result.insertedId);
-    
-    // Create JWT token
-    const token = jwt.sign(
-      { id: result.insertedId.toString(), email, type: userType, campus },
-      process.env.JWT_SECRET || 'tut_marketplace_secret',
-      { expiresIn: '7d' }
-    );
-
-    // Return user data (without password)
-    const { password: _, ...userResponse } = user;
-    userResponse._id = result.insertedId;
-
-    console.log('✅ User registered successfully:', email);
-
-    res.status(201).json({
-      success: true,
-      message: 'User registered successfully',
-      user: userResponse,
-      token
-    });
-
-  } catch (error) {
-    console.error('❌ Registration error:', error);
-    res.status(500).json({ 
-      error: 'Registration failed: ' + error.message,
-      success: false
-    });
-  }
-});
-
-// Login
-app.post('/api/auth/login', async (req, res) => {
-  try {
-    console.log('🔑 Login attempt:', req.body.email);
-    
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({ 
-        error: 'Email and password are required',
-        success: false
-      });
-    }
-
-    // Find user
-    const user = await db.collection('users').findOne({ 
-      email: email.toLowerCase() 
-    });
-    
-    if (!user) {
-      return res.status(400).json({ 
-        error: 'Invalid email or password',
-        success: false
-      });
-    }
-
-    // Check password
-    const isValidPassword = await bcrypt.compare(password, user.password);
-    if (!isValidPassword) {
-      return res.status(400).json({ 
-        error: 'Invalid email or password',
-        success: false
-      });
-    }
-
-    // Create JWT token
-    const token = jwt.sign(
-      { id: user._id.toString(), email: user.email, type: user.type, campus: user.campus },
-      process.env.JWT_SECRET || 'tut_marketplace_secret',
-      { expiresIn: '7d' }
-    );
-
-    // Return user data (without password)
-    const { password: _, ...userResponse } = user;
-
-    console.log('✅ User logged in successfully:', email);
-
-    res.json({
-      success: true,
-      message: 'Login successful',
-      user: userResponse,
-      token
-    });
-
-  } catch (error) {
-    console.error('❌ Login error:', error);
-    res.status(500).json({ 
-      error: 'Login failed: ' + error.message,
-      success: false
-    });
-  }
-});
-
-// ==============================================
-// PRODUCT ROUTES
-// ==============================================
-
-// Get all products
-app.get('/api/products', async (req, res) => {
-  try {
-    console.log('📦 Getting products with filters:', req.query);
-    
-    const { category, campus, search, page = 1, limit = 12 } = req.query;
-    
-    // Build filter query
-    let filter = { status: 'active' };
-    
-    if (category && category !== 'all') {
-      filter.category = category;
-    }
-    
-    if (campus && campus !== 'all') {
-      filter.sellerCampus = campus;
-    }
-    
-    if (search) {
-      filter.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } }
-      ];
-    }
-
-    console.log('🔍 Filter:', filter);
-
-    // Get total count
-    const total = await db.collection('products').countDocuments(filter);
-    
-    // Get products with pagination
-    const products = await db.collection('products')
-      .find(filter)
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(parseInt(limit))
-      .toArray();
-
-    console.log(`✅ Found ${products.length} products out of ${total} total`);
-
-    res.json({
-      success: true,
-      products,
-      pagination: {
-        currentPage: parseInt(page),
-        totalPages: Math.ceil(total / limit),
-        totalProducts: total,
-        hasNext: page * limit < total,
-        hasPrev: page > 1
-      }
-    });
-
-  } catch (error) {
-    console.error('❌ Get products error:', error);
-    res.status(500).json({ 
-      error: 'Failed to retrieve products: ' + error.message,
-      success: false
-    });
-  }
-});
-
-// Get single product
-app.get('/api/products/:id', async (req, res) => {
-  try {
-    const productId = req.params.id;
-    console.log('📦 Getting product:', productId);
-    
-    if (!ObjectId.isValid(productId)) {
-      return res.status(400).json({ 
-        error: 'Invalid product ID',
-        success: false
-      });
-    }
-    
-    const product = await db.collection('products')
-      .findOne({ _id: new ObjectId(productId) });
-    
-    if (!product) {
-      return res.status(404).json({ 
-        error: 'Product not found',
-        success: false
-      });
-    }
-
-    console.log('✅ Product found:', product.title);
-    
-    res.json({
-      success: true,
-      ...product
-    });
-
-  } catch (error) {
-    console.error('❌ Get product error:', error);
-    res.status(500).json({ 
-      error: 'Failed to retrieve product: ' + error.message,
-      success: false
-    });
-  }
-});
-
-// Create product
-app.post('/api/products', authenticateToken, requireActiveSubscription, async (req, res) => {
-  try {
-    console.log('➕ Creating product:', req.body);
-    console.log('👤 User:', req.user);
-    
-    const { title, description, price, category, type } = req.body;
+    const { title, description, price, category, type, sellerName, sellerCampus } = req.body;
 
     // Validation
     if (!title || !description || !price || !category) {
+      // Clean up uploaded file if validation fails
+      if (req.file) {
+        fs.unlinkSync(req.file.path);
+      }
       return res.status(400).json({ 
         error: 'All fields are required',
         success: false
       });
     }
 
-    if (!isValidCategory(category)) {
-      return res.status(400).json({ 
-        error: 'Invalid category',
-        success: false
-      });
+    // Handle image URL
+    let imageUrl = null;
+    if (req.file) {
+      imageUrl = `/uploads/${req.file.filename}`;
     }
-
-    if (isNaN(parseFloat(price)) || parseFloat(price) <= 0) {
-      return res.status(400).json({ 
-        error: 'Price must be a positive number',
-        success: false
-      });
-    }
-
-    // Get seller information
-    const seller = req.userProfile;
 
     // Create product object
     const product = {
@@ -470,11 +178,12 @@ app.post('/api/products', authenticateToken, requireActiveSubscription, async (r
       category,
       type: type || 'product',
       sellerId: new ObjectId(req.user.id),
-      sellerName: seller.name,
-      sellerCampus: seller.campus,
+      sellerName: sellerName || req.user.name,
+      sellerCampus: sellerCampus || req.user.campus,
+      image: imageUrl,
       rating: 0,
       reviews: [],
-      images: [],
+      images: imageUrl ? [imageUrl] : [],
       status: 'active',
       views: 0,
       createdAt: new Date(),
@@ -497,6 +206,10 @@ app.post('/api/products', authenticateToken, requireActiveSubscription, async (r
 
   } catch (error) {
     console.error('❌ Create product error:', error);
+    // Clean up uploaded file on error
+    if (req.file) {
+      fs.unlinkSync(req.file.path);
+    }
     res.status(500).json({ 
       error: 'Failed to create product: ' + error.message,
       success: false
@@ -504,260 +217,18 @@ app.post('/api/products', authenticateToken, requireActiveSubscription, async (r
   }
 });
 
-// Update product
-app.put('/api/products/:id', authenticateToken, async (req, res) => {
-  try {
-    const productId = req.params.id;
-    console.log('✏️ Updating product:', productId);
-    
-    if (!ObjectId.isValid(productId)) {
-      return res.status(400).json({ 
-        error: 'Invalid product ID',
-        success: false
-      });
-    }
+app.put('/api/products/:id', authenticateToken, validateObjectId('id'), withOwnershipCheck('product'), (req, res) => productController.updateProduct(req, res, req.db));
+app.delete('/api/products/:id', authenticateToken, validateObjectId('id'), withOwnershipCheck('product'), (req, res) => productController.deleteProduct(req, res, req.db));
 
-    // Check if product exists and user owns it
-    const existingProduct = await db.collection('products')
-      .findOne({ _id: new ObjectId(productId) });
+// Message routes
+app.get('/api/messages/:conversationId', authenticateToken, (req, res) => messageController.getMessages(req, res, req.db));
+app.post('/api/messages', authenticateToken, (req, res) => messageController.sendMessage(req, res, req.db));
 
-    if (!existingProduct) {
-      return res.status(404).json({ 
-        error: 'Product not found',
-        success: false
-      });
-    }
+// Reference data routes
+app.get('/api/campuses', referenceController.getCampuses);
+app.get('/api/categories', referenceController.getCategories);
 
-    if (existingProduct.sellerId.toString() !== req.user.id) {
-      return res.status(403).json({ 
-        error: 'You can only update your own products',
-        success: false
-      });
-    }
-
-    const { title, description, price, category, type, status } = req.body;
-
-    // Build update object
-    const updateData = { updatedAt: new Date() };
-    
-    if (title) updateData.title = title.trim();
-    if (description) updateData.description = description.trim();
-    if (price) updateData.price = parseFloat(price);
-    if (category && isValidCategory(category)) updateData.category = category;
-    if (type) updateData.type = type;
-    if (status) updateData.status = status;
-
-    const result = await db.collection('products').updateOne(
-      { _id: new ObjectId(productId) },
-      { $set: updateData }
-    );
-
-    console.log('✅ Product updated');
-
-    res.json({
-      success: true,
-      message: 'Product updated successfully'
-    });
-
-  } catch (error) {
-    console.error('❌ Update product error:', error);
-    res.status(500).json({ 
-      error: 'Failed to update product: ' + error.message,
-      success: false
-    });
-  }
-});
-
-// Delete product
-app.delete('/api/products/:id', authenticateToken, async (req, res) => {
-  try {
-    const productId = req.params.id;
-    console.log('🗑️ Deleting product:', productId);
-    
-    if (!ObjectId.isValid(productId)) {
-      return res.status(400).json({ 
-        error: 'Invalid product ID',
-        success: false
-      });
-    }
-
-    // Check if product exists and user owns it
-    const existingProduct = await db.collection('products')
-      .findOne({ _id: new ObjectId(productId) });
-
-    if (!existingProduct) {
-      return res.status(404).json({ 
-        error: 'Product not found',
-        success: false
-      });
-    }
-
-    if (existingProduct.sellerId.toString() !== req.user.id) {
-      return res.status(403).json({ 
-        error: 'You can only delete your own products',
-        success: false
-      });
-    }
-
-    const result = await db.collection('products').deleteOne({ 
-      _id: new ObjectId(productId) 
-    });
-
-    console.log('✅ Product deleted');
-
-    res.json({
-      success: true,
-      message: 'Product deleted successfully'
-    });
-
-  } catch (error) {
-    console.error('❌ Delete product error:', error);
-    res.status(500).json({ 
-      error: 'Failed to delete product: ' + error.message,
-      success: false
-    });
-  }
-});
-
-// ==============================================
-// MESSAGE ROUTES
-// ==============================================
-
-// Get messages for conversation
-app.get('/api/messages/:conversationId', authenticateToken, async (req, res) => {
-  try {
-    const conversationId = req.params.conversationId;
-    console.log('💬 Getting messages for:', conversationId);
-    
-    const messages = await db.collection('messages')
-      .find({ conversationId })
-      .sort({ createdAt: 1 })
-      .toArray();
-
-    res.json({
-      success: true,
-      messages
-    });
-
-  } catch (error) {
-    console.error('❌ Get messages error:', error);
-    res.status(500).json({ 
-      error: 'Failed to retrieve messages: ' + error.message,
-      success: false
-    });
-  }
-});
-
-// Send message
-app.post('/api/messages', authenticateToken, async (req, res) => {
-  try {
-    console.log('📤 Sending message:', req.body);
-    
-    const { receiverId, text, conversationId } = req.body;
-
-    if (!receiverId || !text || !conversationId) {
-      return res.status(400).json({ 
-        error: 'All fields are required',
-        success: false
-      });
-    }
-
-    const message = {
-      senderId: new ObjectId(req.user.id),
-      receiverId: new ObjectId(receiverId),
-      conversationId,
-      text: text.trim(),
-      read: false,
-      createdAt: new Date()
-    };
-
-    const result = await db.collection('messages').insertOne(message);
-    console.log('✅ Message sent');
-    
-    res.status(201).json({
-      success: true,
-      message: 'Message sent successfully',
-      messageId: result.insertedId
-    });
-
-  } catch (error) {
-    console.error('❌ Send message error:', error);
-    res.status(500).json({ 
-      error: 'Failed to send message: ' + error.message,
-      success: false
-    });
-  }
-});
-
-// ==============================================
-// REFERENCE DATA ROUTES
-// ==============================================
-
-// Get campuses
-app.get('/api/campuses', (req, res) => {
-  const campuses = [
-    { id: 'pretoria-main', name: 'Pretoria Main Campus' },
-    { id: 'soshanguve', name: 'Soshanguve Campus' },
-    { id: 'ga-rankuwa', name: 'Ga-Rankuwa Campus' },
-    { id: 'pretoria-west', name: 'Pretoria West Campus' },
-    { id: 'arts', name: 'Arts Campus' },
-    { id: 'emalahleni', name: 'eMalahleni Campus' },
-    { id: 'mbombela', name: 'Mbombela Campus' },
-    { id: 'polokwane', name: 'Polokwane Campus' }
-  ];
-  res.json({ success: true, campuses });
-});
-
-// Get categories
-app.get('/api/categories', (req, res) => {
-  const categories = [
-    { id: 'books', name: 'Books' },
-    { id: 'electronics', name: 'Electronics' },
-    { id: 'services', name: 'Services' },
-    { id: 'clothing', name: 'Clothing' },
-    { id: 'food', name: 'Food' },
-    { id: 'transport', name: 'Transport' },
-    { id: 'accommodation', name: 'Accommodation' },
-    { id: 'other', name: 'Other' }
-  ];
-  res.json({ success: true, categories });
-});
-
-// Get subscription status
-app.get('/api/user/subscription-status', authenticateToken, async (req, res) => {
-  try {
-    const user = await db.collection('users')
-      .findOne({ _id: new ObjectId(req.user.id) });
-
-    if (!user) {
-      return res.status(404).json({ 
-        error: 'User not found',
-        success: false
-      });
-    }
-
-    const hasActiveSubscription = user.subscribed && 
-      (!user.subscriptionEndDate || new Date() <= new Date(user.subscriptionEndDate));
-
-    res.json({
-      success: true,
-      hasActiveSubscription,
-      subscriptionStatus: user.subscriptionStatus,
-      subscriptionEndDate: user.subscriptionEndDate,
-      canSell: hasActiveSubscription
-    });
-
-  } catch (error) {
-    console.error('❌ Subscription status error:', error);
-    res.status(500).json({ 
-      error: 'Failed to check subscription status: ' + error.message,
-      success: false
-    });
-  }
-});
-
-//update user profile
-
+// Debug route for user update
 app.put('/api/users/:id', (req, res) => {
   console.log('🎯 PUT /api/users/:id route HIT!');
   console.log('Request details:', {
@@ -776,148 +247,6 @@ app.put('/api/users/:id', (req, res) => {
     userId: req.params.id 
   });
 });
-/*
-app.put('/api/users/:id', authenticateToken, validateObjectId('id'), requireOwnership('user'), async (req, res) => {
-  try {
-    console.log('✏️ Updating user profile for user ID:', req.params.id);
-    console.log('👤 Authenticated user ID:', req.user.id);
-    console.log('📦 Request body:', req.body);
-    
-    const userId = req.params.id;
-    const { name, campus, email } = req.body;
-
-    // Validation
-    if (!name?.trim()) {
-      return res.status(400).json({ 
-        error: 'Name is required',
-        success: false,
-        code: 'NAME_REQUIRED'
-      });
-    }
-
-    if (!email?.includes('@')) {
-      return res.status(400).json({ 
-        error: 'Please enter a valid email address',
-        success: false,
-        code: 'INVALID_EMAIL'
-      });
-    }
-
-    // Add email format validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({ 
-        error: 'Please enter a valid email address',
-        success: false,
-        code: 'INVALID_EMAIL_FORMAT'
-      });
-    }
-
-    if (campus && !isValidCampus(campus)) {
-      return res.status(400).json({ 
-        error: 'Please select a valid campus',
-        success: false,
-        code: 'INVALID_CAMPUS'
-      });
-    }
-
-    // Build update object
-    const updateData = {
-      name: name.trim(),
-      email: email.toLowerCase().trim(),
-      updatedAt: new Date()
-    };
-
-    // Only include campus if provided
-    if (campus) updateData.campus = campus;
-
-    console.log('📤 Update data:', updateData);
-    console.log('🔍 Searching for user with ID:', new ObjectId(userId));
-
-    const result = await db.collection('users').updateOne(
-      { _id: new ObjectId(userId) },
-      { $set: updateData }
-    );
-
-    console.log('✅ MongoDB update result:', result);
-
-    if (result.matchedCount === 0) {
-      return res.status(404).json({ 
-        error: 'User not found',
-        success: false,
-        code: 'USER_NOT_FOUND'
-      });
-    }
-
-    // Get updated user to return complete data
-    const updatedUser = await db.collection('users').findOne(
-      { _id: new ObjectId(userId) },
-      { projection: { password: 0 } } // Exclude password
-    );
-
-    console.log('✅ User profile updated successfully');
-
-    res.json({
-      success: true,
-      message: 'Profile updated successfully',
-      user: updatedUser // Return the full updated user object
-    });
-
-  } catch (error) {
-    console.error('❌ Update profile error:', error);
-    
-    // Handle duplicate email error
-    if (error.code === 11000 || error.message.includes('duplicate key')) {
-      return res.status(409).json({ 
-        error: 'Email already exists. Please use a different email.',
-        success: false,
-        code: 'EMAIL_EXISTS'
-      });
-    }
-
-    // Handle invalid ObjectId error
-    if (error.message.includes('ObjectId') || error.message.includes('hex string')) {
-      return res.status(400).json({ 
-        error: 'Invalid user ID format',
-        success: false,
-        code: 'INVALID_USER_ID'
-      });
-    }
-
-    res.status(500).json({ 
-      error: 'Failed to update profile',
-      success: false,
-      code: 'UPDATE_FAILED'
-    });
-  }
-});*/
-
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
-    timestamp: new Date(),
-    database: db ? 'Connected' : 'Disconnected',
-    success: true
-  });
-});
-
-// Test database connection
-app.get('/api/test-db', async (req, res) => {
-  try {
-    await db.admin().ping();
-    res.json({ 
-      success: true,
-      message: 'Database connection is working!',
-      timestamp: new Date()
-    });
-  } catch (error) {
-    res.status(500).json({ 
-      success: false,
-      error: 'Database connection failed: ' + error.message
-    });
-  }
-});
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -929,14 +258,13 @@ app.use((err, req, res, next) => {
 });
 
 // 404 handler
-/*
-app.use((req, res) => {
+app.use('*', (req, res) => {
+  console.log('🚫 404 Route not found:', req.originalUrl);
   res.status(404).json({ 
     error: 'Route not found',
     success: false
   });
 });
-*/
 
 // Start server
 const startServer = async () => {
@@ -947,6 +275,17 @@ const startServer = async () => {
     console.log(`🔗 Health check: http://localhost:${PORT}/api/health`);
     console.log(`🔗 Test DB: http://localhost:${PORT}/api/test-db`);
     console.log(`📊 Database: ${db ? '✅ Connected' : '❌ Disconnected'}`);
+    
+    // Create uploads directory if it doesn't exist
+    const uploadsDir = path.join(__dirname, 'uploads');
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+      console.log('📁 Created uploads directory:', uploadsDir);
+    }
+    
+    console.log(`📷 Image uploads will be stored in: ${uploadsDir}`);
+    console.log(`🔗 Products route: http://localhost:${PORT}/api/products`);
+    console.log(`🔗 Image access: http://localhost:${PORT}/uploads/filename.jpg`);
   });
 };
 

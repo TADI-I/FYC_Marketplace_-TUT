@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { createProduct } from './api'; 
 
+const API_BASE = process.env.REACT_APP_API_BASE;
+
 type Product = {
   id: number;
   title: string;
@@ -91,81 +93,88 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ currentUser, onProductA
     setImagePreview('');
   };
 
-  const handleAddProduct = async () => {
-    if (!currentUser) {
-      setError('You must be logged in to add a product');
-      return;
+// In AddProductForm.js - Update handleAddProduct function
+const handleAddProduct = async () => {
+  if (!currentUser) {
+    setError('You must be logged in to add a product');
+    return;
+  }
+
+  if (!productData.title || !productData.description || !productData.price || !productData.category) {
+    setError('Please fill all required fields.');
+    return;
+  }
+
+  if (parseFloat(productData.price) <= 0) {
+    setError('Price must be greater than 0');
+    return;
+  }
+
+  setLoading(true);
+  setError('');
+
+  try {
+    // Create FormData for multipart form upload
+    const formData = new FormData();
+    
+    // Add product data fields
+    formData.append('title', productData.title);
+    formData.append('description', productData.description);
+    formData.append('price', productData.price);
+    formData.append('category', productData.category);
+    formData.append('type', productData.type);
+    formData.append('sellerName', currentUser.name);
+    formData.append('sellerCampus', currentUser.campus);
+    formData.append('rating', '0');
+    
+    // Add image file if selected
+    if (imageFile) {
+      formData.append('image', imageFile);
+      console.log('📁 Adding image file:', imageFile.name);
     }
 
-    if (!productData.title || !productData.description || !productData.price || !productData.category) {
-      setError('Please fill all required fields.');
-      return;
-    }
+    // Get auth token
+    const token = localStorage.getItem('auth_token');
+    
+    console.log('📤 Sending FormData to backend...');
 
-    if (parseFloat(productData.price) <= 0) {
-      setError('Price must be greater than 0');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-
-    try {
-      let imageUrl = '/api/placeholder/300/200'; // Default placeholder
-
-      // If an image was selected, upload it first
-      if (imageFile) {
-        imageUrl = await uploadImage(imageFile);
-      }
-
-      // Create product data with seller information
-      const productToCreate = {
-        ...productData,
-        price: parseFloat(productData.price),
-        sellerId: currentUser.id,
-        sellerName: currentUser.name,
-        sellerCampus: currentUser.campus,
-        rating: 0,
-        image: imageUrl,
-        type: productData.type || 'product'
-      };
-
-      // Call the API to create the product
-      const createdProduct = await createProduct(productToCreate);
-
-      // Call the parent callback
-      onProductAdded(createdProduct);
-      
-      // Reset form
-      setProductData({ title: '', description: '', price: '', category: '', type: 'product' });
-      setImageFile(null);
-      setImagePreview('');
-      
-      console.log('✅ Product added successfully');
-      
-    } catch (error) {
-      console.error('❌ Failed to add product:', error);
-      const errorMessage = error && typeof error === 'object' && 'message' in error
-        ? (error as { message: string }).message
-        : 'Failed to add product. Please try again.';
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Simulate image upload - replace this with your actual upload API
-  const uploadImage = async (file: File): Promise<string> => {
-    // This is a mock implementation. Replace with your actual image upload logic
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        // In a real app, you would upload to a service like Cloudinary, AWS S3, or your backend
-        // For now, we'll use a placeholder and store the file locally
-        const mockImageUrl = URL.createObjectURL(file);
-        resolve(mockImageUrl);
-      }, 1000);
+    // Send FormData to backend
+    const response = await fetch('http://localhost:5001/api/products', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        // Don't set Content-Type here - let browser set it with boundary
+      },
+      body: formData,
     });
-  };
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to create product');
+    }
+
+    console.log('✅ Product added successfully:', data);
+    
+    // Call the parent callback with the created product
+    onProductAdded(data.product || data);
+    
+    // Reset form
+    setProductData({ title: '', description: '', price: '', category: '', type: 'product' });
+    setImageFile(null);
+    setImagePreview('');
+    
+  } catch (error) {
+    console.error('❌ Failed to add product:', error);
+    const errorMessage = error instanceof Error 
+      ? error.message 
+      : 'Failed to add product. Please try again.';
+    setError(errorMessage);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const handleInputChange = (field: string, value: string) => {
     setProductData(prev => ({ ...prev, [field]: value }));

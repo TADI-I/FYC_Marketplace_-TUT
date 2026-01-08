@@ -1,5 +1,3 @@
-// api.js - Complete API integration functions for React frontend
-
 
 const API_BASE = process.env.REACT_APP_API_BASE;
 
@@ -59,14 +57,12 @@ const apiCall = async (endpoint, options = {}) => {
  */
 export const registerUser = async (userData) => {
   try {
-    console.log('📝 Registering user:', userData);
     
     const response = await apiCall('/auth/register', {
       method: 'POST',
       body: JSON.stringify(userData),
     });
 
-    console.log('✅ Registration successful:', response);
     
     // Store token in localStorage
     if (response.token) {
@@ -89,14 +85,11 @@ export const registerUser = async (userData) => {
  */
 export const loginUser = async (credentials) => {
   try {
-    console.log('🔑 Logging in user:', credentials.email);
-    
+
     const response = await apiCall('/auth/login', {
       method: 'POST',
       body: JSON.stringify(credentials),
     });
-
-    console.log('✅ Login successful:', response);
     
     // Store token and user data in localStorage
     if (response.token) {
@@ -117,7 +110,6 @@ export const loginUser = async (credentials) => {
 export const logoutUser = () => {
   localStorage.removeItem('auth_token');
   localStorage.removeItem('user_data');
-  console.log('👋 User logged out');
 };
 
 /**
@@ -167,13 +159,9 @@ export const getProducts = async (filters = {}) => {
 
     const queryString = queryParams.toString();
     const endpoint = `/products${queryString ? `?${queryString}` : ''}`;
-    
-    console.log('📦 Getting products with filters:', filters);
-    
+        
     const response = await apiCall(endpoint);
-    
-    console.log(`✅ Retrieved ${response.products ? response.products.length : 0} products`);
-    
+        
     return response;
   } catch (error) {
     console.error('❌ Failed to get products:', error);
@@ -186,13 +174,9 @@ export const getProducts = async (filters = {}) => {
  * @param {string} productId - Product ID
  */
 export const getProduct = async (productId) => {
-  try {
-    console.log('📦 Getting product:', productId);
-    
+  try {   
     const response = await apiCall(`/products/${productId}`);
-    
-    console.log('✅ Product retrieved:', response.title);
-    
+        
     return response;
   } catch (error) {
     console.error('❌ Failed to get product:', error);
@@ -206,24 +190,16 @@ export const getProduct = async (productId) => {
  */
 export const getProductsBySeller = async (sellerId) => {
   try {
-    console.log('📦 Getting products for seller _id:', sellerId);
-    console.log('🔗 API endpoint:', `/products/seller/${sellerId}`);
-    
+   
     const response = await apiCall(`/products/seller/${sellerId}`);
-    
-    console.log('📊 Full API response:', response);
-    console.log('📦 Products array:', response.products);
-    console.log(`✅ Retrieved ${response.products ? response.products.length : 0} products for seller ${sellerId}`);
-    
+  
     return response.products || [];
   } catch (error) {
     console.error('❌ Failed to get seller products:', error);
     
     // Fallback: filter from all products if specific endpoint fails
     try {
-      console.log('🔄 Attempting fallback method...');
       const allProductsResponse = await getProducts();
-      console.log('📊 All products response:', allProductsResponse);
       
       const allProducts = allProductsResponse.products || allProductsResponse || [];
       // Fix: Compare with both _id and sellerId since your data might use different field names
@@ -233,9 +209,7 @@ export const getProductsBySeller = async (sellerId) => {
         p.seller?._id === sellerId ||
         p.sellerId === sellerId
       );
-      
-      console.log(`✅ Retrieved ${sellerProducts.length} products using fallback method`);
-      return sellerProducts;
+            return sellerProducts;
     } catch (fallbackError) {
       console.error('❌ Fallback also failed:', fallbackError);
       throw new Error(error.message || 'Failed to retrieve seller products');
@@ -252,33 +226,45 @@ export const getProductsBySeller = async (sellerId) => {
  * @param {string} productData.category - Product category
  * @param {string} productData.type - 'product' or 'service'
  */
-export const createProduct = async (productData) => {
+// In api.js - update createProduct function
+// In api.js - Update createProduct function
+export const createProduct = async (productData, imageFile = null) => {
   try {
-    console.log('➕ Creating product:', productData);
+    console.log('➕ Creating product via FormData:', productData);
     
-    // Validate required fields
-    const requiredFields = ['title', 'description', 'price', 'category'];
-    for (const field of requiredFields) {
-      if (!productData[field]) {
-        throw new Error(`${field} is required`);
+    const token = localStorage.getItem('auth_token');
+    
+    // Create FormData
+    const formData = new FormData();
+    
+    // Append all product data
+    Object.keys(productData).forEach(key => {
+      if (key !== 'image' && productData[key] !== undefined) {
+        formData.append(key, productData[key]);
       }
+    });
+    
+    // Append image file if provided
+    if (imageFile && imageFile instanceof File) {
+      formData.append('image', imageFile);
     }
 
-    // Ensure price is a number
-    const productToSend = {
-      ...productData,
-      price: parseFloat(productData.price),
-      type: productData.type || 'product'
-    };
-
-    const response = await apiCall('/products', {
+    const response = await fetch(`${API_BASE}/products`, {
       method: 'POST',
-      body: JSON.stringify(productToSend),
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        // Don't set Content-Type for FormData
+      },
+      body: formData,
     });
 
-    console.log('✅ Product created successfully:', response);
+    const data = await response.json();
     
-    return response;
+    if (!response.ok) {
+      throw new Error(data.error || data.message || `HTTP error! status: ${response.status}`);
+    }
+
+    return data.product || data;
   } catch (error) {
     console.error('❌ Failed to create product:', error);
     throw new Error(error.message || 'Failed to create product');
@@ -292,15 +278,12 @@ export const createProduct = async (productData) => {
  */
 export const updateProduct = async (productId, updateData) => {
   try {
-    console.log('✏️ Updating product:', productId, updateData);
-    
+   
     const response = await apiCall(`/products/${productId}`, {
       method: 'PUT',
       body: JSON.stringify(updateData),
     });
-
-    console.log('✅ Product updated successfully');
-    
+   
     return response;
   } catch (error) {
     console.error('❌ Failed to update product:', error);
@@ -314,14 +297,11 @@ export const updateProduct = async (productId, updateData) => {
  */
 export const deleteProduct = async (productId) => {
   try {
-    console.log('🗑️ Deleting product:', productId);
-    
+
     const response = await apiCall(`/products/${productId}`, {
       method: 'DELETE',
     });
-
-    console.log('✅ Product deleted successfully');
-    
+   
     return response;
   } catch (error) {
     console.error('❌ Failed to delete product:', error);
@@ -460,7 +440,6 @@ const getMockMessages = async (conversationId) => {
       new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     );
 
-    console.log(`✅ Loaded ${sortedMessages.length} mock messages`);
     return sortedMessages;
 
   } catch (error) {
@@ -477,12 +456,8 @@ const getMockMessages = async (conversationId) => {
  * Get user subscription status
  */
 export const getSubscriptionStatus = async () => {
-  try {
-    console.log('💳 Getting subscription status');
-    
+  try {    
     const response = await apiCall('/user/subscription-status');
-    
-    console.log('✅ Subscription status:', response);
     
     return response;
   } catch (error) {
@@ -492,43 +467,56 @@ export const getSubscriptionStatus = async () => {
   }
 };
 
-/**
- * Get user profile
- */
-// api.js - Fix the getUserProfile function
 
-
-/**
- * Update user profile
- */
-
+// In api.js - Fix the updateUserProfile function
 export const updateUserProfile = async (userId, updateData) => {
   try {
-    console.log('🌐 Updating profile for user ID:', userId);
+    // Get the authentication token
+    const token = localStorage.getItem('auth_token');
     
-    const response = await apiCall(`/users/${userId}`, {
+    if (!token) {
+      throw new Error('Authentication token not found. Please log in again.');
+    }
+
+
+    
+    const response = await fetch(`${API_BASE}/users/${userId}`, {
       method: 'PUT',
       headers: {
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(updateData),
     });
+
+
     
-    console.log('✅ Profile update response:', response);
-    return response.user;
+    // Handle non-JSON responses
+    let data;
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      const text = await response.text();
+      throw new Error(`Server returned non-JSON response: ${text}`);
+    }
+
+    if (!response.ok) {
+      console.error('❌ API Error Response:', data);
+      throw new Error(data.error || `HTTP ${response.status}: Failed to update profile`);
+    }
+
+
+    return data.user || data;
     
   } catch (error) {
     console.error('❌ Failed to update profile:', error);
     
-    // Enhanced error handling based on backend codes
-    if (error.status === 409) {
-      throw new Error('Email already exists. Please use a different email.');
-    } else if (error.status === 404) {
-      throw new Error('User not found. Please log in again.');
-    } else if (error.status === 400) {
-      throw new Error(error.message || 'Validation failed');
-    } else if (error.status === 403) {
-      throw new Error('You do not have permission to update this profile.');
+    // Provide more specific error messages
+    if (error.message.includes('Authentication token')) {
+      throw new Error('Your session has expired. Please log in again.');
+    } else if (error.message.includes('non-JSON')) {
+      throw new Error('Server error. Please try again later.');
     }
     
     throw new Error(error.message || 'Failed to update profile');
@@ -614,7 +602,7 @@ export const testConnection = async () => {
     const data = await response.json();
     
     if (data.success) {
-      console.log('✅ API connection successful');
+
       return true;
     } else {
       console.error('❌ API connection failed');
@@ -690,7 +678,7 @@ export const markMessagesAsRead = async (userId, partnerId) => {
       return message;
     });
 
-    console.log(`✅ Marked messages from ${partnerId} as read for user ${userId}`);
+
   } catch (error) {
     console.error('❌ Failed to mark messages as read:', error);
     throw new Error('Failed to mark messages as read');
