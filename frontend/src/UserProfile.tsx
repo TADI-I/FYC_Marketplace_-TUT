@@ -33,13 +33,32 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
   const [upgrading, setUpgrading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   
+  
 
-  useEffect(() => {
-    if (currentUser) {
-      fetchCurrentUser();
-      fetchSubscriptionStatus();
-    }
-  }, [currentUser]);
+useEffect(() => {
+  if (!currentUser) return;
+
+  setUser(currentUser);
+}, [currentUser]);
+
+useEffect(() => {
+  if (!user) return;
+
+  fetchSubscriptionStatus();
+}, [user]);
+
+
+useEffect(() => {
+  if (!user) return;
+
+  setFormData({
+    name: user.name || '',
+    email: user.email || '',
+    campus: user.campus || '',
+  });
+}, [user]);
+
+
 
 
   const fetchCurrentUser = async () => {
@@ -152,29 +171,32 @@ const handleProfileUpdate = async (e: React.FormEvent) => {
 
 
 
-  const handleUpgradeToSeller = async () => {
-    if (!currentUser) return;
+const handleUpgradeToSeller = async () => {
+  if (!currentUser?._id) {
+    setError('User ID missing. Please log in again.');
+    return;
+  }
 
-    setUpgrading(true);
-    setError('');
+  setUpgrading(true);
+  setError('');
 
-    try {
-      const result = await upgradeUserToSeller(currentUser.id);
-      setUser(prev => prev ? { ...prev, type: 'seller' } : null);
-      setSubscriptionStatus('seller');
-      setSuccessMessage('Account upgraded to seller successfully!');
-      
-      setTimeout(() => setSuccessMessage(''), 3000);
-    } catch (error) {
-      let errorMessage = 'Failed to upgrade account. Please try again.';
-      if (error && typeof error === 'object' && 'message' in error) {
-        errorMessage = (error as { message: string }).message;
-      }
-      setError(errorMessage);
-    } finally {
-      setUpgrading(false);
-    }
-  };
+  try {
+    await upgradeUserToSeller(currentUser._id);
+
+    const updated = {
+      ...user!,
+      type: 'seller',
+      subscribed: true,
+    };
+
+    setUser(updated);
+    setSuccessMessage('Account upgraded to seller successfully!');
+  } catch (err: any) {
+    setError(err.message || 'Upgrade failed');
+  } finally {
+    setUpgrading(false);
+  }
+};
 
   if (!currentUser) {
     return (
@@ -273,7 +295,7 @@ const handleProfileUpdate = async (e: React.FormEvent) => {
                           type="text"
                           id="name"
                           name="name"
-                          value={ user.name || formData.name}
+                          value={formData.name}
                           onChange={handleInputChange}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                           required

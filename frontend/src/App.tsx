@@ -189,14 +189,11 @@ const App = () => {
     setCurrentView('home');
   };
 
-  const filteredProducts = products.filter(product => {
-    const matchesSearch =
-      (product.title?.toLowerCase() ?? '').includes(searchTerm.toLowerCase()) ||
-      (product.description?.toLowerCase() ?? '').includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
-    const matchesCampus = selectedCampus === 'all' || product.sellerCampus === selectedCampus;
-    return matchesSearch && matchesCategory && matchesCampus;
-  });
+
+  useEffect(() => {
+  fetchProducts(1);
+}, [selectedCategory, selectedCampus, searchTerm]);
+
 
 
  const handleLoginSuccess = (user: User) => {
@@ -468,7 +465,7 @@ const App = () => {
 
         {/* Products Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProducts.map(product => (
+          {products.map(product => (
             <div key={product.id} className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
               {/*<div className="h-48 bg-gray-200 flex items-center justify-center">
                 <Tag className="h-12 w-12 text-gray-400" />
@@ -535,7 +532,7 @@ const App = () => {
           </div>
         )}
 
-        {filteredProducts.length === 0 && (
+        {products.length === 0 && (
           <div className="text-center py-20">
             <ShoppingBag className="h-16 w-16 text-gray-300 mx-auto mb-4" />
             <p className="text-xl text-gray-500">No products found matching your search.</p>

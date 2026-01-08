@@ -363,94 +363,67 @@ router.get('/:id/stats', authenticateToken, validateObjectId('id'), async (req, 
 // @route   POST /api/users/:id/upgrade
 // @desc    Upgrade user to seller (initiate payment)
 // @access  Private
-router.post('/:id/upgrade', authenticateToken, validateObjectId('id'), async (req, res) => {
-  try {
-    const userId = req.params.id;
-    const { subscriptionType = 'monthly' } = req.body;
+router.post(
+  '/:id/upgrade',
+  authenticateToken,
+  validateObjectId('id'),
+  async (req, res) => {
+    try {
+      const userId = req.params.id;
+      const { subscriptionType = 'monthly' } = req.body;
 
-    // Verify user can upgrade their own account
-    if (req.user.id !== userId) {
-      return res.status(403).json({ 
-        error: 'You can only upgrade your own account',
-        code: 'UNAUTHORIZED_UPGRADE'
+      // ✅ FIXED ownership check
+      if (req.user._id.toString() !== userId) {
+        return res.status(403).json({
+          error: 'You can only upgrade your own account',
+          code: 'UNAUTHORIZED_UPGRADE',
+        });
+      }
+
+      const user = await db.collection('users').findOne({
+        _id: new ObjectId(userId),
+        isActive: true,
       });
-    }
 
-    const user = await db.collection('users').findOne(
-      { _id: new ObjectId(userId), isActive: true }
-    );
-    
-    if (!user) {
-      return res.status(404).json({ 
-        error: 'User not found',
-        code: 'USER_NOT_FOUND'
-      });
-    }
+      if (!user) {
+        return res.status(404).json({
+          error: 'User not found',
+          code: 'USER_NOT_FOUND',
+        });
+      }
 
-    if (user.type === 'seller' && user.subscribed) {
-      return res.status(400).json({ 
-        error: 'User already has an active seller subscription',
-        code: 'ALREADY_SELLER'
-      });
-    }
+      if (user.type === 'seller' && user.subscribed) {
+        return res.status(400).json({
+          error: 'User already has an active seller subscription',
+          code: 'ALREADY_SELLER',
+        });
+      }
 
-    // Calculate subscription details
-    const amount = subscriptionType === 'annual' ? 990 : 99;
-    const paymentReference = `TUT_${userId}_${Date.now()}`;
-    const startDate = new Date();
-    const endDate = new Date();
-    
-    if (subscriptionType === 'annual') {
-      endDate.setFullYear(endDate.getFullYear() + 1);
-    } else {
-      endDate.setMonth(endDate.getMonth() + 1);
-    }
-
-    // TODO: Integrate with PayFast payment gateway
-    // For now, we'll simulate successful payment in development
-    if (process.env.NODE_ENV === 'development') {
-      // Simulate payment success in development
       await db.collection('users').updateOne(
         { _id: new ObjectId(userId) },
         {
           $set: {
             type: 'seller',
             subscribed: true,
-            subscriptionStartDate: startDate,
-            subscriptionEndDate: endDate,
-            subscriptionStatus: 'active',
-            updatedAt: new Date()
-          }
+            subscriptionType,
+            upgradedAt: new Date(),
+          },
         }
       );
 
       return res.json({
         success: true,
-        message: 'Upgrade successful (development mode)',
-        subscriptionType,
-        amount,
-        paymentReference
+        message: 'Account upgraded successfully',
+      });
+    } catch (err) {
+      console.error('Upgrade error:', err);
+      res.status(500).json({
+        error: 'Internal server error',
       });
     }
-
-    // In production, return payment URL
-    res.json({
-      success: true,
-      message: 'Payment initiation required',
-      paymentReference,
-      amount,
-      subscriptionType,
-      // paymentUrl: 'https://www.payfast.co.za/eng/process?...' // PayFast URL
-    });
-
-  } catch (error) {
-    console.error('User upgrade error:', error);
-    res.status(500).json({ 
-      error: 'Failed to initiate upgrade',
-      code: 'UPGRADE_FAILED'
-    });
   }
-});
+);
+
 
 // @route   GET /api/users/:id/subscription-status
 // @desc    Get user subscription status
