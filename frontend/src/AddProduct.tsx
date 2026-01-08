@@ -139,7 +139,7 @@ const handleAddProduct = async () => {
     console.log('📤 Sending FormData to backend...');
 
     // Send FormData to backend
-    const response = await fetch('http://localhost:5001/api/products', {
+    const response = await fetch(`${API_BASE}/products`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
