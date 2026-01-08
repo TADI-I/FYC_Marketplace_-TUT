@@ -1,11 +1,10 @@
-// server.js - Fixed version with proper db injection
+// server.js - Fixed GridFS Implementation
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId, GridFSBucket } = require('mongodb');
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -14,40 +13,6 @@ const PORT = process.env.PORT || 5001;
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const uploadDir = 'uploads/';
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-const upload = multer({ 
-  storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif|webp/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
-    
-    if (mimetype && extname) {
-      return cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed'));
-    }
-  }
-});
-
-// Serve static files from uploads directory
-app.use('/uploads', express.static('uploads'));
 
 // MongoDB connection
 const uri = process.env.MONGODB_URI || "mongodb+srv://tadiwasongore_db_user:BigdaddyT@sales.o3ww0ii.mongodb.net/tut_marketplace?retryWrites=true&w=majority&appName=sales";
@@ -60,13 +25,21 @@ const client = new MongoClient(uri, {
 });
 
 let db;
+let gridfsBucket;
+let upload; // We'll initialize this after DB connection
 
-// Connect to MongoDB
+// Connect to MongoDB with GridFS
 async function connectToMongoDB() {
   try {
     await client.connect();
     db = client.db('tut_marketplace');
-    console.log("✅ Successfully connected to MongoDB!");
+    
+    // Initialize GridFS Bucket
+    gridfsBucket = new GridFSBucket(db, {
+      bucketName: 'images'
+    });
+    
+    console.log("✅ Successfully connected to MongoDB with GridFS!");
     
     // Create indexes for better performance
     try {
@@ -74,6 +47,7 @@ async function connectToMongoDB() {
       await db.collection('products').createIndex({ sellerId: 1 });
       await db.collection('products').createIndex({ category: 1 });
       await db.collection('products').createIndex({ sellerCampus: 1 });
+      await db.collection('images.files').createIndex({ filename: 1 });
       console.log("✅ Database indexes created successfully");
     } catch (indexError) {
       console.log("📝 Indexes already exist or error creating indexes:", indexError.message);
@@ -86,13 +60,60 @@ async function connectToMongoDB() {
   }
 }
 
+// Configure multer storage with GridFS (after DB connection)
+function initializeGridFSStorage() {
+  const storage = multer.memoryStorage(); // Use memory storage temporarily
+  
+  upload = multer({ 
+    storage: storage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    fileFilter: (req, file, cb) => {
+      const allowedTypes = /jpeg|jpg|png|gif|webp/;
+      const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+      const mimetype = allowedTypes.test(file.mimetype);
+      
+      if (mimetype && extname) {
+        return cb(null, true);
+      } else {
+        cb(new Error('Only image files are allowed (JPEG, PNG, GIF, WebP)'));
+      }
+    }
+  });
+  
+  console.log("✅ Multer upload configured");
+}
+
+// Helper function to upload buffer to GridFS
+async function uploadToGridFS(buffer, filename, mimetype, metadata = {}) {
+  return new Promise((resolve, reject) => {
+    const uploadStream = gridfsBucket.openUploadStream(filename, {
+      contentType: mimetype,
+      metadata: metadata
+    });
+    
+    uploadStream.on('error', reject);
+    uploadStream.on('finish', () => {
+      // The file ID is available on the uploadStream itself
+      resolve({
+        id: uploadStream.id,
+        filename: filename,
+        contentType: mimetype,
+        uploadDate: new Date()
+      });
+    });
+    
+    uploadStream.end(buffer);
+  });
+}
+
 // Database middleware - inject db into all requests
 app.use((req, res, next) => {
   req.db = db;
+  req.gridfsBucket = gridfsBucket;
   next();
 });
 
-// Import controllers
+// Import controllers and middleware
 const authController = require('./controllers/authController');
 const productController = require('./controllers/productController');
 const userController = require('./controllers/userController');
@@ -100,7 +121,6 @@ const messageController = require('./controllers/messageController');
 const referenceController = require('./controllers/referenceController');
 const healthController = require('./controllers/healthController');
 
-// Import middleware
 const { 
   authenticateToken, 
   requireActiveSubscription,
@@ -141,84 +161,343 @@ app.get('/api/products', (req, res) => productController.getProducts(req, res, r
 app.get('/api/products/:id', validateObjectId('id'), (req, res) => productController.getProductById(req, res, req.db));
 app.get('/api/products/seller/:sellerId', validateObjectId('sellerId'), (req, res) => productController.getProductsBySeller(req, res, req.db));
 
-// ⚠️ REMOVE THIS DUPLICATE ROUTE LINE (LINE 113):
-// app.post('/api/products', authenticateToken, withSubscriptionCheck, (req, res) => productController.createProduct(req, res, req.db));
-
-// ⚠️ KEEP ONLY THIS ONE WITH MULTER UPLOAD:
-app.post('/api/products', authenticateToken, withSubscriptionCheck, upload.single('image'), async (req, res) => {
-  try {
-    console.log('➕ Creating product with FormData:', req.body);
-    console.log('📁 File received:', req.file);
-    
-    const { title, description, price, category, type, sellerName, sellerCampus } = req.body;
-
-    // Validation
-    if (!title || !description || !price || !category) {
-      // Clean up uploaded file if validation fails
-      if (req.file) {
-        fs.unlinkSync(req.file.path);
-      }
+// POST route with GridFS - using upload middleware
+app.post('/api/products', authenticateToken, withSubscriptionCheck, (req, res, next) => {
+  upload.single('image')(req, res, async (err) => {
+    if (err) {
+      console.error('❌ Multer error:', err);
       return res.status(400).json({ 
-        error: 'All fields are required',
+        error: err.message,
+        success: false
+      });
+    }
+    
+    try {
+      console.log('➕ Creating product with GridFS image');
+      console.log('📁 File info:', req.file);
+      
+      const { title, description, price, category, type } = req.body;
+
+      // Validation
+      if (!title || !description || !price || !category) {
+        return res.status(400).json({ 
+          error: 'All fields are required',
+          success: false
+        });
+      }
+
+      // Upload image to GridFS if provided
+      let imageInfo = null;
+      if (req.file) {
+        const filename = `${Date.now()}-${Math.round(Math.random() * 1E9)}${path.extname(req.file.originalname)}`;
+        
+        imageInfo = await uploadToGridFS(
+          req.file.buffer,
+          filename,
+          req.file.mimetype,
+          {
+            userId: req.user.id,
+            originalName: req.file.originalname,
+            uploadDate: new Date()
+          }
+        );
+        
+        console.log('🖼️ Image stored in GridFS:', imageInfo);
+      }
+
+      // Create product object with GridFS reference
+      const product = {
+        title: title.trim(),
+        description: description.trim(),
+        price: parseFloat(price),
+        category,
+        type: type || 'product',
+        sellerId: new ObjectId(req.user.id),
+        sellerName: req.userProfile.name,
+        sellerCampus: req.userProfile.campus,
+        image: imageInfo,
+        rating: 0,
+        reviews: [],
+        status: 'active',
+        views: 0,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      console.log('💾 Inserting product:', product);
+
+      const result = await db.collection('products').insertOne(product);
+      console.log('✅ Product insertion result:', result.insertedId);
+      
+      const createdProduct = { 
+        ...product, 
+        _id: result.insertedId,
+        imageUrl: imageInfo ? `/api/images/${imageInfo.id}` : null
+      };
+
+      res.status(201).json({
+        success: true,
+        message: 'Product created successfully',
+        productId: result.insertedId,
+        product: createdProduct
+      });
+
+    } catch (error) {
+      console.error('❌ Create product error:', error);
+      // Clean up uploaded file on error
+      if (req.file && imageInfo && imageInfo.id) {
+        try {
+          await req.gridfsBucket.delete(new ObjectId(imageInfo.id));
+        } catch (deleteError) {
+          console.error('Failed to delete image on error:', deleteError);
+        }
+      }
+      res.status(500).json({ 
+        error: 'Failed to create product: ' + error.message,
+        success: false
+      });
+    }
+  });
+});
+
+// PUT route with GridFS
+app.put('/api/products/:id', authenticateToken, validateObjectId('id'), withOwnershipCheck('product'), (req, res, next) => {
+  upload.single('image')(req, res, async (err) => {
+    if (err) {
+      console.error('❌ Multer error:', err);
+      return res.status(400).json({ 
+        error: err.message,
+        success: false
+      });
+    }
+    
+    try {
+      const productId = req.params.id;
+      console.log('✏️ Updating product:', productId);
+      
+      const existingProduct = await db.collection('products').findOne({ 
+        _id: new ObjectId(productId) 
+      });
+
+      if (!existingProduct) {
+        return res.status(404).json({ 
+          error: 'Product not found',
+          success: false
+        });
+      }
+
+      if (existingProduct.sellerId.toString() !== req.user.id) {
+        return res.status(403).json({ 
+          error: 'You can only update your own products',
+          success: false
+        });
+      }
+
+      const { title, description, price, category, type, status, removeImage } = req.body;
+
+      const updateData = { updatedAt: new Date() };
+      
+      if (title) updateData.title = title.trim();
+      if (description) updateData.description = description.trim();
+      if (price) updateData.price = parseFloat(price);
+      if (category) updateData.category = category;
+      if (type) updateData.type = type;
+      if (status) updateData.status = status;
+
+      // Handle image update
+      if (req.file) {
+        const filename = `${Date.now()}-${Math.round(Math.random() * 1E9)}${path.extname(req.file.originalname)}`;
+        
+        const imageInfo = await uploadToGridFS(
+          req.file.buffer,
+          filename,
+          req.file.mimetype,
+          {
+            userId: req.user.id,
+            originalName: req.file.originalname,
+            uploadDate: new Date()
+          }
+        );
+        
+        updateData.image = imageInfo;
+        
+        // Delete old image from GridFS if it exists
+        if (existingProduct.image && existingProduct.image.id) {
+          try {
+            await req.gridfsBucket.delete(new ObjectId(existingProduct.image.id));
+          } catch (deleteError) {
+            console.error('Failed to delete old image:', deleteError);
+          }
+        }
+      } else if (removeImage === 'true' && existingProduct.image) {
+        updateData.image = null;
+        
+        // Delete old image from GridFS
+        if (existingProduct.image.id) {
+          try {
+            await req.gridfsBucket.delete(new ObjectId(existingProduct.image.id));
+          } catch (deleteError) {
+            console.error('Failed to delete image:', deleteError);
+          }
+        }
+      }
+
+      const result = await db.collection('products').updateOne(
+        { _id: new ObjectId(productId) },
+        { $set: updateData }
+      );
+
+      console.log('✅ Product updated');
+
+      res.json({
+        success: true,
+        message: 'Product updated successfully',
+        imageUrl: updateData.image ? `/api/images/${updateData.image.id}` : null
+      });
+
+    } catch (error) {
+      console.error('❌ Update product error:', error);
+      res.status(500).json({ 
+        error: 'Failed to update product: ' + error.message,
+        success: false
+      });
+    }
+  });
+});
+
+// DELETE route
+app.delete('/api/products/:id', authenticateToken, validateObjectId('id'), withOwnershipCheck('product'), async (req, res) => {
+  try {
+    const productId = req.params.id;
+    console.log('🗑️ Deleting product:', productId);
+
+    const existingProduct = await db.collection('products').findOne({ 
+      _id: new ObjectId(productId) 
+    });
+
+    if (!existingProduct) {
+      return res.status(404).json({ 
+        error: 'Product not found',
         success: false
       });
     }
 
-    // Handle image URL
-    let imageUrl = null;
-    if (req.file) {
-      imageUrl = `/uploads/${req.file.filename}`;
+    // Delete associated image from GridFS
+    if (existingProduct.image && existingProduct.image.id) {
+      try {
+        await req.gridfsBucket.delete(new ObjectId(existingProduct.image.id));
+        console.log('🗑️ Deleted associated image from GridFS');
+      } catch (deleteError) {
+        console.error('Failed to delete image:', deleteError);
+      }
     }
 
-    // Create product object
-    const product = {
-      title: title.trim(),
-      description: description.trim(),
-      price: parseFloat(price),
-      category,
-      type: type || 'product',
-      sellerId: new ObjectId(req.user.id),
-      sellerName: sellerName || req.user.name,
-      sellerCampus: sellerCampus || req.user.campus,
-      image: imageUrl,
-      rating: 0,
-      reviews: [],
-      images: imageUrl ? [imageUrl] : [],
-      status: 'active',
-      views: 0,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
+    const result = await db.collection('products').deleteOne({ 
+      _id: new ObjectId(productId) 
+    });
 
-    console.log('💾 Inserting product:', product);
+    console.log('✅ Product deleted');
 
-    const result = await db.collection('products').insertOne(product);
-    console.log('✅ Product insertion result:', result.insertedId);
-    
-    const createdProduct = { ...product, _id: result.insertedId };
-
-    res.status(201).json({
+    res.json({
       success: true,
-      message: 'Product created successfully',
-      productId: result.insertedId,
-      product: createdProduct
+      message: 'Product deleted successfully'
     });
 
   } catch (error) {
-    console.error('❌ Create product error:', error);
-    // Clean up uploaded file on error
-    if (req.file) {
-      fs.unlinkSync(req.file.path);
-    }
+    console.error('❌ Delete product error:', error);
     res.status(500).json({ 
-      error: 'Failed to create product: ' + error.message,
+      error: 'Failed to delete product: ' + error.message,
       success: false
     });
   }
 });
 
-app.put('/api/products/:id', authenticateToken, validateObjectId('id'), withOwnershipCheck('product'), (req, res) => productController.updateProduct(req, res, req.db));
-app.delete('/api/products/:id', authenticateToken, validateObjectId('id'), withOwnershipCheck('product'), (req, res) => productController.deleteProduct(req, res, req.db));
+// Image retrieval endpoints
+app.get('/api/images/:id', async (req, res) => {
+  try {
+    const fileId = req.params.id;
+    console.log('🖼️ Fetching image:', fileId);
+    
+    if (!ObjectId.isValid(fileId)) {
+      return res.status(400).json({ 
+        error: 'Invalid image ID',
+        success: false
+      });
+    }
+
+    const files = await db.collection('images.files').find({ 
+      _id: new ObjectId(fileId) 
+    }).toArray();
+    
+    if (!files || files.length === 0) {
+      return res.status(404).json({ 
+        error: 'Image not found',
+        success: false
+      });
+    }
+
+    const file = files[0];
+    
+    res.set('Content-Type', file.contentType);
+    res.set('Cache-Control', 'public, max-age=31536000');
+    
+    const downloadStream = req.gridfsBucket.openDownloadStream(new ObjectId(fileId));
+    
+    downloadStream.pipe(res);
+    
+    downloadStream.on('error', (error) => {
+      console.error('GridFS stream error:', error);
+      if (!res.headersSent) {
+        res.status(500).json({ 
+          error: 'Error streaming image',
+          success: false
+        });
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Get image error:', error);
+    res.status(500).json({ 
+      error: 'Failed to retrieve image',
+      success: false
+    });
+  }
+});
+
+// Get image by product ID
+app.get('/api/products/:id/image', async (req, res) => {
+  try {
+    const productId = req.params.id;
+    
+    if (!ObjectId.isValid(productId)) {
+      return res.status(400).json({ 
+        error: 'Invalid product ID',
+        success: false
+      });
+    }
+
+    const product = await db.collection('products').findOne(
+      { _id: new ObjectId(productId) },
+      { projection: { image: 1 } }
+    );
+
+    if (!product || !product.image) {
+      return res.status(404).json({ 
+        error: 'Image not found',
+        success: false
+      });
+    }
+
+    res.redirect(`/api/images/${product.image.id}`);
+
+  } catch (error) {
+    console.error('❌ Get product image error:', error);
+    res.status(500).json({ 
+      error: 'Failed to retrieve product image',
+      success: false
+    });
+  }
+});
 
 // Message routes
 app.get('/api/messages/:conversationId', authenticateToken, (req, res) => messageController.getMessages(req, res, req.db));
@@ -228,27 +507,7 @@ app.post('/api/messages', authenticateToken, (req, res) => messageController.sen
 app.get('/api/campuses', referenceController.getCampuses);
 app.get('/api/categories', referenceController.getCategories);
 
-// Debug route for user update
-app.put('/api/users/:id', (req, res) => {
-  console.log('🎯 PUT /api/users/:id route HIT!');
-  console.log('Request details:', {
-    method: req.method,
-    url: req.url,
-    originalUrl: req.originalUrl,
-    baseUrl: req.baseUrl,
-    path: req.path,
-    params: req.params,
-    body: req.body
-  });
-  
-  res.json({ 
-    success: true, 
-    message: 'Debug route reached',
-    userId: req.params.id 
-  });
-});
-
-// Error handling middleware
+// Error handling
 app.use((err, req, res, next) => {
   console.error('🚨 Server error:', err.stack);
   res.status(500).json({ 
@@ -257,7 +516,6 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 404 handler
 app.use('*', (req, res) => {
   console.log('🚫 404 Route not found:', req.originalUrl);
   res.status(404).json({ 
@@ -269,23 +527,15 @@ app.use('*', (req, res) => {
 // Start server
 const startServer = async () => {
   await connectToMongoDB();
+  initializeGridFSStorage(); // Initialize multer AFTER DB connection
   
   app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`🔗 Health check: http://localhost:${PORT}/api/health`);
     console.log(`🔗 Test DB: http://localhost:${PORT}/api/test-db`);
     console.log(`📊 Database: ${db ? '✅ Connected' : '❌ Disconnected'}`);
-    
-    // Create uploads directory if it doesn't exist
-    const uploadsDir = path.join(__dirname, 'uploads');
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
-      console.log('📁 Created uploads directory:', uploadsDir);
-    }
-    
-    console.log(`📷 Image uploads will be stored in: ${uploadsDir}`);
-    console.log(`🔗 Products route: http://localhost:${PORT}/api/products`);
-    console.log(`🔗 Image access: http://localhost:${PORT}/uploads/filename.jpg`);
+    console.log(`🖼️ GridFS: ${gridfsBucket ? '✅ Ready' : '❌ Not ready'}`);
+    console.log(`🔗 Image URL example: http://localhost:${PORT}/api/images/{imageId}`);
   });
 };
 

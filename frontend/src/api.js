@@ -1,5 +1,4 @@
-
-const API_BASE = process.env.REACT_APP_API_BASE;
+const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001';
 
 // API Helper function
 const apiCall = async (endpoint, options = {}) => {
@@ -14,15 +13,15 @@ const apiCall = async (endpoint, options = {}) => {
     ...options,
   };
 
-  // Add body if it exists (for POST, PUT requests)
   if (options.body) {
     config.body = options.body;
   }
 
   try {
-    const response = await fetch(`${API_BASE}${endpoint}`, config);
+    // Ensure endpoint starts with /api
+    const fullEndpoint = endpoint.startsWith('/api') ? endpoint : `/api${endpoint}`;
+    const response = await fetch(`${API_BASE}${fullEndpoint}`, config);
     
-    // Handle cases where response might not be JSON
     let data;
     const contentType = response.headers.get('content-type');
     if (contentType && contentType.includes('application/json')) {
@@ -42,29 +41,29 @@ const apiCall = async (endpoint, options = {}) => {
   }
 };
 
+// Helper to add imageUrl to products
+const addImageUrl = (product) => {
+  if (!product) return product;
+  
+  return {
+    ...product,
+    imageUrl: product.image?.id 
+      ? `${API_BASE}/api/images/${product.image.id}`
+      : product.imageUrl || null
+  };
+};
+
 // ==============================================
 // AUTH API FUNCTIONS
 // ==============================================
 
-/**
- * Register a new user
- * @param {Object} userData - User registration data
- * @param {string} userData.name - Full name
- * @param {string} userData.email - TUT email address
- * @param {string} userData.password - Password
- * @param {string} userData.userType - 'customer' or 'seller'
- * @param {string} userData.campus - Campus ID
- */
 export const registerUser = async (userData) => {
   try {
-    
-    const response = await apiCall('/auth/register', {
+    const response = await apiCall('/api/auth/register', {
       method: 'POST',
       body: JSON.stringify(userData),
     });
 
-    
-    // Store token in localStorage
     if (response.token) {
       localStorage.setItem('auth_token', response.token);
       localStorage.setItem('user_data', JSON.stringify(response.user));
@@ -77,21 +76,13 @@ export const registerUser = async (userData) => {
   }
 };
 
-/**
- * Login user
- * @param {Object} credentials - Login credentials
- * @param {string} credentials.email - TUT email address
- * @param {string} credentials.password - Password
- */
 export const loginUser = async (credentials) => {
   try {
-
-    const response = await apiCall('/auth/login', {
+    const response = await apiCall('/api/auth/login', {
       method: 'POST',
       body: JSON.stringify(credentials),
     });
     
-    // Store token and user data in localStorage
     if (response.token) {
       localStorage.setItem('auth_token', response.token);
       localStorage.setItem('user_data', JSON.stringify(response.user));
@@ -104,17 +95,11 @@ export const loginUser = async (credentials) => {
   }
 };
 
-/**
- * Logout user (clear local storage)
- */
 export const logoutUser = () => {
   localStorage.removeItem('auth_token');
   localStorage.removeItem('user_data');
 };
 
-/**
- * Get current user from localStorage
- */
 export const getCurrentUser = () => {
   try {
     const userData = localStorage.getItem('user_data');
@@ -125,9 +110,6 @@ export const getCurrentUser = () => {
   }
 };
 
-/**
- * Check if user is authenticated
- */
 export const isAuthenticated = () => {
   const token = localStorage.getItem('auth_token');
   const user = getCurrentUser();
@@ -138,15 +120,6 @@ export const isAuthenticated = () => {
 // PRODUCT API FUNCTIONS
 // ==============================================
 
-/**
- * Get all products with filters
- * @param {Object} filters - Filter options
- * @param {string} filters.category - Category filter
- * @param {string} filters.campus - Campus filter
- * @param {string} filters.search - Search term
- * @param {number} filters.page - Page number
- * @param {number} filters.limit - Items per page
- */
 export const getProducts = async (filters = {}) => {
   try {
     const queryParams = new URLSearchParams();
@@ -158,9 +131,14 @@ export const getProducts = async (filters = {}) => {
     });
 
     const queryString = queryParams.toString();
-    const endpoint = `/products${queryString ? `?${queryString}` : ''}`;
+    const endpoint = `/api/products${queryString ? `?${queryString}` : ''}`;
         
     const response = await apiCall(endpoint);
+    
+    // Add imageUrl to all products
+    if (response.products && Array.isArray(response.products)) {
+      response.products = response.products.map(addImageUrl);
+    }
         
     return response;
   } catch (error) {
@@ -169,47 +147,34 @@ export const getProducts = async (filters = {}) => {
   }
 };
 
-/**
- * Get single product by ID
- * @param {string} productId - Product ID
- */
 export const getProduct = async (productId) => {
   try {   
-    const response = await apiCall(`/products/${productId}`);
-        
-    return response;
+    const response = await apiCall(`/api/products/${productId}`);
+    return addImageUrl(response);
   } catch (error) {
     console.error('❌ Failed to get product:', error);
     throw new Error(error.message || 'Failed to retrieve product');
   }
 };
 
-/**
- * Get products by seller ID
- * @param {string} sellerId - Seller user ID
- */
 export const getProductsBySeller = async (sellerId) => {
   try {
-   
-    const response = await apiCall(`/products/seller/${sellerId}`);
-  
-    return response.products || [];
+    const response = await apiCall(`/api/products/seller/${sellerId}`);
+    const products = response.products || [];
+    return products.map(addImageUrl);
   } catch (error) {
     console.error('❌ Failed to get seller products:', error);
     
-    // Fallback: filter from all products if specific endpoint fails
     try {
       const allProductsResponse = await getProducts();
-      
       const allProducts = allProductsResponse.products || allProductsResponse || [];
-      // Fix: Compare with both _id and sellerId since your data might use different field names
       const sellerProducts = allProducts.filter(p => 
         p.sellerId === sellerId || 
         p.sellerId === parseInt(sellerId) ||
         p.seller?._id === sellerId ||
         p.sellerId === sellerId
       );
-            return sellerProducts;
+      return sellerProducts.map(addImageUrl);
     } catch (fallbackError) {
       console.error('❌ Fallback also failed:', fallbackError);
       throw new Error(error.message || 'Failed to retrieve seller products');
@@ -217,43 +182,33 @@ export const getProductsBySeller = async (sellerId) => {
   }
 };
 
-/**
- * Create a new product (requires seller subscription)
- * @param {Object} productData - Product data
- * @param {string} productData.title - Product title
- * @param {string} productData.description - Product description
- * @param {number} productData.price - Product price
- * @param {string} productData.category - Product category
- * @param {string} productData.type - 'product' or 'service'
- */
-// In api.js - update createProduct function
-// In api.js - Update createProduct function
-export const createProduct = async (productData, imageFile = null) => {
+export const createProduct = async (productData) => {
   try {
     console.log('➕ Creating product via FormData:', productData);
     
     const token = localStorage.getItem('auth_token');
     
-    // Create FormData
+    if (!token) {
+      throw new Error('Authentication token not found');
+    }
+
     const formData = new FormData();
     
-    // Append all product data
     Object.keys(productData).forEach(key => {
       if (key !== 'image' && productData[key] !== undefined) {
         formData.append(key, productData[key]);
       }
     });
     
-    // Append image file if provided
-    if (imageFile && imageFile instanceof File) {
-      formData.append('image', imageFile);
+    if (productData.image && productData.image instanceof File) {
+      formData.append('image', productData.image);
+      console.log('📁 Adding image file:', productData.image.name);
     }
 
-    const response = await fetch(`${API_BASE}/products`, {
+    const response = await fetch(`${API_BASE}/api/products`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
-        // Don't set Content-Type for FormData
       },
       body: formData,
     });
@@ -264,44 +219,34 @@ export const createProduct = async (productData, imageFile = null) => {
       throw new Error(data.error || data.message || `HTTP error! status: ${response.status}`);
     }
 
-    return data.product || data;
+    console.log('✅ Product created successfully:', data);
+    
+    // Return product with imageUrl
+    return addImageUrl(data.product || data);
   } catch (error) {
     console.error('❌ Failed to create product:', error);
     throw new Error(error.message || 'Failed to create product');
   }
 };
 
-/**
- * Update an existing product
- * @param {string} productId - Product ID
- * @param {Object} updateData - Data to update
- */
 export const updateProduct = async (productId, updateData) => {
   try {
-   
-    const response = await apiCall(`/products/${productId}`, {
+    const response = await apiCall(`/api/products/${productId}`, {
       method: 'PUT',
       body: JSON.stringify(updateData),
     });
-   
-    return response;
+    return addImageUrl(response);
   } catch (error) {
     console.error('❌ Failed to update product:', error);
     throw new Error(error.message || 'Failed to update product');
   }
 };
 
-/**
- * Delete a product
- * @param {string} productId - Product ID
- */
 export const deleteProduct = async (productId) => {
   try {
-
-    const response = await apiCall(`/products/${productId}`, {
+    const response = await apiCall(`/api/products/${productId}`, {
       method: 'DELETE',
     });
-   
     return response;
   } catch (error) {
     console.error('❌ Failed to delete product:', error);
@@ -310,60 +255,179 @@ export const deleteProduct = async (productId) => {
 };
 
 // ==============================================
-// MESSAGE API FUNCTIONS (Backend Version)
+// MESSAGE API FUNCTIONS
 // ==============================================
 
-/**
- * Get messages for a conversation
- * @param {string} conversationId - Conversation ID
- */
 export const getMessages = async (conversationId) => {
   try {
     console.log('💬 Getting messages for:', conversationId);
-    
-    const response = await apiCall(`/messages/${conversationId}`);
-    
+    const response = await apiCall(`/api/messages/${conversationId}`);
     console.log(`✅ Retrieved ${response.messages ? response.messages.length : 0} messages`);
-    
     return response.messages || [];
   } catch (error) {
     console.error('❌ Failed to get messages:', error);
-    // Fallback to mock data if API fails
     return getMockMessages(conversationId);
   }
 };
 
-/**
- * Send a message
- * @param {Object} messageData - Message data
- * @param {string} messageData.receiverId - Receiver user ID
- * @param {string} messageData.text - Message text
- * @param {string} messageData.conversationId - Conversation ID
- */
 export const sendMessage = async (messageData) => {
   try {
     console.log('📤 Sending message:', messageData);
-    
-    const response = await apiCall('/messages', {
+    const response = await apiCall('/api/messages', {
       method: 'POST',
       body: JSON.stringify(messageData),
     });
-
     console.log('✅ Message sent successfully');
-    
     return response;
   } catch (error) {
     console.error('❌ Failed to send message:', error);
-    // Fallback to mock function if API fails
     return sendMockMessage(messageData);
   }
 };
 
 // ==============================================
-// MOCK MESSAGE FUNCTIONS (Fallback)
+// USER API FUNCTIONS
 // ==============================================
 
-// Mock database for messages (fallback when backend is unavailable)
+export const getSubscriptionStatus = async () => {
+  try {    
+    const response = await apiCall('/api/user/subscription-status');
+    return response;
+  } catch (error) {
+    console.error('❌ Failed to get subscription status:', error);
+    return { subscribed: false, type: 'customer' };
+  }
+};
+
+export const updateUserProfile = async (userId, updateData) => {
+  try {
+    const token = localStorage.getItem('auth_token');
+    
+    if (!token) {
+      throw new Error('Authentication token not found. Please log in again.');
+    }
+
+    const response = await fetch(`${API_BASE}/api/users/${userId}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(updateData),
+    });
+
+    let data;
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      const text = await response.text();
+      throw new Error(`Server returned non-JSON response: ${text}`);
+    }
+
+    if (!response.ok) {
+      console.error('❌ API Error Response:', data);
+      throw new Error(data.error || `HTTP ${response.status}: Failed to update profile`);
+    }
+
+    return data.user || data;
+    
+  } catch (error) {
+    console.error('❌ Failed to update profile:', error);
+    
+    if (error.message.includes('Authentication token')) {
+      throw new Error('Your session has expired. Please log in again.');
+    } else if (error.message.includes('non-JSON')) {
+      throw new Error('Server error. Please try again later.');
+    }
+    
+    throw new Error(error.message || 'Failed to update profile');
+  }
+};
+
+export const upgradeUserToSeller = async (userId, subscriptionType = 'monthly') => {
+  try {
+    const response = await apiCall(`/api/users/${userId}/upgrade`, {
+      method: 'POST',
+      body: JSON.stringify({ subscriptionType }),
+    });
+    return response;
+  } catch (error) {
+    console.error('❌ Failed to upgrade account:', error);
+    throw new Error(error.message || 'Failed to upgrade account');
+  }
+};
+
+// ==============================================
+// REFERENCE DATA API FUNCTIONS
+// ==============================================
+
+export const getCampuses = async () => {
+  try {
+    const response = await apiCall('/api/campuses');
+    return response.campuses || [];
+  } catch (error) {
+    console.error('❌ Failed to get campuses:', error);
+    return [
+      { id: 'pretoria-main', name: 'Pretoria Main' },
+      { id: 'soshanguve-S', name: 'Soshanguve South' },
+      { id: 'soshanguve-N', name: 'Soshanguve North' },
+      { id: 'ga-rankuwa', name: 'Ga-Rankuwa' },
+      { id: 'pretoria-west', name: 'Pretoria West' },
+      { id: 'arts', name: 'Arts' },
+      { id: 'emalahleni', name: 'eMalahleni' },
+      { id: 'mbombela', name: 'Mbombela' },
+      { id: 'polokwane', name: 'Polokwane' }
+    ];
+  }
+};
+
+export const getCategories = async () => {
+  try {
+    const response = await apiCall('/api/categories');
+    return response.categories || [];
+  } catch (error) {
+    console.error('❌ Failed to get categories:', error);
+    return [
+      { id: 'books', name: 'Books' },
+      { id: 'electronics', name: 'Electronics' },
+      { id: 'services', name: 'Services' },
+      { id: 'clothing', name: 'Clothing' },
+      { id: 'food', name: 'Food' },
+      { id: 'transport', name: 'Transport' },
+      { id: 'accommodation', name: 'Accommodation' },
+      { id: 'other', name: 'Other' }
+    ];
+  }
+};
+
+// ==============================================
+// UTILITY FUNCTIONS
+// ==============================================
+
+export const testConnection = async () => {
+  try {
+    const response = await fetch(`${API_BASE}/api/health`);
+    const data = await response.json();
+    
+    if (data.success) {
+      return true;
+    } else {
+      console.error('❌ API connection failed');
+      return false;
+    }
+  } catch (error) {
+    console.error('❌ API connection error:', error);
+    return false;
+  }
+};
+
+export const generateConversationId = (userId1, userId2) => {
+  const ids = [userId1, userId2].sort();
+  return `${ids[0]}-${ids[1]}`;
+};
+
+// Mock message functions (fallback)
 let messagesDB = [
   {
     id: 1,
@@ -393,10 +457,8 @@ let messagesDB = [
 
 let nextMessageId = 4;
 
-// Simulate API delay
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-// Mock message functions
 const sendMockMessage = async (messageData) => {
   await delay(500);
 
@@ -428,7 +490,6 @@ const getMockMessages = async (conversationId) => {
   await delay(300);
 
   try {
-    // Parse user IDs from conversationId (format: "userId1-userId2")
     const [userId1, userId2] = conversationId.split('-').map(Number);
     
     const conversationMessages = messagesDB.filter(message =>
@@ -448,183 +509,6 @@ const getMockMessages = async (conversationId) => {
   }
 };
 
-// ==============================================
-// USER API FUNCTIONS
-// ==============================================
-
-/**
- * Get user subscription status
- */
-export const getSubscriptionStatus = async () => {
-  try {    
-    const response = await apiCall('/user/subscription-status');
-    
-    return response;
-  } catch (error) {
-    console.error('❌ Failed to get subscription status:', error);
-    // Return mock subscription status
-    return { subscribed: false, type: 'customer' };
-  }
-};
-
-
-// In api.js - Fix the updateUserProfile function
-export const updateUserProfile = async (userId, updateData) => {
-  try {
-    // Get the authentication token
-    const token = localStorage.getItem('auth_token');
-    
-    if (!token) {
-      throw new Error('Authentication token not found. Please log in again.');
-    }
-
-
-    
-    const response = await fetch(`${API_BASE}/users/${userId}`, {
-      method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(updateData),
-    });
-
-
-    
-    // Handle non-JSON responses
-    let data;
-    const contentType = response.headers.get('content-type');
-    if (contentType && contentType.includes('application/json')) {
-      data = await response.json();
-    } else {
-      const text = await response.text();
-      throw new Error(`Server returned non-JSON response: ${text}`);
-    }
-
-    if (!response.ok) {
-      console.error('❌ API Error Response:', data);
-      throw new Error(data.error || `HTTP ${response.status}: Failed to update profile`);
-    }
-
-
-    return data.user || data;
-    
-  } catch (error) {
-    console.error('❌ Failed to update profile:', error);
-    
-    // Provide more specific error messages
-    if (error.message.includes('Authentication token')) {
-      throw new Error('Your session has expired. Please log in again.');
-    } else if (error.message.includes('non-JSON')) {
-      throw new Error('Server error. Please try again later.');
-    }
-    
-    throw new Error(error.message || 'Failed to update profile');
-  }
-};
-/**
- * Upgrade user to seller
- */
-export const upgradeUserToSeller = async (userId, subscriptionType = 'monthly') => {
-  try {
-    const response = await apiCall(`/users/${userId}/upgrade`, {
-      method: 'POST',
-      body: JSON.stringify({ subscriptionType }),
-    });
-    return response;
-  } catch (error) {
-    console.error('❌ Failed to upgrade account:', error);
-    throw new Error(error.message || 'Failed to upgrade account');
-  }
-};
-
-// ==============================================
-// REFERENCE DATA API FUNCTIONS
-// ==============================================
-
-/**
- * Get all campuses
- */
-export const getCampuses = async () => {
-  try {
-    const response = await apiCall('/campuses');
-    return response.campuses || [];
-  } catch (error) {
-    console.error('❌ Failed to get campuses:', error);
-    // Return default campuses if API fails
-    return [
-      { id: 'pretoria-main', name: 'Pretoria Main' },
-      { id: 'soshanguve-S', name: 'Soshanguve South' },
-      { id: 'soshanguve-N', name: 'Soshanguve North' },
-      { id: 'ga-rankuwa', name: 'Ga-Rankuwa' },
-      { id: 'pretoria-west', name: 'Pretoria West' },
-      { id: 'arts', name: 'Arts' },
-      { id: 'emalahleni', name: 'eMalahleni' },
-      { id: 'mbombela', name: 'Mbombela' },
-      { id: 'polokwane', name: 'Polokwane' }
-    ];
-  }
-};
-
-/**
- * Get all categories
- */
-export const getCategories = async () => {
-  try {
-    const response = await apiCall('/categories');
-    return response.categories || [];
-  } catch (error) {
-    console.error('❌ Failed to get categories:', error);
-    // Return default categories if API fails
-    return [
-      { id: 'books', name: 'Books' },
-      { id: 'electronics', name: 'Electronics' },
-      { id: 'services', name: 'Services' },
-      { id: 'clothing', name: 'Clothing' },
-      { id: 'food', name: 'Food' },
-      { id: 'transport', name: 'Transport' },
-      { id: 'accommodation', name: 'Accommodation' },
-      { id: 'other', name: 'Other' }
-    ];
-  }
-};
-
-// ==============================================
-// UTILITY FUNCTIONS
-// ==============================================
-
-/**
- * Test API connection
- */
-export const testConnection = async () => {
-  try {
-    const response = await fetch(`${API_BASE}/health`);
-    const data = await response.json();
-    
-    if (data.success) {
-
-      return true;
-    } else {
-      console.error('❌ API connection failed');
-      return false;
-    }
-  } catch (error) {
-    console.error('❌ API connection error:', error);
-    return false;
-  }
-};
-
-/**
- * Generate conversation ID between two users
- * @param {string} userId1 - First user ID
- * @param {string} userId2 - Second user ID
- */
-export const generateConversationId = (userId1, userId2) => {
-  const ids = [userId1, userId2].sort();
-  return `${ids[0]}-${ids[1]}`;
-};
-
-// Additional messaging utility functions (for mock data)
 export const getConversations = async (userId) => {
   await delay(400);
 
@@ -677,8 +561,6 @@ export const markMessagesAsRead = async (userId, partnerId) => {
       }
       return message;
     });
-
-
   } catch (error) {
     console.error('❌ Failed to mark messages as read:', error);
     throw new Error('Failed to mark messages as read');
@@ -700,41 +582,28 @@ export const getUnreadMessageCount = async (userId) => {
   }
 };
 
-// Export all functions as default
 export default {
-  // Auth
   registerUser,
   loginUser,
   logoutUser,
   getCurrentUser,
   isAuthenticated,
-  
-  // Products
   getProducts,
   getProduct,
   createProduct,
   updateProduct,
   deleteProduct,
   getProductsBySeller,
-  
-  // Messages
   getMessages,
   sendMessage,
   getConversations,
   markMessagesAsRead,
   getUnreadMessageCount,
-  
-  // User
   getSubscriptionStatus,
-  //getUserProfile,
   updateUserProfile,
   upgradeUserToSeller,
-  
-  // Reference Data
   getCampuses,
   getCategories,
-  
-  // Utilities
   testConnection,
   generateConversationId
 };
