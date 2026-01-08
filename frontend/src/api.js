@@ -1,6 +1,7 @@
 // api.js - Complete API integration functions for React frontend
 
-const API_BASE = process.env.API_BASE 
+
+const API_BASE = process.env.REACT_APP_API_BASE;
 
 // API Helper function
 const apiCall = async (endpoint, options = {}) => {

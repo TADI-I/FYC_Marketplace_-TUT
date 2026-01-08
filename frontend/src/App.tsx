@@ -88,7 +88,7 @@ const App = () => {
         ...filters
       });
 
-      setProducts(response.products);
+      setProducts(Array.isArray(response.products) ? response.products : []);
       setCurrentPage(response.pagination.currentPage);
       setTotalPages(response.pagination.totalPages);
       setTotalProducts(response.pagination.totalProducts);
