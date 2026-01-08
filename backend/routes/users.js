@@ -433,7 +433,7 @@ router.get('/:id/subscription-status', authenticateToken, validateObjectId('id')
     const userId = req.params.id;
 
     // Users can only check their own subscription status unless admin
-    if (req.user.id !== userId && req.user.role !== 'admin') {
+    if (req.user._id.toString() !== userId && req.user.role !== 'admin') {
       return res.status(403).json({ 
         error: 'You can only check your own subscription status',
         code: 'UNAUTHORIZED_ACCESS'
