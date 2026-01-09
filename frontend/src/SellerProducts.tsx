@@ -439,6 +439,7 @@ const SellerProducts: React.FC<SellerProductsProps> = ({
                   <option value="services">Services</option>
                   <option value="clothing">Clothing</option>
                   <option value="food">Food</option>
+                  <option value="other">Other</option>
                 </select>
               </div>
               

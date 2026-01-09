@@ -124,7 +124,8 @@ const App = () => {
     { id: 'electronics', name: 'Electronics' },
     { id: 'services', name: 'Services' },
     { id: 'clothing', name: 'Clothing' },
-    { id: 'food', name: 'Food' }
+    { id: 'food', name: 'Food' },
+    { id: 'other', name: 'Other' }
   ];
 
   const campuses = [
