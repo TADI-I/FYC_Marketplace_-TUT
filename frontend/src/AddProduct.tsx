@@ -1,10 +1,9 @@
 import React, { useState } from "react";
 import { createProduct } from './api'; 
 
-const API_BASE = process.env.REACT_APP_API_BASE;
-
 type Product = {
   id: number;
+  _id?: string;
   title: string;
   description: string;
   price: number;
@@ -12,9 +11,10 @@ type Product = {
   sellerId: number;
   sellerName: string;
   sellerCampus: string;
-  image: string;
+  image: any; // Changed to handle GridFS reference
   rating: number;
   type: string;
+  imageUrl?: string; // Added for frontend display
 };
 
 type User = {
@@ -47,6 +47,8 @@ const categories: Category[] = [
 ];
 
 const AddProductForm: React.FC<AddProductFormProps> = ({ currentUser, onProductAdded, onCancel }) => {
+  const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001';
+  
   const [productData, setProductData] = useState({
     title: '', 
     description: '', 
@@ -93,88 +95,100 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ currentUser, onProductA
     setImagePreview('');
   };
 
-// In AddProductForm.js - Update handleAddProduct function
-const handleAddProduct = async () => {
-  if (!currentUser) {
-    setError('You must be logged in to add a product');
-    return;
-  }
-
-  if (!productData.title || !productData.description || !productData.price || !productData.category) {
-    setError('Please fill all required fields.');
-    return;
-  }
-
-  if (parseFloat(productData.price) <= 0) {
-    setError('Price must be greater than 0');
-    return;
-  }
-
-  setLoading(true);
-  setError('');
-
-  try {
-    // Create FormData for multipart form upload
-    const formData = new FormData();
-    
-    // Add product data fields
-    formData.append('title', productData.title);
-    formData.append('description', productData.description);
-    formData.append('price', productData.price);
-    formData.append('category', productData.category);
-    formData.append('type', productData.type);
-    formData.append('sellerName', currentUser.name);
-    formData.append('sellerCampus', currentUser.campus);
-    formData.append('rating', '0');
-    
-    // Add image file if selected
-    if (imageFile) {
-      formData.append('image', imageFile);
-      console.log('📁 Adding image file:', imageFile.name);
+  const handleAddProduct = async () => {
+    if (!currentUser) {
+      setError('You must be logged in to add a product');
+      return;
     }
 
-    // Get auth token
-    const token = localStorage.getItem('auth_token');
-    
-    console.log('📤 Sending FormData to backend...');
-
-    // Send FormData to backend
-    const response = await fetch(`${API_BASE}/products`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        // Don't set Content-Type here - let browser set it with boundary
-      },
-      body: formData,
-    });
-
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.error || 'Failed to create product');
+    if (!productData.title || !productData.description || !productData.price || !productData.category) {
+      setError('Please fill all required fields.');
+      return;
     }
 
-    console.log('✅ Product added successfully:', data);
-    
-    // Call the parent callback with the created product
-    onProductAdded(data.product || data);
-    
-    // Reset form
-    setProductData({ title: '', description: '', price: '', category: '', type: 'product' });
-    setImageFile(null);
-    setImagePreview('');
-    
-  } catch (error) {
-    console.error('❌ Failed to add product:', error);
-    const errorMessage = error instanceof Error 
-      ? error.message 
-      : 'Failed to add product. Please try again.';
-    setError(errorMessage);
-  } finally {
-    setLoading(false);
-  }
-};
+    if (parseFloat(productData.price) <= 0) {
+      setError('Price must be greater than 0');
+      return;
+    }
 
+    setLoading(true);
+    setError('');
+
+    try {
+      // Create FormData for multipart form upload
+      const formData = new FormData();
+      
+      // Add product data fields
+      formData.append('title', productData.title);
+      formData.append('description', productData.description);
+      formData.append('price', productData.price);
+      formData.append('category', productData.category);
+      formData.append('type', productData.type);
+      // Don't need to send sellerName/sellerCampus - backend gets from token
+      
+      // Add image file if selected
+      if (imageFile) {
+        formData.append('image', imageFile);
+        console.log('📁 Adding image file to GridFS:', {
+          name: imageFile.name,
+          type: imageFile.type,
+          size: imageFile.size
+        });
+      }
+
+      // Get auth token
+      const token = localStorage.getItem('auth_token');
+      
+      if (!token) {
+        throw new Error('Authentication token not found. Please log in again.');
+      }
+
+      console.log('📤 Sending FormData to GridFS backend...');
+
+      // Send FormData to backend
+      const response = await fetch(`${API_BASE}/api/products`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          // Don't set Content-Type for FormData - browser will set it
+        },
+        body: formData,
+      });
+
+      const data = await response.json();
+      console.log('📥 Backend response:', data);
+      
+      if (!response.ok) {
+        throw new Error(data.error || `HTTP ${response.status}: Failed to create product`);
+      }
+
+      console.log('✅ Product added successfully with GridFS image:', data);
+      
+      // Add imageUrl to product for frontend display
+      const productWithImageUrl = {
+        ...data.product,
+        imageUrl: data.product.imageUrl || 
+                 (data.product.image?.id ? `${API_BASE}/api/images/${data.product.image.id}` : null)
+      };
+      
+      // Call the parent callback with the created product
+      onProductAdded(productWithImageUrl);
+      
+      // Reset form
+      setProductData({ title: '', description: '', price: '', category: '', type: 'product' });
+      setImageFile(null);
+      setImagePreview('');
+      
+    } catch (error) {
+      console.error('❌ Failed to add product:', error);
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'Failed to add product. Please try again.';
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleInputChange = (field: string, value: string) => {
     setProductData(prev => ({ ...prev, [field]: value }));
@@ -184,12 +198,16 @@ const handleAddProduct = async () => {
     <div className="max-w-2xl mx-auto p-6">
       <h2 className="text-2xl font-bold mb-6">Add New Product/Service</h2>
       
-      {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">{error}</div>}
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          {error}
+        </div>
+      )}
       
       {/* Image Upload Section */}
       <div className="mb-6">
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Product Image
+          Product Image (Optional - will be stored in database)
         </label>
         <div className="flex items-center gap-4">
           <div className="flex-1">
@@ -201,24 +219,23 @@ const handleAddProduct = async () => {
               className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
             />
             <p className="text-xs text-gray-500 mt-1">
-              JPEG, PNG, WebP accepted. Max 5MB.
+              JPEG, PNG, WebP accepted. Max 5MB. Image will be stored securely in database.
             </p>
           </div>
           
           {imagePreview && (
             <div className="relative">
               <img 
-  src={imagePreview} 
-  alt="Preview" 
-  style={{
-    width: '7rem',           // Tailwind's w-8
-    height: '7rem',          // Tailwind's h-8
-    objectFit: 'cover',      // Tailwind's object-cover
-    borderRadius: '0.5rem',  // Tailwind's rounded
-    border: '1px solid #ccc' // Tailwind's border
-  }}
-/>
-
+                src={imagePreview} 
+                alt="Preview" 
+                style={{
+                  width: '7rem',
+                  height: '7rem',
+                  objectFit: 'cover',
+                  borderRadius: '0.5rem',
+                  border: '1px solid #ccc'
+                }}
+              />
               <button
                 type="button"
                 onClick={handleRemoveImage}
@@ -289,9 +306,16 @@ const handleAddProduct = async () => {
         <button 
           onClick={handleAddProduct} 
           disabled={loading}
-          className="bg-orange-600 text-white px-6 py-3 rounded hover:bg-orange-700 disabled:bg-orange-400 disabled:cursor-not-allowed"
+          className="bg-orange-600 text-white px-6 py-3 rounded hover:bg-orange-700 disabled:bg-orange-400 disabled:cursor-not-allowed flex items-center gap-2"
         >
-          {loading ? 'Adding...' : 'Add Listing'}
+          {loading ? (
+            <>
+              <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+              Adding...
+            </>
+          ) : (
+            'Add Listing'
+          )}
         </button>
         <button 
           onClick={onCancel} 
