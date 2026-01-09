@@ -561,36 +561,47 @@ const App = () => {
       )}
       {showUpgrade && <UpgradeModal />}
 
-      {maximizedImage && (
+{maximizedImage && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center z-50 p-4"
           onClick={() => setMaximizedImage(null)}
           style={{ cursor: 'pointer' }}
         >
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setMaximizedImage(null);
-            }}
-            className="absolute top-4 right-4 w-10 h-10 flex items-center justify-center text-white bg-red-600 hover:bg-red-700 rounded-full transition-all z-50 shadow-lg"
-            aria-label="Close"
-            style={{ cursor: 'pointer' }}
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-          <img
-            src={maximizedImage}
-            alt="Maximized view"
-            className="object-contain"
-            style={{ 
-              maxWidth: '90vw', 
-              maxHeight: '90vh',
-              cursor: 'default'
-            }}
-            onClick={(e) => e.stopPropagation()}
-          />
+          <div className="relative" style={{ maxWidth: '90vw', maxHeight: '90vh' }}>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setMaximizedImage(null);
+              }}
+              className="absolute flex items-center justify-center text-white rounded-full transition-all z-50"
+              aria-label="Close"
+              style={{ 
+                cursor: 'pointer',
+                top: '-20px',
+                right: '-20px',
+                width: '30px',
+                height: '30px',
+                backgroundColor: '#dc2626',
+                border: '3px solid white',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3)'
+              }}
+            >
+              <svg style={{ width: '40px', height: '40px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <img
+              src={maximizedImage}
+              alt="Maximized view"
+              className="object-contain"
+              style={{ 
+                maxWidth: '90vw', 
+                maxHeight: '90vh',
+                cursor: 'default'
+              }}
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
         </div>
       )}
     </div>
