@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { getSubscriptionStatus, updateUserProfile, upgradeUserToSeller,getCurrentUser } from './api'; 
-import { User, ArrowLeft, Mail, Building, CreditCard, Edit3, Save, X, Zap } from 'lucide-react';
+import { getSubscriptionStatus, updateUserProfile, upgradeUserToSeller, getCurrentUser } from './api'; 
+import { User, ArrowLeft, Mail, Building, CreditCard, Edit3, Save, X, Zap, AlertTriangle, Clock, CheckCircle } from 'lucide-react';
 
 type User = {
   id: number;
@@ -10,6 +10,8 @@ type User = {
   type: string;
   subscribed: boolean;
   campus: string;
+  subscriptionEndDate?: Date | string;
+  subscriptionStatus?: string;
 };
 
 interface UserProfileProps {
@@ -24,57 +26,46 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
   const [user, setUser] = useState<User | null>(null);  
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState({
-    name: user?.name ||'',
+    name: user?.name || '',
     email: '',
     campus: '',
-
   });
-  const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
+  const [subscriptionInfo, setSubscriptionInfo] = useState<any>(null);
   const [upgrading, setUpgrading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   
-  
+  useEffect(() => {
+    if (!currentUser) return;
+    setUser(currentUser);
+  }, [currentUser]);
 
-useEffect(() => {
-  if (!currentUser) return;
+  useEffect(() => {
+    if (!user) return;
+    fetchSubscriptionStatus();
+  }, [user]);
 
-  setUser(currentUser);
-}, [currentUser]);
-
-useEffect(() => {
-  if (!user) return;
-
-  fetchSubscriptionStatus();
-}, [user]);
-
-
-useEffect(() => {
-  if (!user) return;
-
-  setFormData({
-    name: user.name || '',
-    email: user.email || '',
-    campus: user.campus || '',
-  });
-}, [user]);
-
-
-
+  useEffect(() => {
+    if (!user) return;
+    setFormData({
+      name: user.name || '',
+      email: user.email || '',
+      campus: user.campus || '',
+    });
+  }, [user]);
 
   const fetchCurrentUser = async () => {
-  try {
-    const user = await getCurrentUser(); // now refers to the API version
-    console.log(user);
-    setUser(user);
-    return user;
-  } catch (error) {
-    console.error('Failed to fetch current user:', error);
-    return null;
-  }
-};
+    try {
+      const user = await getCurrentUser();
+      console.log(user);
+      setUser(user);
+      return user;
+    } catch (error) {
+      console.error('Failed to fetch current user:', error);
+      return null;
+    }
+  };
 
-
-    const campuses = [
+  const campuses = [
     { id: 'all', name: 'All Locations' },
     { id: 'pretoria-main', name: 'Pretoria Central' },
     { id: 'soshanguve-S', name: 'Soshanguve South' },
@@ -92,17 +83,75 @@ useEffect(() => {
 
     try {
       const status = await getSubscriptionStatus();
-      setSubscriptionStatus(status.type || 'customer');
+      setSubscriptionInfo(status);
     } catch (error) {
       console.error('Failed to fetch subscription status:', error);
-      setSubscriptionStatus('customer');
     }
+  };
+
+  const getSubscriptionDaysRemaining = () => {
+    if (!user?.subscriptionEndDate) return null;
+    
+    const endDate = new Date(user.subscriptionEndDate);
+    const today = new Date();
+    const diffTime = endDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    return diffDays;
+  };
+
+  const getSubscriptionAlert = () => {
+    if (user?.type !== 'seller') return null;
+    
+    const daysRemaining = getSubscriptionDaysRemaining();
+    const isExpired = user?.subscriptionStatus === 'expired' || (daysRemaining !== null && daysRemaining <= 0);
+    const isExpiringSoon = daysRemaining !== null && daysRemaining > 0 && daysRemaining <= 7;
+
+    if (isExpired) {
+      return {
+        type: 'error',
+        icon: AlertTriangle,
+        title: 'Subscription Expired',
+        message: 'Your seller subscription has expired. Renew now to continue selling.',
+        bgColor: 'bg-red-50',
+        borderColor: 'border-red-200',
+        textColor: 'text-red-800',
+        iconColor: 'text-red-600'
+      };
+    }
+
+    if (isExpiringSoon) {
+      return {
+        type: 'warning',
+        icon: Clock,
+        title: 'Subscription Expiring Soon',
+        message: `Your subscription expires in ${daysRemaining} day${daysRemaining !== 1 ? 's' : ''}. Renew soon to avoid interruption.`,
+        bgColor: 'bg-yellow-50',
+        borderColor: 'border-yellow-200',
+        textColor: 'text-yellow-800',
+        iconColor: 'text-yellow-600'
+      };
+    }
+
+    if (user?.subscribed && daysRemaining !== null && daysRemaining > 7) {
+      return {
+        type: 'success',
+        icon: CheckCircle,
+        title: 'Subscription Active',
+        message: `Your subscription is active for ${daysRemaining} more days.`,
+        bgColor: 'bg-green-50',
+        borderColor: 'border-green-200',
+        textColor: 'text-green-800',
+        iconColor: 'text-green-600'
+      };
+    }
+
+    return null;
   };
 
   const handleEditToggle = () => {
     setEditing(!editing);
     if (editing) {
-      // Reset form data when canceling edit
       setFormData({
         name: user?.name || '',
         email: user?.email || '',
@@ -121,82 +170,81 @@ useEffect(() => {
     }));
   };
 
-const handleProfileUpdate = async (e: React.FormEvent) => {
-  e.preventDefault();
-  if (!currentUser) return;
+  const handleProfileUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentUser) return;
 
-  // Use _id from MongoDB
-  const userId = currentUser._id;
-  
-  if (!userId) {
-    setError('User ID not found. Please log in again.');
-    return;
-  }
-
-  console.log('✅ Using user ID:', userId);
-
-  // Validation
-  if (!formData.email?.includes('@')) {
-    setError('Please enter a valid email address');
-    return;
-  }
-
-  if (!formData.name?.trim()) {
-    setError('Name is required');
-    return;
-  }
-
-  setLoading(true);
-  setError('');
-
-  try {
-    const updatedProfile = await updateUserProfile(userId, {
-      name: formData.name.trim(),
-      campus: formData.campus,
-      email: formData.email.toLowerCase().trim()
-    });
+    const userId = currentUser._id;
     
-    setUser(updatedProfile);
-    setEditing(false);
-    setSuccessMessage('Profile updated successfully!');
-    
-    setTimeout(() => setSuccessMessage(''), 3000);
-  } catch (error) {
-    console.error('Update error details:', error);
-    setError(error instanceof Error ? error.message : 'Failed to update profile');
-  } finally {
-    setLoading(false);
-  }
-};
+    if (!userId) {
+      setError('User ID not found. Please log in again.');
+      return;
+    }
 
+    if (!formData.email?.includes('@')) {
+      setError('Please enter a valid email address');
+      return;
+    }
 
+    if (!formData.name?.trim()) {
+      setError('Name is required');
+      return;
+    }
 
-const handleUpgradeToSeller = async () => {
-  if (!currentUser?._id) {
-    setError('User ID missing. Please log in again.');
-    return;
-  }
+    setLoading(true);
+    setError('');
 
-  setUpgrading(true);
-  setError('');
+    try {
+      const updatedProfile = await updateUserProfile(userId, {
+        name: formData.name.trim(),
+        campus: formData.campus,
+        email: formData.email.toLowerCase().trim()
+      });
+      
+      setUser(updatedProfile);
+      setEditing(false);
+      setSuccessMessage('Profile updated successfully!');
+      
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (error) {
+      console.error('Update error details:', error);
+      setError(error instanceof Error ? error.message : 'Failed to update profile');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  try {
-    await upgradeUserToSeller(currentUser._id);
+  const handleUpgradeToSeller = async () => {
+    if (!currentUser?._id) {
+      setError('User ID missing. Please log in again.');
+      return;
+    }
 
-    const updated = {
-      ...user!,
-      type: 'seller',
-      subscribed: true,
-    };
+    setUpgrading(true);
+    setError('');
 
-    setUser(updated);
-    setSuccessMessage('Account upgraded to seller successfully!');
-  } catch (err: any) {
-    setError(err.message || 'Upgrade failed');
-  } finally {
-    setUpgrading(false);
-  }
-};
+    try {
+      await upgradeUserToSeller(currentUser._id);
+
+      const updated = {
+        ...user!,
+        type: 'seller',
+        subscribed: true,
+      };
+
+      setUser(updated);
+      setSuccessMessage('Account upgraded to seller successfully!');
+      await fetchSubscriptionStatus();
+    } catch (err: any) {
+      setError(err.message || 'Upgrade failed');
+    } finally {
+      setUpgrading(false);
+    }
+  };
+
+  const handleRenewSubscription = async () => {
+    handleUpgradeToSeller();
+  };
 
   if (!currentUser) {
     return (
@@ -214,10 +262,11 @@ const handleUpgradeToSeller = async () => {
     );
   }
 
+  const subscriptionAlert = getSubscriptionAlert();
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Back Button */}
         <button 
           onClick={onBack}
           className="flex items-center space-x-2 text-blue-600 hover:text-blue-800 mb-6 transition-colors"
@@ -226,7 +275,6 @@ const handleUpgradeToSeller = async () => {
           <span className="font-medium">Back to Home</span>
         </button>
 
-        {/* Header */}
         <div className="bg-white rounded-xl shadow-sm border p-6 mb-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -241,7 +289,32 @@ const handleUpgradeToSeller = async () => {
           </div>
         </div>
 
-        {/* Messages */}
+        {/* Subscription Alert */}
+        {subscriptionAlert && (
+          <div className={`${subscriptionAlert.bgColor} border ${subscriptionAlert.borderColor} rounded-lg p-4 mb-6`}>
+            <div className="flex items-start">
+              <subscriptionAlert.icon className={`h-5 w-5 ${subscriptionAlert.iconColor} mr-3 mt-0.5 flex-shrink-0`} />
+              <div className="flex-1">
+                <h3 className={`font-semibold ${subscriptionAlert.textColor} mb-1`}>
+                  {subscriptionAlert.title}
+                </h3>
+                <p className={`text-sm ${subscriptionAlert.textColor}`}>
+                  {subscriptionAlert.message}
+                </p>
+                {(subscriptionAlert.type === 'error' || subscriptionAlert.type === 'warning') && (
+                  <button
+                    onClick={handleRenewSubscription}
+                    disabled={upgrading}
+                    className="mt-3 bg-white text-orange-600 border border-orange-600 px-4 py-2 rounded-lg hover:bg-orange-50 transition-colors text-sm font-medium disabled:opacity-50"
+                  >
+                    {upgrading ? 'Processing...' : 'Renew Subscription'}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
             <div className="flex items-center">
@@ -260,17 +333,14 @@ const handleUpgradeToSeller = async () => {
           </div>
         )}
 
-        {/* Loading State */}
         {loading && !user && (
           <div className="flex justify-center items-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
           </div>
         )}
 
-        {/* Profile Content */}
         {user && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Column - Account Info */}
             <div className="lg:col-span-2 space-y-6">
               <div className="bg-white rounded-xl shadow-sm border p-6">
                 <div className="flex items-center justify-between mb-6">
@@ -323,21 +393,20 @@ const handleUpgradeToSeller = async () => {
                           Location
                         </label>
                         <select
-                            id="campus"
-                            name="campus"
-                            value={ formData.campus}
-                            onChange={handleInputChange}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            required
-                            >
-                            <option value="">{campuses[0].name}</option>
-                            {campuses.map((campus) => (
-                                <option key={campus.id} value={campus.id}>
-                                {campus.name}
-                                </option>
-                            ))}
-                            </select>
-
+                          id="campus"
+                          name="campus"
+                          value={formData.campus}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          required
+                        >
+                          <option value="">{campuses[0].name}</option>
+                          {campuses.map((campus) => (
+                            <option key={campus.id} value={campus.id}>
+                              {campus.name}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                     </div>
 
@@ -394,24 +463,21 @@ const handleUpgradeToSeller = async () => {
                         </div>
                       </div>
                     </div>
-
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Right Column - Actions & Status */}
             <div className="space-y-6">
-              {/* Account Status */}
               <div className="bg-white rounded-xl shadow-sm border p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Status</h3>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Subscription</span>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      user.subscribed ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                      user.subscribed && user.subscriptionStatus !== 'expired' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                     }`}>
-                      {user.subscribed ? 'Active' : 'Inactive'}
+                      {user.subscribed && user.subscriptionStatus !== 'expired' ? 'Active' : 'Inactive'}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
@@ -422,10 +488,21 @@ const handleUpgradeToSeller = async () => {
                       {user.type.charAt(0).toUpperCase() + user.type.slice(1)}
                     </span>
                   </div>
+                  {user.subscriptionEndDate && (
+                    <div className="pt-2 border-t">
+                      <p className="text-xs text-gray-500 mb-1">Subscription Expires</p>
+                      <p className="text-sm font-medium text-gray-900">
+                        {new Date(user.subscriptionEndDate).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        })}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Upgrade to Seller */}
               {user.type === 'customer' && (
                 <div className="bg-white rounded-xl shadow-sm border p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-3">Become a Seller</h3>
@@ -442,9 +519,6 @@ const handleUpgradeToSeller = async () => {
                   </button>
                 </div>
               )}
-
-              {/* Quick Actions */}
-              
             </div>
           </div>
         )}
