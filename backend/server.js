@@ -162,8 +162,7 @@ app.get('/api/products/:id', validateObjectId('id'), (req, res) => productContro
 app.get('/api/products/seller/:sellerId', validateObjectId('sellerId'), (req, res) => productController.getProductsBySeller(req, res, req.db));
 
 // POST route with GridFS - using upload middleware
-app.post('/api/products', authenticateToken, withSubscriptionCheck, (req, res, next) => {
-  upload.single('image')(req, res, async (err) => {
+app.post('/api/products', authenticateToken, withSubscriptionCheck, (req, res, next) => {upload.single('image')(req, res, async (err) => {
     if (err) {
       console.error('❌ Multer error:', err);
       return res.status(400).json({ 
@@ -347,11 +346,17 @@ app.put('/api/products/:id', authenticateToken, validateObjectId('id'), withOwne
         { $set: updateData }
       );
 
+      // Fetch the updated product to return complete data
+      const updatedProduct = await db.collection('products').findOne({ 
+        _id: new ObjectId(productId) 
+      });
+
       console.log('✅ Product updated');
 
       res.json({
         success: true,
         message: 'Product updated successfully',
+        product: updatedProduct,
         imageUrl: updateData.image ? `/api/images/${updateData.image.id}` : null
       });
 
