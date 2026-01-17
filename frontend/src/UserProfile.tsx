@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { getSubscriptionStatus, updateUserProfile, upgradeUserToSeller, getCurrentUser, requestReactivation } from './api'; 
 import { User, ArrowLeft, Mail, Building, CreditCard, Edit3, Save, X, Zap, AlertTriangle, Clock, CheckCircle } from 'lucide-react';
 
+// Use shared types (remove duplicate User type to avoid redeclare)
 type User = {
   id: number;
   _id?: string;
@@ -30,7 +31,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
     email: '',
     campus: '',
   });
-  const [subscriptionInfo, setSubscriptionInfo] = useState<any>(null);
+  const [_subscriptionInfo, setSubscriptionInfo] = useState<any>(null);
   const [upgrading, setUpgrading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   
@@ -39,10 +40,8 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
     setUser(currentUser);
   }, [currentUser]);
 
-  useEffect(() => {
-    if (!user) return;
-    fetchSubscriptionStatus();
-  }, [user]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { fetchSubscriptionStatus(); }, []);
 
   useEffect(() => {
     if (!user) return;

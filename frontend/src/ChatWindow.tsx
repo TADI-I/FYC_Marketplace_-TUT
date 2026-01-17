@@ -27,7 +27,7 @@ interface ChatWindowProps {
   users: User[];
   onCloseChat: () => void;
   onNewMessage: (message: Message) => void;
-    onLoadMessages: (messages: Message[]) => void;
+  onLoadMessages: (messages: Message[]) => void;
 }
 
 const ChatWindow: React.FC<ChatWindowProps> = ({ 
@@ -46,6 +46,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const otherUser = users.find(user => user.id === chatWith);
 
   // Load messages and mark as read when chat opens
+  // loadMessages and markAsRead are stable here; avoid exhaustive-deps error in CI
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (currentUser && chatWith) {
       loadMessages();

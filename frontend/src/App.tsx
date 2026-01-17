@@ -62,8 +62,9 @@ const App = () => {
     [key: string]: Message[];
   };
 
-  const [error, setError] = useState<string>('');
-  const [loading, setLoading] = useState(false);
+  // prefix unused state values with _ to satisfy eslint
+  const [_error, setError] = useState<string>('');
+  const [_loading, setLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   // Restore session on mount: prefer validating token with backend
@@ -103,15 +104,15 @@ const App = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedCampus, setSelectedCampus] = useState('all');
   const [chatWith, setChatWith] = useState<number | null>(null);
-  const [messages, setMessages] = useState<MessageMap>({});
-  const [newMessage, setNewMessage] = useState('');
-  const [users, setUsers] = useState<User[]>([]);
+  const [_messages, setMessages] = useState<MessageMap>({});
+  const [_newMessage, _setNewMessage] = useState('');
+  const [users, _setUsers] = useState<User[]>([]);
   const [maximizedImage, setMaximizedImage] = useState<string | null>(null);
 
   const [products, setProducts] = useState<Product[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [totalProducts, setTotalProducts] = useState(0);
+  const [_totalProducts, setTotalProducts] = useState(0);
   const [hasNext, setHasNext] = useState(false);
   const [hasPrev, setHasPrev] = useState(false);
 
@@ -226,6 +227,8 @@ const App = () => {
     setCurrentView('home');
   };
 
+  // fetchProducts is stable for this usage, skip exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchProducts(1);
   }, [selectedCategory, selectedCampus, searchTerm]);

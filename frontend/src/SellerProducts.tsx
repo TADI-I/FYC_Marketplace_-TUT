@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Edit, Trash2, ArrowLeft, Plus, Loader, X } from 'lucide-react';
-import { deleteProduct, updateProduct, getProductsBySeller } from './api';
+import { deleteProduct, getProductsBySeller } from './api';
 
 type Product = {
   id: number;

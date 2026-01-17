@@ -606,7 +606,8 @@ export const getUnreadMessageCount = async (userId) => {
   }
 };
 
-export default {
+// assign export to a named variable to satisfy import/no-anonymous-default-export
+const api = {
   registerUser,
   loginUser,
   logoutUser,
@@ -634,3 +635,4 @@ export default {
   testConnection,
   generateConversationId
 };
+export default api;
