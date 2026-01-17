@@ -358,6 +358,30 @@ export const upgradeUserToSeller = async (userId, subscriptionType = 'monthly') 
   }
 };
 
+export const requestReactivation = async (userId, note = '') => {
+  const token = localStorage.getItem('auth_token');
+  if (!token) throw new Error('Authentication token not found. Please log in again.');
+
+  const response = await apiCall(`/api/users/${userId}/reactivate-request`, {
+    method: 'POST',
+    body: JSON.stringify({ note }),
+  });
+  return response;
+};
+
+export const getReactivationRequests = async () => {
+  const response = await apiCall('/api/admin/reactivation-requests');
+  return response.requests || [];
+};
+
+export const processReactivationRequest = async (requestId, action, adminNote = '', subscriptionType = 'monthly') => {
+  const response = await apiCall(`/api/admin/reactivation-requests/${requestId}/process`, {
+    method: 'POST',
+    body: JSON.stringify({ action, adminNote, subscriptionType }),
+  });
+  return response;
+};
+
 // ==============================================
 // REFERENCE DATA API FUNCTIONS
 // ==============================================
@@ -602,6 +626,9 @@ export default {
   getSubscriptionStatus,
   updateUserProfile,
   upgradeUserToSeller,
+  requestReactivation,
+  getReactivationRequests,
+  processReactivationRequest,
   getCampuses,
   getCategories,
   testConnection,

@@ -12,10 +12,11 @@ import AddProductForm from './AddProduct';
 import ChatWindow from './ChatWindow';
 import SellerProducts from './SellerProducts';
 import UserProfile from './UserProfile';
+import AdminReactivation from './AdminReactivation';
 import logo from './assets/facicon.jpeg';
 
 const App = () => {
-
+ 
  const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001/api';
   const SERVER_BASE = process.env.REACT_APP_SERVER_BASE || 'http://localhost:5001';
 
@@ -64,6 +65,19 @@ const App = () => {
   const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+  // Load user from localStorage on mount (normalizes page reloads / login persistence)
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('user_data');
+      if (stored) {
+        setCurrentUser(JSON.parse(stored));
+      }
+    } catch (e) {
+      console.warn('Failed to parse stored user_data', e);
+    }
+  }, []);
+
   const [currentView, setCurrentView] = useState('home');
   const [showLogin, setShowLogin] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
@@ -281,6 +295,18 @@ const App = () => {
             {currentUser ? (
               <div className="flex items-center space-x-4">
                 <span className="text-gray-600 hidden md:inline">Welcome, {currentUser.name}</span>
+
+                {/* Admin button: visible only for admin users */}
+                {currentUser.type === 'admin' && (
+                  <button
+                    onClick={() => setCurrentView('admin-reactivation')}
+                    className="bg-gray-800 text-white px-3 py-2 rounded hover:bg-gray-700"
+                    title="Admin: Reactivation Requests"
+                  >
+                    Admin
+                  </button>
+                )}
+
                 {currentUser.type === 'seller' && currentUser.subscribed && (
                   <button 
                     onClick={() => setCurrentView('add-product')}
@@ -388,6 +414,8 @@ const App = () => {
             onLogout={handleLogout}
             onBack={() => setCurrentView('home')}
           />
+        ) : currentView === 'admin-reactivation' && currentUser?.type === 'admin' ? (
+          <AdminReactivation />
         ) : (
           <>
             <div className="flex justify-between items-center mb-8">
@@ -562,7 +590,7 @@ const App = () => {
       )}
       {showUpgrade && <UpgradeModal />}
 
-{maximizedImage && (
+      {maximizedImage && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center z-50 p-4"
           onClick={() => setMaximizedImage(null)}

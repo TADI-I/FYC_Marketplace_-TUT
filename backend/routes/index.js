@@ -15,7 +15,8 @@ const {
   authenticateToken, 
   requireActiveSubscription,
   validateObjectId,
-  requireOwnership 
+  requireOwnership,
+  requireAdmin
 } = require('../middleware/authMiddleware');
 
 // Database dependency injection middleware
@@ -52,6 +53,11 @@ module.exports = (db) => {
   router.put('/users/:id', authenticateToken, validateObjectId('id'), withOwnershipCheck('user'), withDb(userController.updateUserProfile));
   router.post('/users/:id/upgrade', authenticateToken, validateObjectId('id'), withOwnershipCheck('user'), withDb(userController.upgradeUserToSeller));
   router.get('/user/subscription-status', authenticateToken, withDb(userController.getSubscriptionStatus));
+  router.post('/users/:id/reactivate-request', authenticateToken, validateObjectId('id'), withDb(userController.createReactivationRequest));
+
+  // Admin endpoints
+  router.get('/admin/reactivation-requests', authenticateToken, requireAdmin, withDb(userController.getReactivationRequests));
+  router.post('/admin/reactivation-requests/:requestId/process', authenticateToken, requireAdmin, validateObjectId('requestId'), withDb(userController.processReactivationRequest));
 
   // Product routes
   router.get('/products', withDb(productController.getProducts));

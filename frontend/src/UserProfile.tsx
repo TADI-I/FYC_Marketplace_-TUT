@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { getSubscriptionStatus, updateUserProfile, upgradeUserToSeller, getCurrentUser } from './api'; 
+import { getSubscriptionStatus, updateUserProfile, upgradeUserToSeller, getCurrentUser, requestReactivation } from './api'; 
 import { User, ArrowLeft, Mail, Building, CreditCard, Edit3, Save, X, Zap, AlertTriangle, Clock, CheckCircle } from 'lucide-react';
 
 type User = {
@@ -22,7 +22,7 @@ interface UserProfileProps {
 
 const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack }) => {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);  
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -32,7 +32,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
   });
   const [subscriptionInfo, setSubscriptionInfo] = useState<any>(null);
   const [upgrading, setUpgrading] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   
   useEffect(() => {
     if (!currentUser) return;
@@ -204,8 +204,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
       setUser(updatedProfile);
       setEditing(false);
       setSuccessMessage('Profile updated successfully!');
-      
-      setTimeout(() => setSuccessMessage(''), 3000);
+      setTimeout(() => setSuccessMessage(null), 3000);
     } catch (error) {
       console.error('Update error details:', error);
       setError(error instanceof Error ? error.message : 'Failed to update profile');
@@ -239,6 +238,32 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
       setError(err.message || 'Upgrade failed');
     } finally {
       setUpgrading(false);
+    }
+  };
+
+  const handleRequestReactivation = async () => {
+    setError(null);
+    setSuccessMessage(null);
+    if (!user) {
+      setError('User not loaded. Please refresh and try again.');
+      return;
+    }
+
+    const userId = user._id ?? (user.id ? String(user.id) : null);
+    if (!userId) {
+      setError('User ID missing. Please log in again.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await requestReactivation(userId);
+      setSuccessMessage('Reactivation request sent to admin. You will be notified when it is processed.');
+    } catch (err: any) {
+      setError(err?.message || 'Failed to send reactivation request');
+    } finally {
+      setLoading(false);
+      setTimeout(() => setSuccessMessage(null), 5000);
     }
   };
 
@@ -301,7 +326,19 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
                 <p className={`text-sm ${subscriptionAlert.textColor}`}>
                   {subscriptionAlert.message}
                 </p>
-                {(subscriptionAlert.type === 'error' || subscriptionAlert.type === 'warning') && (
+
+                {/* changed: show Request Reactivation for expired (error), Renew for warning */}
+                {subscriptionAlert.type === 'error' && (
+                  <button
+                    onClick={handleRequestReactivation}
+                    disabled={loading || upgrading}
+                    className="mt-3 bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors text-sm font-medium disabled:opacity-50"
+                  >
+                    {loading ? 'Sending request...' : 'Request Reactivation'}
+                  </button>
+                )}
+
+                {subscriptionAlert.type === 'warning' && (
                   <button
                     onClick={handleRenewSubscription}
                     disabled={upgrading}
@@ -310,6 +347,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
                     {upgrading ? 'Processing...' : 'Renew Subscription'}
                   </button>
                 )}
+
               </div>
             </div>
           </div>
@@ -516,6 +554,18 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
                   >
                     <Zap className="h-4 w-4" />
                     <span>{upgrading ? 'Upgrading...' : 'Upgrade to Seller'}</span>
+                  </button>
+                </div>
+              )}
+
+              {user.type === 'seller' && (user.subscribed === false || user.subscriptionStatus === 'expired') && (
+                <div className="mt-4">
+                  <button
+                    onClick={handleRequestReactivation}
+                    disabled={upgrading || loading}
+                    className="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700"
+                  >
+                    Request Reactivation
                   </button>
                 </div>
               )}

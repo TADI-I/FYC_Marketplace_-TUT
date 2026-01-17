@@ -125,7 +125,8 @@ const {
   authenticateToken, 
   requireActiveSubscription,
   validateObjectId,
-  requireOwnership 
+  requireOwnership,
+  requireAdmin
 } = require('./middleware/authMiddleware');
 
 // Helper functions for middleware with db
@@ -155,6 +156,21 @@ app.get('/api/users/:id', authenticateToken, validateObjectId('id'), (req, res) 
 app.put('/api/users/:id', authenticateToken, validateObjectId('id'), withOwnershipCheck('user'), (req, res) => userController.updateUserProfile(req, res, req.db));
 app.post('/api/users/:id/upgrade', authenticateToken, validateObjectId('id'), withOwnershipCheck('user'), (req, res) => userController.upgradeUserToSeller(req, res, req.db));
 app.get('/api/user/subscription-status', authenticateToken, (req, res) => userController.getSubscriptionStatus(req, res, req.db));
+// User can create a reactivation request (sent to admin)
+app.post('/api/users/:id/reactivate-request', authenticateToken, validateObjectId('id'), (req, res) => {
+  return userController.createReactivationRequest(req, res, req.db);
+});
+
+// Admin endpoints: list and process reactivation requests
+app.get('/api/admin/reactivation-requests', authenticateToken, requireAdmin, (req, res) => {
+  return userController.getReactivationRequests(req, res, req.db);
+});
+app.post('/api/admin/reactivation-requests/:requestId/process',
+  authenticateToken,
+  requireAdmin,
+  validateObjectId('requestId'),
+  (req, res) => userController.processReactivationRequest(req, res, req.db)
+);
 
 // Product routes
 app.get('/api/products', (req, res) => productController.getProducts(req, res, req.db));

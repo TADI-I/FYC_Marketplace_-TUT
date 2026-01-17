@@ -15,7 +15,7 @@ exports.getProducts = async (req, res, db) => {
     
     const { category, campus, search, page = 1, limit = 12 } = req.query;
     
-    // Build filter query
+    // Build filter query (products status)
     let filter = { status: 'active' };
     
     if (category && category !== 'all') {
@@ -35,28 +35,65 @@ exports.getProducts = async (req, res, db) => {
 
     console.log('🔍 Filter:', filter);
 
-    // Get total count
-    const total = await db.collection('products').countDocuments(filter);
-    
-    // Get products with pagination
-    const products = await db.collection('products')
-      .find(filter)
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(parseInt(limit))
-      .toArray();
+    // Aggregation pipeline to exclude products whose seller account is not active
+    const pageNum = Math.max(parseInt(page, 10) || 1, 1);
+    const pageLimit = Math.max(parseInt(limit, 10) || 12, 1);
+    const skip = (pageNum - 1) * pageLimit;
+    const now = new Date();
 
-    console.log(`✅ Found ${products.length} products out of ${total} total`);
+    const pipeline = [
+      { $match: filter },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'sellerId',
+          foreignField: '_id',
+          as: 'seller'
+        }
+      },
+      { $unwind: '$seller' },
+      // seller must be subscribed and subscription not expired (or no end date)
+      {
+        $match: {
+          'seller.subscribed': true,
+          $or: [
+            { 'seller.subscriptionEndDate': { $exists: false } },
+            { 'seller.subscriptionEndDate': { $gte: now } }
+          ]
+        }
+      },
+      // project seller fields removed to keep response shape similar
+      { $project: { seller: 0 } },
+      {
+        $facet: {
+          data: [
+            { $sort: { createdAt: -1 } },
+            { $skip: skip },
+            { $limit: pageLimit }
+          ],
+          totalCount: [
+            { $count: 'count' }
+          ]
+        }
+      }
+    ];
+
+    const aggResult = await db.collection('products').aggregate(pipeline).toArray();
+    const facet = aggResult[0] || { data: [], totalCount: [] };
+    const products = facet.data || [];
+    const total = (facet.totalCount[0] && facet.totalCount[0].count) ? facet.totalCount[0].count : 0;
+
+    console.log(`✅ Returning ${products.length} products (filtered) out of ${total} total`);
 
     res.json({
       success: true,
       products,
       pagination: {
-        currentPage: parseInt(page),
-        totalPages: Math.ceil(total / limit),
+        currentPage: pageNum,
+        totalPages: Math.ceil(total / pageLimit),
         totalProducts: total,
-        hasNext: page * limit < total,
-        hasPrev: page > 1
+        hasNext: pageNum * pageLimit < total,
+        hasPrev: pageNum > 1
       }
     });
 
@@ -82,9 +119,33 @@ exports.getProductById = async (req, res, db) => {
       });
     }
     
-    const product = await db.collection('products')
-      .findOne({ _id: new ObjectId(productId) });
-    
+    // Lookup product and seller, ensure seller active
+    const pipeline = [
+      { $match: { _id: new ObjectId(productId), status: 'active' } },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'sellerId',
+          foreignField: '_id',
+          as: 'seller'
+        }
+      },
+      { $unwind: '$seller' },
+      {
+        $match: {
+          'seller.subscribed': true,
+          $or: [
+            { 'seller.subscriptionEndDate': { $exists: false } },
+            { 'seller.subscriptionEndDate': { $gte: new Date() } }
+          ]
+        }
+      },
+      { $project: { seller: 0 } }
+    ];
+
+    const results = await db.collection('products').aggregate(pipeline).toArray();
+    const product = results[0];
+
     if (!product) {
       return res.status(404).json({ 
         error: 'Product not found',
@@ -119,6 +180,16 @@ exports.getProductsBySeller = async (req, res, db) => {
         error: 'Invalid seller ID',
         success: false
       });
+    }
+
+    // Ensure seller exists and is active
+    const seller = await db.collection('users').findOne({ _id: new ObjectId(sellerId) });
+    if (!seller) {
+      return res.status(404).json({ error: 'Seller not found', success: false });
+    }
+    const hasActiveSubscription = seller.subscribed && (!seller.subscriptionEndDate || new Date() <= new Date(seller.subscriptionEndDate));
+    if (!hasActiveSubscription) {
+      return res.status(404).json({ error: 'Seller account not active', success: false });
     }
 
     const products = await db.collection('products')

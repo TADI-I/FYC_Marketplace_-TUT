@@ -62,6 +62,13 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ currentUser, onProductA
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Disable all inputs if seller account is not active
+  const isSeller = currentUser?.type === 'seller';
+  const canPost = isSeller && (currentUser?.subscribed === true);
+  const disabledMessage = isSeller && !canPost
+    ? 'Your seller account is not active. Please renew or request reactivation from the profile page before adding listings.'
+    : null;
+ 
   // Handle image selection
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -71,16 +78,20 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ currentUser, onProductA
         setError('Please select an image file (JPEG, PNG, etc.)');
         return;
       }
-
+      if (!canPost) {
+        setError('Cannot add image while seller account is inactive.');
+        return;
+      }
+ 
       // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         setError('Image size must be less than 5MB');
         return;
       }
-
+ 
       setImageFile(file);
       setError('');
-
+ 
       // Create preview
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -89,32 +100,36 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ currentUser, onProductA
       reader.readAsDataURL(file);
     }
   };
-
+ 
   // Remove selected image
   const handleRemoveImage = () => {
     setImageFile(null);
     setImagePreview('');
   };
-
+ 
   const handleAddProduct = async () => {
+    if (!canPost) {
+      setError('Your seller account is not active. Please update your account before adding listings.');
+      return;
+    }
     if (!currentUser) {
       setError('You must be logged in to add a product');
       return;
     }
-
+ 
     if (!productData.title || !productData.description || !productData.price || !productData.category) {
       setError('Please fill all required fields.');
       return;
     }
-
+ 
     if (parseFloat(productData.price) <= 0) {
       setError('Price must be greater than 0');
       return;
     }
-
+ 
     setLoading(true);
     setError('');
-
+ 
     try {
       // Create FormData for multipart form upload
       const formData = new FormData();
@@ -136,16 +151,21 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ currentUser, onProductA
           size: imageFile.size
         });
       }
-
+ 
+      // If somehow posting while disabled, prevent
+      if (!canPost) {
+        throw new Error('Account inactive');
+      }
+ 
       // Get auth token
       const token = localStorage.getItem('auth_token');
       
       if (!token) {
         throw new Error('Authentication token not found. Please log in again.');
       }
-
+ 
       console.log('📤 Sending FormData to GridFS backend...');
-
+ 
       // Send FormData to backend
       const response = await fetch(`${API_BASE}/api/products`, {
         method: 'POST',
@@ -155,14 +175,14 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ currentUser, onProductA
         },
         body: formData,
       });
-
+ 
       const data = await response.json();
       console.log('📥 Backend response:', data);
       
       if (!response.ok) {
         throw new Error(data.error || `HTTP ${response.status}: Failed to create product`);
       }
-
+ 
       console.log('✅ Product added successfully with GridFS image:', data);
       
       // Add imageUrl to product for frontend display
@@ -190,15 +210,30 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ currentUser, onProductA
       setLoading(false);
     }
   };
-
+ 
   const handleInputChange = (field: string, value: string) => {
     setProductData(prev => ({ ...prev, [field]: value }));
   };
-
+ 
   return (
     <div className="max-w-2xl mx-auto p-6">
       <h2 className="text-2xl font-bold mb-6">Add New Product/Service</h2>
       
+      {disabledMessage && (
+        <div className="bg-gray-50 border border-gray-300 text-gray-800 px-4 py-3 rounded mb-4">
+          <p className="font-medium mb-2">Seller account inactive</p>
+          <p className="text-sm">{disabledMessage}</p>
+          <div className="mt-3">
+            <button
+              onClick={onCancel}
+              className="bg-blue-600 text-white px-3 py-1 rounded"
+            >
+              Go to Profile
+            </button>
+          </div>
+        </div>
+      )}
+       
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
           {error}
@@ -217,6 +252,9 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ currentUser, onProductA
               accept="image/*"
               onChange={handleImageChange}
               disabled={loading}
+              // fully disable file selection if account inactive
+              aria-disabled={!canPost}
+              tabIndex={canPost ? 0 : -1}
               className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
             />
             <p className="text-xs text-gray-500 mt-1">
@@ -249,7 +287,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ currentUser, onProductA
           )}
         </div>
       </div>
-
+ 
       <div className="grid md:grid-cols-2 gap-4 mb-4">
         <input
           type="text"
@@ -257,13 +295,13 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ currentUser, onProductA
           className="p-3 border rounded"
           value={productData.title}
           onChange={(e) => handleInputChange('title', e.target.value)}
-          disabled={loading}
+          disabled={loading || !canPost}
         />
         <select 
           className="p-3 border rounded" 
           value={productData.category}
           onChange={(e) => handleInputChange('category', e.target.value)}
-          disabled={loading}
+          disabled={loading || !canPost}
         >
           <option value="">Select Category</option>
           {categories.slice(1).map(cat => (
@@ -278,7 +316,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ currentUser, onProductA
         rows={4}
         value={productData.description}
         onChange={(e) => handleInputChange('description', e.target.value)}
-        disabled={loading}
+        disabled={loading || !canPost}
       />
       
       <div className="grid md:grid-cols-2 gap-4 mb-6">
@@ -290,13 +328,13 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ currentUser, onProductA
           onChange={(e) => handleInputChange('price', e.target.value)}
           min="0"
           step="0.01"
-          disabled={loading}
+          disabled={loading || !canPost}
         />
         <select 
           className="p-3 border rounded" 
           value={productData.type}
           onChange={(e) => handleInputChange('type', e.target.value)}
-          disabled={loading}
+          disabled={loading || !canPost}
         >
           <option value="product">Physical Product</option>
           <option value="service">Service</option>
@@ -306,7 +344,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ currentUser, onProductA
       <div className="flex gap-2">
         <button 
           onClick={handleAddProduct} 
-          disabled={loading}
+          disabled={loading || !canPost}
           className="bg-orange-600 text-white px-6 py-3 rounded hover:bg-orange-700 disabled:bg-orange-400 disabled:cursor-not-allowed flex items-center gap-2"
         >
           {loading ? (
@@ -329,5 +367,4 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ currentUser, onProductA
     </div>
   );
 };
-
 export default AddProductForm;
