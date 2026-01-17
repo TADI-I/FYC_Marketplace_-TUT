@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { createProduct } from './api'; 
 
 type Product = {
   id: number;

@@ -18,9 +18,8 @@ import logo from './assets/facicon.jpeg';
 
 const App = () => {
  
- const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001/api';
-  const SERVER_BASE = process.env.REACT_APP_SERVER_BASE || 'http://localhost:5001';
-
+  const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001/api';
+  
   type User = {
     id: number;
     name: string;
@@ -146,6 +145,9 @@ const App = () => {
     }
   };
 
+  // intentionally ignore exhaustive-deps here to avoid re-creating fetchProducts;
+  // fetchProducts is stable for this simple usage
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchProducts(1);
   }, []);
