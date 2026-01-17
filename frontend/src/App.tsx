@@ -3,8 +3,9 @@ import { ShoppingBag, Plus, Search, User, Star, Filter, Locate } from 'lucide-re
 import './App.css';
 import {
   logoutUser,
-  getProducts,   
-  upgradeUserToSeller     
+  getProducts,
+  getCurrentUser,
+  upgradeUserToSeller
 } from './api';
 import LoginForm from './LoginForm';
 import RegisterForm from './RegisterForm';
@@ -66,16 +67,33 @@ const App = () => {
   const [loading, setLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
-  // Load user from localStorage on mount (normalizes page reloads / login persistence)
+  // Restore session on mount: prefer validating token with backend
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem('user_data');
-      if (stored) {
-        setCurrentUser(JSON.parse(stored));
+    const restore = async () => {
+      try {
+        const token = localStorage.getItem('auth_token');
+        if (token) {
+          // validate token and fetch fresh user from backend
+          const user = await getCurrentUser();
+          if (user) {
+            setCurrentUser(user);
+            localStorage.setItem('user_data', JSON.stringify(user));
+            return;
+          }
+        }
+
+        // fallback to stored user_data if present (older flows)
+        const stored = localStorage.getItem('user_data');
+        if (stored) setCurrentUser(JSON.parse(stored));
+      } catch (err) {
+        console.warn('Session restore failed', err);
+        // clear bad data
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user_data');
+        setCurrentUser(null);
       }
-    } catch (e) {
-      console.warn('Failed to parse stored user_data', e);
-    }
+    };
+    restore();
   }, []);
 
   const [currentView, setCurrentView] = useState('home');
