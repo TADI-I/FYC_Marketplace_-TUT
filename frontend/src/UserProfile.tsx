@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { getSubscriptionStatus, updateUserProfile, upgradeUserToSeller, getCurrentUser, requestReactivation } from './api'; 
-import { User, ArrowLeft, Mail, Building, CreditCard, Edit3, Save, X, Zap, AlertTriangle, Clock, CheckCircle } from 'lucide-react';
+import { User as UserIC, ArrowLeft, Mail, Building, CreditCard, Edit3, Save, X, Zap, AlertTriangle, Clock, CheckCircle } from 'lucide-react';
 
 // Use shared types (remove duplicate User type to avoid redeclare)
 type User = {
@@ -303,7 +303,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div className="h-16 w-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                <User className="h-8 w-8 text-white" />
+                <UserIC className="h-8 w-8 text-white" />
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">User Profile</h1>
@@ -469,7 +469,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
                   <div className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="flex items-center space-x-3">
-                        <User className="h-5 w-5 text-gray-400" />
+                        <UserIC className="h-5 w-5 text-gray-400" />
                         <div>
                           <p className="text-sm text-gray-600">Name</p>
                           <p className="font-medium text-gray-900">{user.name}</p>
