@@ -563,16 +563,47 @@ const App = () => {
                             </div>
                           )}
 
-                          {waLink && (
-                            <a
-                              href={waLink}
-                              target="_blank"
-                              rel="noreferrer noopener"
-                              className="inline-flex items-center gap-2 bg-green-600 text-white px-3 py-2 rounded hover:bg-green-700"
+                          <div className="flex items-center space-x-2">
+                            {waLink && (
+                              <a
+                                href={waLink}
+                                target="_blank"
+                                rel="noreferrer noopener"
+                                className="inline-flex items-center gap-2 bg-green-600 text-white px-3 py-2 rounded hover:bg-green-700"
+                                title="Contact seller on WhatsApp"
+                              >
+                                WhatsApp Me
+                              </a>
+                            )}
+
+                            {/* Share button - uses Web Share API when available, falls back to copy */}
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                try {
+                                  const shareUrl = `${window.location.origin}/product/${product.id}`;
+                                  const shareData = {
+                                    title: product.title,
+                                    text: `Check out this listing: ${product.title}`,
+                                    url: shareUrl
+                                  };
+                                  if ((navigator as any).share) {
+                                    await (navigator as any).share(shareData);
+                                  } else {
+                                    await navigator.clipboard.writeText(shareUrl);
+                                    alert('Product link copied to clipboard');
+                                  }
+                                } catch (err) {
+                                  console.error('Share failed', err);
+                                  alert('Unable to share this product right now.');
+                                }
+                              }}
+                              className="inline-flex items-center gap-2 bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700"
+                              title="Share listing"
                             >
-                              WhatsApp Me
-                            </a>
-                          )}
+                              Share
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
