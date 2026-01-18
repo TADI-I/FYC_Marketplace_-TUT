@@ -9,27 +9,8 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 5001;
 
-// Allowed frontend origin(s) — set FRONTEND_URL in env for production
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
-const ALLOWED_ORIGINS = [
-  FRONTEND_URL,
-  'http://127.0.0.1:3000',
-  'http://localhost:3000'
-];
-
-// Middleware - CORS: return specific origin (not '*') and allow credentials
-app.use(cors({
-  origin: (origin, callback) => {
-    // allow requests with no origin (curl, mobile clients)
-    if (!origin) return callback(null, true);
-    if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
-    return callback(new Error('CORS policy: origin not allowed'), false);
-  },
-  credentials: true,
-  methods: ['GET','POST','PUT','DELETE','OPTIONS'],
-  allowedHeaders: ['Content-Type','Authorization','X-Requested-With','Accept']
-}));
-app.options('*', (req, res) => res.sendStatus(200));
+// Middleware
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
