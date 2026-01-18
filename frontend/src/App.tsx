@@ -320,8 +320,26 @@ const App = () => {
             {currentUser ? (
               <div className="flex items-center space-x-4">
                 <span className="text-gray-600 hidden md:inline">Welcome, {currentUser.name}</span>
+                <button 
+                  onClick={() => setCurrentView('my-profile')}
+                  className="p-2 rounded-lg hover:bg-gray-100 transition-colors group"
+                  title="My Profile"
+                >
+                  <User className="h-6 w-6 text-gray-600 group-hover:text-blue-600 transition-colors" />
+                </button>
 
-                {/* Admin button: visible only for admin users */}
+                {currentUser.type === 'seller' && currentUser.subscribed && (
+                  <button 
+                    onClick={() => setCurrentView('add-product')}
+                    className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 flex items-center space-x-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span className="hidden md:inline">Add Listing</span>
+                  </button>
+                )}
+              
+
+{/* Admin button: visible only for admin users */}
                 {currentUser.type === 'admin' && (
                   <button
                     onClick={() => setCurrentView('admin-reactivation')}
@@ -346,25 +364,7 @@ const App = () => {
                   </button>
 
                 )}
-
-                {currentUser.type === 'seller' && currentUser.subscribed && (
-                  <button 
-                    onClick={() => setCurrentView('add-product')}
-                    className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 flex items-center space-x-2"
-                  >
-                    <Plus className="h-4 w-4" />
-                    <span className="hidden md:inline">Add Listing</span>
-                  </button>
-                )}
-              
-                <button 
-                  onClick={() => setCurrentView('my-profile')}
-                  className="p-2 rounded-lg hover:bg-gray-100 transition-colors group"
-                  title="My Profile"
-                >
-                  <User className="h-6 w-6 text-gray-600 group-hover:text-blue-600 transition-colors" />
-                </button>
-
+                
                 <button 
                   onClick={() => {
                     setCurrentUser(null);
@@ -380,10 +380,10 @@ const App = () => {
                     transition: 'background-color 0.3s ease'
                   }}
                   onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#4b5563';
+                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#ff0000ff';
                   }}
                   onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#ef4444';
+                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#e01111ff';
                   }}
                 >
                   Logout
@@ -591,6 +591,8 @@ const App = () => {
                                     borderRadius: '0.25rem',      // rounded
                                     border: 'none',
                                     cursor: 'pointer',
+                                    fontSize: '0.875rem',  // text-sm
+                                    fontWeight: 500,
                                     textDecoration: 'none',       // removes underline
                                     transition: 'background-color 0.3s ease'
                                   }}
@@ -609,33 +611,33 @@ const App = () => {
 
 
                            {product?.id && (
-  <button
-    type="button"
-    onClick={async () => {
-      try {
-        const shareUrl = `${window.location.origin}/product/${product.id}`;
-        const shareData = {
-          title: product.title,
-          text: `Check out this listing: ${product.title}`,
-          url: shareUrl
-        };
-        if (navigator.share) {
-          await navigator.share(shareData);
-        } else {
-          await navigator.clipboard.writeText(shareUrl);
-          alert('Product link copied to clipboard');
-        }
-      } catch (err) {
-        console.error('Share failed', err);
-        alert('Unable to share this product right now.');
-      }
-    }}
-    className="inline-flex items-center gap-2 bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700"
-    title="Share listing"
-  >
-    Share
-  </button>
-)}
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    try {
+                                      const shareUrl = `${window.location.origin}/product/${product.id}`;
+                                      const shareData = {
+                                        title: product.title,
+                                        text: `Check out this listing: ${product.title}`,
+                                        url: shareUrl
+                                      };
+                                      if (navigator.share) {
+                                        await navigator.share(shareData);
+                                      } else {
+                                        await navigator.clipboard.writeText(shareUrl);
+                                        alert('Product link copied to clipboard');
+                                      }
+                                    } catch (err) {
+                                      console.error('Share failed', err);
+                                      alert('Unable to share this product right now.');
+                                    }
+                                  }}
+                                  className="inline-flex items-center gap-2 bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700"
+                                  title="Share listing"
+                                >
+                                  Share
+                                </button>
+                              )}
 
                           </div>
                         </div>
