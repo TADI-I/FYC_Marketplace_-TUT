@@ -62,7 +62,15 @@ exports.getProducts = async (req, res, db) => {
           ]
         }
       },
-      // project seller fields removed to keep response shape similar
+      // expose a couple of seller fields on the product document so frontend can use them
+      {
+        $addFields: {
+          sellerWhatsApp: '$seller.whatsapp',
+          sellerName: '$seller.name',
+          sellerCampus: '$seller.campus'
+        }
+      },
+      // project seller object away to keep response small
       { $project: { seller: 0 } },
       {
         $facet: {

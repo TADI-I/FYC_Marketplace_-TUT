@@ -13,6 +13,7 @@ type User = {
   campus: string;
   subscriptionEndDate?: Date | string;
   subscriptionStatus?: string;
+  whatsapp?: string | null;
 };
 
 interface UserProfileProps {
@@ -30,15 +31,28 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
     name: user?.name || '',
     email: '',
     campus: '',
+    whatsapp: user?.whatsapp || ''
   });
   const [_subscriptionInfo, setSubscriptionInfo] = useState<any>(null);
   const [upgrading, setUpgrading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   
-  useEffect(() => {
-    if (!currentUser) return;
-    setUser(currentUser);
-  }, [currentUser]);
+   // ...existing code...
+    useEffect(() => {
+    // try to fetch fresh user from API (so latest whatsapp and other fields are present)
+      const init = async () => {
+        if (!currentUser) return;
+        try {
+          const fresh = await fetchCurrentUser();
+          setUser(fresh || currentUser);
+        } catch (err) {
+          // fallback to prop if API call fails
+          setUser(currentUser);
+        }
+      };
+      init();
+    }, [currentUser]);
+  // ...existing code...
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchSubscriptionStatus(); }, []);
@@ -49,6 +63,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
       name: user.name || '',
       email: user.email || '',
       campus: user.campus || '',
+      whatsapp: user.whatsapp || ''
     });
   }, [user]);
 
@@ -155,6 +170,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
         name: user?.name || '',
         email: user?.email || '',
         campus: user?.campus || '',
+        whatsapp: user?.whatsapp || ''
       });
     }
     setError('');
@@ -190,6 +206,16 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
       return;
     }
 
+    // normalize whatsapp (optional) and validate basic length
+    let normalizedWhatsapp: string | undefined = undefined;
+    if (formData.whatsapp && formData.whatsapp.trim() !== '') {
+      normalizedWhatsapp = String(formData.whatsapp).replace(/\D/g, '');
+      if (normalizedWhatsapp.length < 7) {
+        setError('Please enter a valid WhatsApp number (include country code if possible)');
+        return;
+      }
+    }
+
     setLoading(true);
     setError('');
 
@@ -197,7 +223,8 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
       const updatedProfile = await updateUserProfile(userId, {
         name: formData.name.trim(),
         campus: formData.campus,
-        email: formData.email.toLowerCase().trim()
+        email: formData.email.toLowerCase().trim(),
+        whatsapp: normalizedWhatsapp !== undefined ? normalizedWhatsapp : null
       });
       
       setUser(updatedProfile);
@@ -445,6 +472,21 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
                           ))}
                         </select>
                       </div>
+                      <div>
+                        <label htmlFor="whatsapp" className="block text-sm font-medium text-gray-700 mb-1">
+                          WhatsApp Number
+                        </label>
+                        <input
+                          type="tel"
+                          id="whatsapp"
+                          name="whatsapp"
+                          value={formData.whatsapp}
+                          onChange={handleInputChange}
+                          placeholder="+27123456789"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Include country code (e.g. 27...) so others can contact you via WhatsApp.</p>
+                      </div>
                     </div>
 
                     <div className="flex space-x-3 pt-4">
@@ -497,6 +539,16 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
                         <div>
                           <p className="text-sm text-gray-600">Account Type</p>
                           <p className="font-medium text-gray-900 capitalize">{user.type}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="flex items-center space-x-3">
+                        <Mail className="h-5 w-5 text-gray-400" />
+                        <div>
+                          <p className="text-sm text-gray-600">WhatsApp</p>
+                          <p className="font-medium text-gray-900">{user.whatsapp || 'Not provided'}</p>
                         </div>
                       </div>
                     </div>

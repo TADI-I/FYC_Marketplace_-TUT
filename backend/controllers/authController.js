@@ -20,12 +20,13 @@ const isValidCampus = (campus) => {
 // Register controller
 exports.register = async (req, res, db) => {
   try {
-    console.log('📝 Registration attempt:', req.body);
-    
-    const { name, email, password, userType, campus } = req.body;
+    const { name, email, password, campus, whatsapp } = req.body;
+
+    // simple normalize whatsapp: remove non-digits, allow leading country code (E.164 expected)
+    const normalizedWhatsapp = whatsapp ? String(whatsapp).replace(/\D/g, '') : null;
 
     // Validation
-    if (!name || !email || !password || !userType || !campus) {
+    if (!name || !email || !password || !campus) {
       return res.status(400).json({ 
         error: 'All fields are required',
         success: false
@@ -62,46 +63,35 @@ exports.register = async (req, res, db) => {
     const hashedPassword = await bcrypt.hash(password, 12);
 
     // Create user object
-    const isSellerType = userType === 'seller';
-    const user = {
+    const userDoc = {
       name: name.trim(),
       email: email.toLowerCase().trim(),
-      password: hashedPassword,
-      type: userType,
-      campus,
-      subscribed: isSellerType,
-      subscriptionStartDate: isSellerType ? new Date() : null,
-      subscriptionEndDate: isSellerType ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : null,
-      subscriptionStatus: isSellerType ? 'active' : null,
-      isActive: true,
+      campus: campus || null,
+      type: 'buyer',
+      subscribed: false,
+      subscriptionStatus: 'expired',
       createdAt: new Date(),
+      // store normalized whatsapp (or null)
+      whatsapp: normalizedWhatsapp,
+      password: hashedPassword,
       updatedAt: new Date()
     };
 
-    console.log('💾 Inserting user:', { ...user, password: '[HIDDEN]' });
+    console.log('💾 Inserting user:', { ...userDoc, password: '[HIDDEN]' });
 
     // Insert user
-    const result = await db.collection('users').insertOne(user);
-    console.log('✅ User insertion result:', result.insertedId);
-    
-    // Create JWT token
-    const token = jwt.sign(
-      { id: result.insertedId.toString(), email, type: userType, campus },
-      process.env.JWT_SECRET || 'tut_marketplace_secret',
-      { expiresIn: '7d' }
-    );
+    const result = await db.collection('users').insertOne(userDoc);
+    userDoc._id = result.insertedId;
 
-    // Return user data (without password)
-    const { password: _, ...userResponse } = user;
-    userResponse._id = result.insertedId;
+    // don't include password/hash in response
+    const safeUser = { ...userDoc, password: undefined };
 
     console.log('✅ User registered successfully:', email);
 
     res.status(201).json({
       success: true,
       message: 'User registered successfully',
-      user: userResponse,
-      token
+      user: safeUser
     });
 
   } catch (error) {
@@ -155,15 +145,28 @@ exports.login = async (req, res, db) => {
       { expiresIn: '7d' }
     );
 
-    // Return user data (without password)
-    const { password: _, ...userResponse } = user;
-
+    // Build safe user object (mirror getCurrentUser) so client always receives the same fields
+    const safeUser = {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      type: user.type,
+      campus: user.campus,
+      subscribed: user.subscribed,
+      subscriptionStatus: user.subscriptionStatus,
+      subscriptionStartDate: user.subscriptionStartDate,
+      subscriptionEndDate: user.subscriptionEndDate,
+      whatsapp: user.whatsapp || null,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt
+    };
+ 
     console.log('✅ User logged in successfully:', email);
-
+ 
     res.json({
       success: true,
       message: 'Login successful',
-      user: userResponse,
+      user: safeUser,
       token
     });
 
@@ -179,27 +182,31 @@ exports.login = async (req, res, db) => {
 // Get current user
 exports.getCurrentUser = async (req, res, db) => {
   try {
-    const user = await db.collection('users').findOne(
-      { _id: new ObjectId(req.user.id) },
-      { projection: { password: 0 } }
-    );
-    
-    if (!user) {
-      return res.status(404).json({ 
-        error: 'User not found',
-        success: false
-      });
-    }
+    const userId = req.user?.id || req.user?._id;
+    if (!userId) return res.status(401).json({ success: false, error: 'Not authenticated' });
 
-    res.json({
-      success: true,
-      user
-    });
-  } catch (error) {
-    console.error('❌ Get user error:', error);
-    res.status(500).json({ 
-      error: 'Failed to get user: ' + error.message,
-      success: false
-    });
+    const user = await db.collection('users').findOne({ _id: require('mongodb').ObjectId(userId) });
+    if (!user) return res.status(404).json({ success: false, error: 'User not found' });
+
+    // only return safe fields (include whatsapp)
+    const safeUser = {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      type: user.type,
+      campus: user.campus,
+      subscribed: user.subscribed,
+      subscriptionStatus: user.subscriptionStatus,
+      subscriptionStartDate: user.subscriptionStartDate,
+      subscriptionEndDate: user.subscriptionEndDate,
+      whatsapp: user.whatsapp || null, // <- ensure whatsapp is returned
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt
+    };
+
+    res.json({ success: true, user: safeUser });
+  } catch (err) {
+    console.error('getCurrentUser error', err);
+    res.status(500).json({ success: false, error: 'Failed to fetch current user' });
   }
 };

@@ -38,8 +38,7 @@ async function connectToMongoDB() {
     gridfsBucket = new GridFSBucket(db, {
       bucketName: 'images'
     });
-    
-    console.log("✅ Successfully connected to MongoDB with GridFS!");
+  
     
     // Create indexes for better performance
     try {
@@ -48,9 +47,7 @@ async function connectToMongoDB() {
       await db.collection('products').createIndex({ category: 1 });
       await db.collection('products').createIndex({ sellerCampus: 1 });
       await db.collection('images.files').createIndex({ filename: 1 });
-      console.log("✅ Database indexes created successfully");
     } catch (indexError) {
-      console.log("📝 Indexes already exist or error creating indexes:", indexError.message);
     }
     
     return db;
@@ -80,7 +77,7 @@ function initializeGridFSStorage() {
     }
   });
   
-  console.log("✅ Multer upload configured");
+
 }
 
 // Helper function to upload buffer to GridFS
@@ -188,8 +185,7 @@ app.post('/api/products', authenticateToken, withSubscriptionCheck, (req, res, n
     }
     
     try {
-      console.log('➕ Creating product with GridFS image');
-      console.log('📁 File info:', req.file);
+
       
       const { title, description, price, category, type } = req.body;
 
@@ -217,7 +213,6 @@ app.post('/api/products', authenticateToken, withSubscriptionCheck, (req, res, n
           }
         );
         
-        console.log('🖼️ Image stored in GridFS:', imageInfo);
       }
 
       // Create product object with GridFS reference
@@ -239,10 +234,8 @@ app.post('/api/products', authenticateToken, withSubscriptionCheck, (req, res, n
         updatedAt: new Date()
       };
 
-      console.log('💾 Inserting product:', product);
 
       const result = await db.collection('products').insertOne(product);
-      console.log('✅ Product insertion result:', result.insertedId);
       
       const createdProduct = { 
         ...product, 
@@ -288,7 +281,7 @@ app.put('/api/products/:id', authenticateToken, validateObjectId('id'), withOwne
     
     try {
       const productId = req.params.id;
-      console.log('✏️ Updating product:', productId);
+
       
       const existingProduct = await db.collection('products').findOne({ 
         _id: new ObjectId(productId) 
@@ -367,8 +360,6 @@ app.put('/api/products/:id', authenticateToken, validateObjectId('id'), withOwne
         _id: new ObjectId(productId) 
       });
 
-      console.log('✅ Product updated');
-
       res.json({
         success: true,
         message: 'Product updated successfully',
@@ -390,7 +381,6 @@ app.put('/api/products/:id', authenticateToken, validateObjectId('id'), withOwne
 app.delete('/api/products/:id', authenticateToken, validateObjectId('id'), withOwnershipCheck('product'), async (req, res) => {
   try {
     const productId = req.params.id;
-    console.log('🗑️ Deleting product:', productId);
 
     const existingProduct = await db.collection('products').findOne({ 
       _id: new ObjectId(productId) 
@@ -407,17 +397,13 @@ app.delete('/api/products/:id', authenticateToken, validateObjectId('id'), withO
     if (existingProduct.image && existingProduct.image.id) {
       try {
         await req.gridfsBucket.delete(new ObjectId(existingProduct.image.id));
-        console.log('🗑️ Deleted associated image from GridFS');
       } catch (deleteError) {
-        console.error('Failed to delete image:', deleteError);
       }
     }
 
     const result = await db.collection('products').deleteOne({ 
       _id: new ObjectId(productId) 
     });
-
-    console.log('✅ Product deleted');
 
     res.json({
       success: true,
@@ -437,7 +423,6 @@ app.delete('/api/products/:id', authenticateToken, validateObjectId('id'), withO
 app.get('/api/images/:id', async (req, res) => {
   try {
     const fileId = req.params.id;
-    console.log('🖼️ Fetching image:', fileId);
     
     if (!ObjectId.isValid(fileId)) {
       return res.status(400).json({ 
@@ -538,7 +523,6 @@ app.use((err, req, res, next) => {
 });
 
 app.use('*', (req, res) => {
-  console.log('🚫 404 Route not found:', req.originalUrl);
   res.status(404).json({ 
     error: 'Route not found',
     success: false
@@ -552,11 +536,6 @@ const startServer = async () => {
   
   app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
-    console.log(`🔗 Health check: http://localhost:${PORT}/api/health`);
-    console.log(`🔗 Test DB: http://localhost:${PORT}/api/test-db`);
-    console.log(`📊 Database: ${db ? '✅ Connected' : '❌ Disconnected'}`);
-    console.log(`🖼️ GridFS: ${gridfsBucket ? '✅ Ready' : '❌ Not ready'}`);
-    console.log(`🔗 Image URL example: http://localhost:${PORT}/api/images/{imageId}`);
   });
 };
 

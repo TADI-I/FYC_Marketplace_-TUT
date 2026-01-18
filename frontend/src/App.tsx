@@ -67,27 +67,25 @@ const App = () => {
   const [_loading, setLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
-  // Restore session on mount: prefer validating token with backend
+  // restore session on mount
   useEffect(() => {
     const restore = async () => {
       try {
         const token = localStorage.getItem('auth_token');
         if (token) {
-          // validate token and fetch fresh user from backend
-          const user = await getCurrentUser();
-          if (user) {
-            setCurrentUser(user);
-            localStorage.setItem('user_data', JSON.stringify(user));
+          // call backend to get fresh user (auth/me)
+          const data = await getCurrentUser(); // returns { success, user } or user object depending on your api.js
+          const freshUser = data?.user || data;
+          if (freshUser) {
+            setCurrentUser(freshUser);
+            localStorage.setItem('user_data', JSON.stringify(freshUser));
             return;
           }
         }
-
-        // fallback to stored user_data if present (older flows)
         const stored = localStorage.getItem('user_data');
         if (stored) setCurrentUser(JSON.parse(stored));
       } catch (err) {
         console.warn('Session restore failed', err);
-        // clear bad data
         localStorage.removeItem('auth_token');
         localStorage.removeItem('user_data');
         setCurrentUser(null);
@@ -233,8 +231,12 @@ const App = () => {
     fetchProducts(1);
   }, [selectedCategory, selectedCampus, searchTerm]);
 
-  const handleLoginSuccess = (user: User) => {
+  const handleLoginSuccess = (user: any, token?: string) => {
     setCurrentUser(user);
+    try {
+      if (token) localStorage.setItem('auth_token', token);
+      localStorage.setItem('user_data', JSON.stringify(user)); // store full user including whatsapp
+    } catch (e) { console.warn('Failed to persist session', e); }
     setShowLogin(false);
   };
 
@@ -504,6 +506,11 @@ const App = () => {
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {products.map(product => {
                 const imageUrl = getImageUrl(product);
+                const raw = (product as any).sellerWhatsApp || (product as any).seller?.whatsapp || (product as any).whatsapp || '';
+                const normalized = raw ? String(raw).replace(/\D/g, '') : '';
+                const waMessage = encodeURIComponent(`Hi ${product.sellerName || ''}, I'm interested in your listing "${product.title}".`);
+                const waLink = normalized ? `https://wa.me/${normalized}?text=${waMessage}` : null;
+
                 return (
                   <div key={product.id} className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
                     <div className="relative overflow-hidden" style={{ height: '25rem' }}> {/* adjust height as needed */}
@@ -533,25 +540,40 @@ const App = () => {
                         <h3 className="text-lg font-semibold text-gray-900 line-clamp-2">{product.title}</h3>
                         <span className="text-lg font-bold text-green-600">R{product.price}</span>
                       </div>
+
                       <p className="text-gray-600 text-sm mb-4 line-clamp-3">{product.description}</p>
+
                       <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center text-sm text-gray-500">
-                          <User className="h-4 w-4 mr-1" />
-                          <span>{product.sellerName}</span>
-                        </div> 
-                        
-                        <div>
-                          <div className="flex items-center text-sm text-gray-500">
+                        <div className="flex items-center text-sm text-gray-500 space-x-6">
+                          <div className="flex items-center">
+                            <User className="h-4 w-4 mr-1" />
+                            <span>{product.sellerName}</span>
+                          </div>
+                          <div className="flex items-center">
                             <Locate className="h-4 w-4 mr-1" />
                             <span>{product.sellerCampus}</span>
                           </div>
                         </div>
-                        {product.rating > 0 && (
-                          <div className="flex items-center">
-                            <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                            <span className="text-sm text-gray-600 ml-1">{product.rating}</span>
-                          </div>
-                        )}
+
+                        <div className="flex items-center space-x-3">
+                          {product.rating > 0 && (
+                            <div className="flex items-center">
+                              <Star className="h-4 w-4 text-yellow-400 fill-current" />
+                              <span className="text-sm text-gray-600 ml-1">{product.rating}</span>
+                            </div>
+                          )}
+
+                          {waLink && (
+                            <a
+                              href={waLink}
+                              target="_blank"
+                              rel="noreferrer noopener"
+                              className="inline-flex items-center gap-2 bg-green-600 text-white px-3 py-2 rounded hover:bg-green-700"
+                            >
+                              WhatsApp Me
+                            </a>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -643,7 +665,7 @@ const App = () => {
               </svg>
             </button>
             <img
-              src={maximizedImage}
+              src={maximizedImage ?? undefined}
               alt="Maximized view"
               className="object-contain"
               style={{ 

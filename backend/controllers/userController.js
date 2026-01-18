@@ -42,7 +42,7 @@ exports.updateUserProfile = async (req, res, db) => {
     console.log('👤 Authenticated user ID:', req.user.id);
     console.log('📦 Request body:', req.body);
     
-    const { name, campus, email } = req.body;
+    const { name, campus, email, whatsapp } = req.body;
 
     // Validation
     if (!name?.trim()) {
@@ -60,6 +60,19 @@ exports.updateUserProfile = async (req, res, db) => {
         success: false,
         code: 'INVALID_EMAIL_FORMAT'
       });
+    }
+
+    // normalize whatsapp if provided
+    let normalizedWhatsapp = null;
+    if (whatsapp) {
+      normalizedWhatsapp = String(whatsapp).replace(/\D/g, '');
+      if (normalizedWhatsapp.length < 7) {
+        return res.status(400).json({
+          error: 'Please enter a valid WhatsApp number',
+          success: false,
+          code: 'INVALID_WHATSAPP'
+        });
+      }
     }
 
     // Check if email already exists (for different user)
@@ -85,6 +98,8 @@ exports.updateUserProfile = async (req, res, db) => {
 
     // Only include campus if provided
     if (campus) updateData.campus = campus;
+    // Include whatsapp if provided
+    if (normalizedWhatsapp !== null) updateData.whatsapp = normalizedWhatsapp;
 
     console.log('📤 Update data:', updateData);
 
