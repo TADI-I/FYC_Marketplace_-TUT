@@ -325,11 +325,26 @@ const App = () => {
                 {currentUser.type === 'admin' && (
                   <button
                     onClick={() => setCurrentView('admin-reactivation')}
-                    className="bg-gray-800 text-white px-3 py-2 rounded hover:bg-gray-700"
+                    style={{
+                      backgroundColor: '#166534',   // Tailwind's green-800 hex
+                      color: 'white',
+                      padding: '0.5rem 0.75rem',    // px-3 py-2 equivalent
+                      borderRadius: '0.25rem',      // rounded equivalent
+                      border: 'none',
+                      cursor: 'pointer',
+                      transition: 'background-color 0.3s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#15803d'; // Tailwind green-700
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#166534'; // back to green-800
+                    }}
                     title="Admin: Reactivation Requests"
                   >
                     Admin
                   </button>
+
                 )}
 
                 {currentUser.type === 'seller' && currentUser.subscribed && (
@@ -564,45 +579,64 @@ const App = () => {
                           )}
 
                           <div className="flex items-center space-x-2">
-                            {waLink && (
-                              <a
-                                href={waLink}
-                                target="_blank"
-                                rel="noreferrer noopener"
-                                className="inline-flex items-center gap-2 bg-green-600 text-white px-3 py-2 rounded hover:bg-green-700"
-                                title="Contact seller on WhatsApp"
-                              >
-                                WhatsApp Me
-                              </a>
-                            )}
+                              {waLink && (
+                                <a
+                                  href={waLink}
+                                  target="_blank"
+                                  rel="noreferrer noopener"
+                                  style={{
+                                    backgroundColor: '#16a34a',   // Tailwind green-600 hex
+                                    color: 'white',
+                                    padding: '0.5rem 0.75rem',    // px-3 py-2 equivalent
+                                    borderRadius: '0.25rem',      // rounded
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    textDecoration: 'none',       // removes underline
+                                    transition: 'background-color 0.3s ease'
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    (e.currentTarget as HTMLAnchorElement).style.backgroundColor = '#15803d'; // green-700
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    (e.currentTarget as HTMLAnchorElement).style.backgroundColor = '#16a34a'; // back to green-600
+                                  }}
+                                  title="Contact seller on WhatsApp"
+                                >
+                                  WhatsApp Me
+                                </a>
+                              )}
+                            
 
-                            {/* Share button - uses Web Share API when available, falls back to copy */}
-                            <button
-                              type="button"
-                              onClick={async () => {
-                                try {
-                                  const shareUrl = `${window.location.origin}/product/${product.id}`;
-                                  const shareData = {
-                                    title: product.title,
-                                    text: `Check out this listing: ${product.title}`,
-                                    url: shareUrl
-                                  };
-                                  if ((navigator as any).share) {
-                                    await (navigator as any).share(shareData);
-                                  } else {
-                                    await navigator.clipboard.writeText(shareUrl);
-                                    alert('Product link copied to clipboard');
-                                  }
-                                } catch (err) {
-                                  console.error('Share failed', err);
-                                  alert('Unable to share this product right now.');
-                                }
-                              }}
-                              className="inline-flex items-center gap-2 bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700"
-                              title="Share listing"
-                            >
-                              Share
-                            </button>
+
+                           {product?.id && (
+  <button
+    type="button"
+    onClick={async () => {
+      try {
+        const shareUrl = `${window.location.origin}/product/${product.id}`;
+        const shareData = {
+          title: product.title,
+          text: `Check out this listing: ${product.title}`,
+          url: shareUrl
+        };
+        if (navigator.share) {
+          await navigator.share(shareData);
+        } else {
+          await navigator.clipboard.writeText(shareUrl);
+          alert('Product link copied to clipboard');
+        }
+      } catch (err) {
+        console.error('Share failed', err);
+        alert('Unable to share this product right now.');
+      }
+    }}
+    className="inline-flex items-center gap-2 bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700"
+    title="Share listing"
+  >
+    Share
+  </button>
+)}
+
                           </div>
                         </div>
                       </div>

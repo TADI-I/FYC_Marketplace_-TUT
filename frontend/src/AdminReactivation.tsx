@@ -81,7 +81,7 @@ const AdminReactivation: React.FC = () => {
                 <div className="text-sm mt-2">{r.note}</div>
                 <div className="text-xs text-gray-500 mt-1">Requested: {new Date(r.requestedAt).toLocaleString()}</div>
                 <div className="text-xs mt-1">
-                  Status: <span className={`font-medium ${r.status === 'approved' ? 'text-green-600' : r.status === 'rejected' ? 'text-red-600' : 'text-yellow-600'}`}>{r.status}</span>
+                  Status: <span className={`font-medium ${r.status === 'approved' ? 'text-green-600' : r.status === 'rejected' ? 'text-red-400' : 'text-yellow-600'}`}>{r.status}</span>
                 </div>
                 {r.processedAt && <div className="text-xs text-gray-500">Processed: {new Date(r.processedAt).toLocaleString()}</div>}
               </div>
@@ -89,7 +89,27 @@ const AdminReactivation: React.FC = () => {
                 {r.status === 'pending' ? (
                   <>
                     <button onClick={() => handleProcess(r._id, 'approve')} className="bg-green-600 text-white px-3 py-1 rounded">Approve</button>
-                    <button onClick={() => handleProcess(r._id, 'reject')} className="bg-red-600 text-white px-3 py-1 rounded">Reject</button>
+                    <button 
+                      onClick={() => handleProcess(r._id, 'reject')}
+                      style={{
+                        backgroundColor: '#ef4444',   // Tailwind's red-500 hex
+                        color: 'white',
+                        padding: '0.25rem 0.75rem',   // px-3 py-1 equivalent
+                        borderRadius: '0.25rem',      // rounded equivalent
+                        border: 'none',
+                        cursor: 'pointer',
+                        transition: 'background-color 0.3s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#dc2626'; // darker red
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#ef4444'; // back to red
+                      }}
+                    >
+                      Reject
+                    </button>
+
                   </>
                 ) : (
                   <div className="text-sm text-gray-600">No actions</div>
