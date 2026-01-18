@@ -608,14 +608,11 @@ export const getUnreadMessageCount = async (userId) => {
 
 export async function requestUpgrade(userId) {
   try {
-    const res = await fetch(`${API_BASE}/users/${userId}/request-upgrade`, {
+    // use apiCall so Authorization header and /api prefix are applied consistently
+    const response = await apiCall(`/users/${userId}/reactivate-request`, {
       method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' }
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data?.error || 'Request failed');
-    return data;
+    return response;
   } catch (err) {
     console.error('requestUpgrade error', err);
     throw err;
