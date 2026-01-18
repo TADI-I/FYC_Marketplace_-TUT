@@ -607,7 +607,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
                   {user.subscriptionEndDate && (
                     <div className="pt-2 border-t">
                       <span className="text-gray-600">Subscription Expires</span>
-                      <span className="text-sm font-medium text-gray-900">
+                      <span className="px-2 py-1 rounded-full text-xs font-medium">
                         {new Date(user.subscriptionEndDate).toLocaleDateString('en-US', {
                           year: 'numeric',
                           month: 'long',
