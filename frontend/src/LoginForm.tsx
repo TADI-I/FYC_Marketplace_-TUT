@@ -32,14 +32,11 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess, onShowRegister, o
     setError('');
 
     try {
-      console.log('🔑 Attempting login for:', loginData.email);
       
       const response = await loginUser({
         email: loginData.email,
         password: loginData.password
       });
-
-      console.log('✅ Login successful:', response.user.name);
       
       onLoginSuccess(response.user);
       setLoginData({ email: '', password: '' });

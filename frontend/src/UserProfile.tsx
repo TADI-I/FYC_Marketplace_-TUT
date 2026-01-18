@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { getSubscriptionStatus, updateUserProfile, upgradeUserToSeller, getCurrentUser, requestReactivation } from './api'; 
+import { getSubscriptionStatus, updateUserProfile, upgradeUserToSeller, getCurrentUser, requestReactivation, requestUpgrade } from './api'; 
 import { User as UserIC, ArrowLeft, Mail, Building, CreditCard, Edit3, Save, X, Zap, AlertTriangle, Clock, CheckCircle } from 'lucide-react';
 
 // Use shared types (remove duplicate User type to avoid redeclare)
@@ -35,6 +35,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
   });
   const [_subscriptionInfo, setSubscriptionInfo] = useState<any>(null);
   const [upgrading, setUpgrading] = useState(false);
+  const [upgradeRequested, setUpgradeRequested] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   
    // ...existing code...
@@ -70,7 +71,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
   const fetchCurrentUser = async () => {
     try {
       const user = await getCurrentUser();
-      console.log(user);
+
       setUser(user);
       return user;
     } catch (error) {
@@ -287,6 +288,32 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
       setSuccessMessage('Reactivation request sent to admin. You will be notified when it is processed.');
     } catch (err: any) {
       setError(err?.message || 'Failed to send reactivation request');
+    } finally {
+      setLoading(false);
+      setTimeout(() => setSuccessMessage(null), 5000);
+    }
+  };
+
+  const handleRequestUpgrade = async () => {
+    setError(null);
+    setSuccessMessage(null);
+    if (!user) {
+      setError('User not loaded. Please refresh and try again.');
+      return;
+    }
+    const userId = user._id ?? (user.id ? String(user.id) : null);
+    if (!userId) {
+      setError('User ID missing. Please log in again.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await requestUpgrade(userId);
+      setUpgradeRequested(true);
+      setSuccessMessage('Upgrade request sent. Admin will review your request.');
+    } catch (err: any) {
+      setError(err?.message || 'Failed to send upgrade request');
     } finally {
       setLoading(false);
       setTimeout(() => setSuccessMessage(null), 5000);
@@ -592,20 +619,25 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
                 </div>
               </div>
 
-              {user.type === 'customer' && (
+              {(user.type === 'customer' || user.type === 'buyer') && (
                 <div className="bg-white rounded-xl shadow-sm border p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-3">Become a Seller</h3>
                   <p className="text-gray-600 text-sm mb-4">
                     Upgrade your account to start selling products on our marketplace.
                   </p>
-                  <button 
-                    onClick={handleUpgradeToSeller} 
-                    disabled={upgrading}
-                    className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-2 rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-colors disabled:opacity-50 flex items-center justify-center space-x-2"
-                  >
-                    <Zap className="h-4 w-4" />
-                    <span>{upgrading ? 'Upgrading...' : 'Upgrade to Seller'}</span>
-                  </button>
+                  <div className="space-y-2">
+                    <button 
+                      onClick={handleRequestUpgrade} 
+                      disabled={loading || upgradeRequested}
+                      className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-2 rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-colors disabled:opacity-50 flex items-center justify-center space-x-2"
+                    >
+                      <Zap className="h-4 w-4" />
+                      <span>{upgradeRequested ? 'Request Pending' : loading ? 'Sending...' : 'Request Seller Account'}</span>
+                    </button>
+                    <p className="text-xs text-gray-600">
+                      Seller subscription: <span className="font-semibold">R25 / month</span> — first month free. Admin will review your request.
+                    </p>
+                  </div>
                 </div>
               )}
 

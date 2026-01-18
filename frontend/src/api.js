@@ -606,6 +606,22 @@ export const getUnreadMessageCount = async (userId) => {
   }
 };
 
+export async function requestUpgrade(userId) {
+  try {
+    const res = await fetch(`${API_BASE}/users/${userId}/request-upgrade`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error || 'Request failed');
+    return data;
+  } catch (err) {
+    console.error('requestUpgrade error', err);
+    throw err;
+  }
+}
+
 // assign export to a named variable to satisfy import/no-anonymous-default-export
 const api = {
   registerUser,

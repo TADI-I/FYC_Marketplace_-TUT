@@ -23,6 +23,7 @@ const RegisterForm: React.FC<{ onRegisterSuccess: (user: any) => void; onShowLog
   const [campus, setCampus] = useState('');
   const [password, setPassword] = useState('');
   const [whatsapp, setWhatsapp] = useState(''); // new field
+  const [accountType, setAccountType] = useState<'buyer' | 'seller'>('buyer');
 
   const campuses = [
     { id: 'all', name: 'All Locations' },
@@ -56,7 +57,8 @@ const RegisterForm: React.FC<{ onRegisterSuccess: (user: any) => void; onShowLog
         email,
         password,
         campus,
-        whatsapp
+        whatsapp,
+        type: accountType // send buyer or seller to backend
       });
 
       console.log('✅ Registration successful:', response.user.name);
@@ -134,6 +136,40 @@ const RegisterForm: React.FC<{ onRegisterSuccess: (user: any) => void; onShowLog
             onFocus={(e) => e.target.select()}
           />
           
+          {/* Account type selector */}
+          <div className="mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Account Type</label>
+            <div className="flex items-center gap-4">
+              <label className={`inline-flex items-center cursor-pointer px-3 py-2 border rounded ${accountType === 'buyer' ? 'bg-gray-100 border-gray-300' : 'bg-white'}`}>
+                <input
+                  type="radio"
+                  name="accountType"
+                  value="buyer"
+                  checked={accountType === 'buyer'}
+                  onChange={() => setAccountType('buyer')}
+                  className="mr-2"
+                />
+                Buyer
+              </label>
+              <label className={`inline-flex items-center cursor-pointer px-3 py-2 border rounded ${accountType === 'seller' ? 'bg-gray-100 border-gray-300' : 'bg-white'}`}>
+                <input
+                  type="radio"
+                  name="accountType"
+                  value="seller"
+                  checked={accountType === 'seller'}
+                  onChange={() => setAccountType('seller')}
+                  className="mr-2"
+                />
+                Seller
+              </label>
+            </div>
+            {accountType === 'seller' && (
+              <p className="text-xs text-gray-500 mt-1">
+                As a seller, you can list items for sale. Please ensure your details are accurate.
+              </p>
+            )}
+          </div>
+          
           <select 
             className="w-full p-3 border rounded mb-4"
             value={campus}
@@ -152,9 +188,9 @@ const RegisterForm: React.FC<{ onRegisterSuccess: (user: any) => void; onShowLog
               value={whatsapp}
               onChange={(e) => setWhatsapp(e.target.value)}
               placeholder="+27123456789"
-              className="mt-1 block w-full border rounded p-2"
+              className="w-full p-3 border rounded mb-4"
             />
-            <p className="text-xs text-gray-500 mt-1">Provide a WhatsApp number for buyers to contact you (include country code, e.g. 27...)</p>
+            <p className="text-xs text-gray-500 mt-1">Provide a WhatsApp number for buyers to contact you (include country code, e.g. +27...)</p>
           </div>
           
           <div className="flex gap-2">
