@@ -385,7 +385,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
                   <button
                     onClick={handleRequestReactivation}
                     disabled={loading || upgrading}
-                    className="mt-3 bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors text-sm font-medium disabled:opacity-50"
+                    className="w-full flex-1 bg-orange-600 text-white p-3 rounded hover:bg-orange-700 "
                   >
                     {loading ? 'Sending request...' : 'Request Reactivation'}
                   </button>
@@ -395,7 +395,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
                   <button
                     onClick={handleRenewSubscription}
                     disabled={upgrading}
-                    className="mt-3 bg-white text-orange-600 border border-orange-600 px-4 py-2 rounded-lg hover:bg-orange-50 transition-colors text-sm font-medium disabled:opacity-50"
+                    className="w-full flex-1 bg-orange-600 text-white p-3 rounded hover:bg-orange-700 "
                   >
                     {upgrading ? 'Processing...' : 'Renew Subscription'}
                   </button>
