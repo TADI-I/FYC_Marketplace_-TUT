@@ -347,7 +347,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <button 
           onClick={onBack}
-          className="flex items-center space-x-2 text-blue-600 hover:text-blue-800 mb-6 transition-colors"
+         className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center space-x-2"
         >
           <ArrowLeft className="h-5 w-5" />
           <span className="font-medium">Back to Home</span>
@@ -357,7 +357,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div className="h-16 w-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                <UserIC className="h-8 w-8 text-black" />
+                <UserIC className="h-12 w-12 text-black" />
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">User Profile</h1>
@@ -438,7 +438,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
                   <h2 className="text-lg font-semibold text-gray-900">Personal Information</h2>
                   <button 
                     onClick={handleEditToggle}
-                    className="flex items-center space-x-2 text-blue-600 hover:text-blue-800 transition-colors"
+                    className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors  flex items-center space-x-2"
                   >
                     <Edit3 className="h-4 w-4" />
                     <span>{editing ? 'Cancel' : 'Edit Profile'}</span>

@@ -298,12 +298,13 @@ const SellerProducts: React.FC<SellerProductsProps> = ({
         <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 text-center">
           <h2 className="text-xl font-bold text-red-600">Access Denied</h2>
           <p className="text-gray-600 mt-2">You need to be a seller to access this page.</p>
-          <button 
-            onClick={onBack}
-            className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full sm:w-auto"
-          >
-            Back to Home
-          </button>
+           <button 
+                    onClick={onBack}
+                   className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center space-x-2"
+                  >
+                    <ArrowLeft className="h-5 w-5" />
+                    <span className="font-medium">Back to Home</span>
+                  </button>
         </div>
       </div>
     );
@@ -324,14 +325,13 @@ const SellerProducts: React.FC<SellerProductsProps> = ({
     <div className="max-w-6xl mx-auto p-4 sm:p-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-3">
-          <button 
-            onClick={onBack}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-800 p-1"
-            disabled={loading}
-          >
-            <ArrowLeft className="h-5 w-5" />
-            <span className="hidden xs:inline">Back</span>
-          </button>
+           <button 
+                    onClick={onBack}
+                   className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center space-x-2"
+                  >
+                    <ArrowLeft className="h-5 w-5" />
+                    <span className="font-medium">Back to Home</span>
+                  </button>
           
           <div className="flex items-center gap-3">
             <h1 className="text-2xl sm:text-3xl font-bold">My Products</h1>
