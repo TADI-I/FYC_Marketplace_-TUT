@@ -643,17 +643,6 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
                 </div>
               )}
 
-              {user.type === 'seller' && (user.subscribed === false || user.subscriptionStatus === 'expired') && (
-                <div className="mt-4">
-                  <button
-                    onClick={handleRequestReactivation}
-                    disabled={upgrading || loading}
-                    className="w-full flex-1 bg-orange-600 text-white p-3 rounded hover:bg-orange-700 "
-                  >
-                    Request Reactivation
-                  </button>
-                </div>
-              )}
             </div>
           </div>
         )}
