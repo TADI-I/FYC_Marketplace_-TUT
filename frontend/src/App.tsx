@@ -506,7 +506,7 @@ const App = () => {
                 const imageUrl = getImageUrl(product);
                 return (
                   <div key={product.id} className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-                    <div className="relative overflow-hidden" style={{ height: '35rem' }}> {/* adjust height as needed */}
+                    <div className="relative overflow-hidden" style={{ height: '25rem' }}> {/* adjust height as needed */}
                       {imageUrl ? (
                         <img
                           src={imageUrl}
