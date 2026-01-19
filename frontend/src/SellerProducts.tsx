@@ -68,7 +68,7 @@ const SellerProducts: React.FC<SellerProductsProps> = ({
   const [error, setError] = useState('');
   const [maximizedImage, setMaximizedImage] = useState<string | null>(null);
 
-  const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001/api';
+  const API_BASE = process.env.REACT_APP_API_BASE ;
 
   useEffect(() => {
     const fetchSellerProducts = async () => {
