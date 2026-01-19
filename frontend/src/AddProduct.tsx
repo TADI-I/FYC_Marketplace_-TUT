@@ -47,7 +47,7 @@ const categories: Category[] = [
 ];
 
 const AddProductForm: React.FC<AddProductFormProps> = ({ currentUser, onProductAdded, onCancel }) => {
-  const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001';
+  const API_BASE = process.env.REACT_APP_API_BASE;
   
   const [productData, setProductData] = useState({
     title: '', 

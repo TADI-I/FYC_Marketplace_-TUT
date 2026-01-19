@@ -201,7 +201,7 @@ const SellerProducts: React.FC<SellerProductsProps> = ({
       console.log('📤 Sending update request for product:', productId);
 
       // Use the correct endpoint without /api prefix (API_BASE already includes it)
-      const response = await fetch(`${API_BASE.replace('/api', '')}/api/products/${productId}`, {
+      const response = await fetch(`${API_BASE}/products/${productId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -218,7 +218,7 @@ const SellerProducts: React.FC<SellerProductsProps> = ({
       }
 
       // Fetch the updated product to get complete data
-      const updatedProductResponse = await fetch(`${API_BASE.replace('/api', '')}/api/products/${productId}`, {
+      const updatedProductResponse = await fetch(`${API_BASE}/products/${productId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -233,7 +233,7 @@ const SellerProducts: React.FC<SellerProductsProps> = ({
         price: parseFloat(editFormData.price),
         image: updatedProductData.product?.image || editingProduct.image,
         imageUrl: updatedProductData.product?.imageUrl || 
-                 (updatedProductData.product?.image?.id ? `${API_BASE.replace('/api', '')}/api/images/${updatedProductData.product.image.id}` : null)
+                 (updatedProductData.product?.image?.id ? `${API_BASE}/images/${updatedProductData.product.image.id}` : null)
       };
 
       setProducts(prev => prev.map(p => 
