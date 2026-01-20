@@ -307,6 +307,30 @@ const App = () => {
     return null;
   };
 
+  const ProductSkeleton = () => (
+  <div className="bg-white rounded-lg shadow-sm overflow-hidden animate-pulse">
+    <div className="h-96 bg-gray-200" />
+
+    <div className="p-6 space-y-4">
+      <div className="flex justify-between">
+        <div className="h-5 w-2/3 bg-gray-200 rounded" />
+        <div className="h-5 w-16 bg-gray-200 rounded" />
+      </div>
+
+      <div className="space-y-2">
+        <div className="h-4 bg-gray-200 rounded w-full" />
+        <div className="h-4 bg-gray-200 rounded w-5/6" />
+        <div className="h-4 bg-gray-200 rounded w-4/6" />
+      </div>
+
+      <div className="flex justify-between items-center pt-2">
+        <div className="h-4 w-32 bg-gray-200 rounded" />
+        <div className="h-8 w-24 bg-gray-200 rounded" />
+      </div>
+    </div>
+  </div>
+);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm border-b sticky top-0 z-40">
@@ -517,9 +541,15 @@ const App = () => {
                 </div>
               </div>
             </div>
-
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {products.map(product => {
+              {_loading ? (
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {Array.from({ length: 12 }).map((_, i) => (
+                    <ProductSkeleton key={i} />
+                  ))}
+                </div>
+              ) : products.length > 0 ? (
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {products.map(product => {
                 const imageUrl = getImageUrl(product);
                 const raw = (product as any).sellerWhatsApp || (product as any).seller?.whatsapp || (product as any).whatsapp || '';
                 const normalized = raw ? String(raw).replace(/\D/g, '') : '';
@@ -647,6 +677,12 @@ const App = () => {
                 );
               })}
             </div>
+            ) : (
+              <div className="text-center py-20">
+                <ShoppingBag className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                <p className="text-xl text-gray-500">No products found matching your search.</p>
+              </div>
+            )}
 
             {totalPages > 1 && (
               <div className="flex justify-center items-center mt-8 space-x-4">
@@ -670,12 +706,6 @@ const App = () => {
               </div>
             )}
 
-            {products.length === 0 && (
-              <div className="text-center py-20">
-                <ShoppingBag className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                <p className="text-xl text-gray-500">No products found matching your search.</p>
-              </div>
-            )}
           </>
         )}
       </main>
