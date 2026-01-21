@@ -37,23 +37,27 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
   const [upgrading, setUpgrading] = useState(false);
   const [upgradeRequested, setUpgradeRequested] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [showReactivationModal, setShowReactivationModal] = useState(false);
+
+  // debug: log modal state so we can see if click toggles it
+  useEffect(() => {
+    console.debug('showReactivationModal ->', showReactivationModal);
+  }, [showReactivationModal]);
   
-   // ...existing code...
-    useEffect(() => {
+  useEffect(() => {
     // try to fetch fresh user from API (so latest whatsapp and other fields are present)
-      const init = async () => {
-        if (!currentUser) return;
-        try {
-          const fresh = await fetchCurrentUser();
-          setUser(fresh || currentUser);
-        } catch (err) {
-          // fallback to prop if API call fails
-          setUser(currentUser);
-        }
-      };
-      init();
-    }, [currentUser]);
-  // ...existing code...
+    const init = async () => {
+      if (!currentUser) return;
+      try {
+        const fresh = await fetchCurrentUser();
+        setUser(fresh || currentUser);
+      } catch (err) {
+        // fallback to prop if API call fails
+        setUser(currentUser);
+      }
+    };
+    init();
+  }, [currentUser]);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchSubscriptionStatus(); }, []);
@@ -71,7 +75,6 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
   const fetchCurrentUser = async () => {
     try {
       const user = await getCurrentUser();
-
       setUser(user);
       return user;
     } catch (error) {
@@ -282,11 +285,18 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
       return;
     }
 
+    // open modal immediately so the buyer sees the WhatsApp instructions
+    // even if the API call takes a while or fails
+    setShowReactivationModal(true);
+    
     setLoading(true);
     try {
       await requestReactivation(userId);
+      // keep modal open; show success message in-banner
       setSuccessMessage('Reactivation request sent to admin. You will be notified when it is processed.');
     } catch (err: any) {
+      console.error('Reactivation request failed:', err);
+      // keep the modal visible so user can still send proof of payment manually
       setError(err?.message || 'Failed to send reactivation request');
     } finally {
       setLoading(false);
@@ -344,10 +354,85 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
+      {/* Reactivation Modal - Single instance at top level */}
+{showReactivationModal && (
+  <div
+    className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+    role="dialog"
+    aria-modal="true"
+  >
+    <div
+  className="
+    bg-white
+    w-[360px] h-[360px]
+    rounded-2xl
+    p-6
+    flex flex-col justify-between
+
+    drop-shadow-[0_35px_60px_rgba(0,0,0,0.6)]
+    ring-2 ring-white/20
+    translate-y-[-4px]
+  "
+>
+
+      <div>
+        <h3 className="text-xl font-semibold text-gray-900 mb-3 text-center">
+          Reactivation Request
+        </h3>
+
+        <p className="text-sm text-gray-700 text-center mb-4">
+          Your request has been sent. Please send proof of payment to the admin on WhatsApp.
+          Account will be reactivated once payment is confirmed.
+        </p>
+
+        <p className="text-sm text-gray-700 text-center mb-4">
+          Use the following details to make your payment:
+        </p>
+
+        <div className="bg-gray-50 p-3 rounded-lg text-center space-y-1">
+          <p className="font-mono text-sm">
+            <b>PAYSHAP:</b> +27629622755
+          </p>
+          <p className="font-mono text-sm">
+            <b>FNB – Account:</b> 62315723321
+          </p>
+          <p className="font-mono text-sm">
+            <b>Branch Code:</b> 250655
+          </p>
+          <p className="font-mono text-sm mt-2">
+            <b>Reference:</b> Your registered email + FYC
+          </p>
+        </div>
+      </div>
+
+      <div className="flex gap-3">
+        <a
+          href={`https://wa.me/27629622755?text=${encodeURIComponent(
+            `Hi admin this is ${user?.email || ''} please see proof of payment for reactivating my subscription.`
+          )}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex-1 bg-green-600 text-white py-2 rounded-lg text-center hover:bg-green-700"
+        >
+          WhatsApp
+        </a>
+
+        <button
+          onClick={() => setShowReactivationModal(false)}
+          className="flex-1 border rounded-lg py-2 hover:bg-gray-50"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <button 
           onClick={onBack}
-         className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center space-x-2"
+          className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center space-x-2 mb-6"
         >
           <ArrowLeft className="h-5 w-5" />
           <span className="font-medium">Back to Home</span>
@@ -357,7 +442,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div className="h-16 w-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                <UserIC className="h-12 w-12 text-black" />
+                <UserIC className="h-12 w-12 text-white" />
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">User Profile</h1>
@@ -376,16 +461,15 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
                 <h3 className={`font-semibold ${subscriptionAlert.textColor} mb-1`}>
                   {subscriptionAlert.title}
                 </h3>
-                <p className={`text-sm ${subscriptionAlert.textColor}`}>
+                <p className={`text-sm ${subscriptionAlert.textColor} mb-3`}>
                   {subscriptionAlert.message}
                 </p>
 
-                {/* changed: show Request Reactivation for expired (error), Renew for warning */}
                 {subscriptionAlert.type === 'error' && (
                   <button
                     onClick={handleRequestReactivation}
                     disabled={loading || upgrading}
-                    className="w-full flex-1 bg-orange-600 text-white p-3 rounded hover:bg-orange-700 "
+                    className="mt-2 bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700 disabled:opacity-50"
                   >
                     {loading ? 'Sending request...' : 'Request Reactivation'}
                   </button>
@@ -395,12 +479,11 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
                   <button
                     onClick={handleRenewSubscription}
                     disabled={upgrading}
-                    className="w-full flex-1 bg-orange-600 text-white p-3 rounded hover:bg-orange-700 "
+                    className="mt-2 bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700 disabled:opacity-50"
                   >
                     {upgrading ? 'Processing...' : 'Renew Subscription'}
                   </button>
                 )}
-
               </div>
             </div>
           </div>
@@ -438,7 +521,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
                   <h2 className="text-lg font-semibold text-gray-900">Personal Information</h2>
                   <button 
                     onClick={handleEditToggle}
-                    className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors  flex items-center space-x-2"
+                    className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
                   >
                     <Edit3 className="h-4 w-4" />
                     <span>{editing ? 'Cancel' : 'Edit Profile'}</span>
@@ -629,10 +712,8 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
                     <button 
                       onClick={handleRequestUpgrade} 
                       disabled={loading || upgradeRequested}
-                className="w-full flex-1 bg-orange-600 text-white p-3 rounded 
-            hover:bg-orange-700 "
-
->
+                      className="w-full bg-orange-600 text-white p-3 rounded hover:bg-orange-700 disabled:opacity-50 flex items-center justify-center space-x-2"
+                    >
                       <Zap className="h-4 w-4" />
                       <span>{upgradeRequested ? 'Request Pending' : loading ? 'Sending...' : 'Request Seller Account'}</span>
                     </button>
@@ -642,7 +723,6 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
                   </div>
                 </div>
               )}
-
             </div>
           </div>
         )}
