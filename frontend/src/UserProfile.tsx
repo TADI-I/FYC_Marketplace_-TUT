@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { getSubscriptionStatus, updateUserProfile, upgradeUserToSeller, getCurrentUser, requestReactivation, requestUpgrade } from './api'; 
 import { User as UserIC, ArrowLeft, Mail, Building, CreditCard, Edit3, Save, X, Zap, AlertTriangle, Clock, CheckCircle } from 'lucide-react';
+import ReactivateModal from './reactivatemodal'; // <-- new import
 
 // Use shared types (remove duplicate User type to avoid redeclare)
 type User = {
@@ -355,79 +356,11 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       {/* Reactivation Modal - Single instance at top level */}
-{showReactivationModal && (
-  <div
-    className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-    role="dialog"
-    aria-modal="true"
-  >
-    <div
-  className="
-    bg-white
-    w-[360px] h-[360px]
-    rounded-2xl
-    p-6
-    flex flex-col justify-between
-
-    drop-shadow-[0_35px_60px_rgba(0,0,0,0.6)]
-    ring-2 ring-white/20
-    translate-y-[-4px]
-  "
->
-
-      <div>
-        <h3 className="text-xl font-semibold text-gray-900 mb-3 text-center">
-          Reactivation Request
-        </h3>
-
-        <p className="text-sm text-gray-700 text-center mb-4">
-          Your request has been sent. Please send proof of payment to the admin on WhatsApp.
-          Account will be reactivated once payment is confirmed.
-        </p>
-
-        <p className="text-sm text-gray-700 text-center mb-4">
-          Use the following details to make your payment:
-        </p>
-
-        <div className="bg-gray-50 p-3 rounded-lg text-center space-y-1">
-          <p className="font-mono text-sm">
-            <b>PAYSHAP:</b> +27629622755
-          </p>
-          <p className="font-mono text-sm">
-            <b>FNB – Account:</b> 62315723321
-          </p>
-          <p className="font-mono text-sm">
-            <b>Branch Code:</b> 250655
-          </p>
-          <p className="font-mono text-sm mt-2">
-            <b>Reference:</b> Your registered email + FYC
-          </p>
-        </div>
-      </div>
-
-      <div className="flex gap-3">
-        <a
-          href={`https://wa.me/27629622755?text=${encodeURIComponent(
-            `Hi admin this is ${user?.email || ''} please see proof of payment for reactivating my subscription.`
-          )}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex-1 bg-green-600 text-white py-2 rounded-lg text-center hover:bg-green-700"
-        >
-          WhatsApp
-        </a>
-
-        <button
-          onClick={() => setShowReactivationModal(false)}
-          className="flex-1 border rounded-lg py-2 hover:bg-gray-50"
-        >
-          Close
-        </button>
-      </div>
-    </div>
-  </div>
-)}
-
+      <ReactivateModal
+        isOpen={showReactivationModal}
+        onClose={() => setShowReactivationModal(false)}
+        userEmail={user?.email}
+      />
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <button 
