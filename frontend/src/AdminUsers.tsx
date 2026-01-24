@@ -55,52 +55,231 @@ const AdminUsers: React.FC = () => {
   if (loading) return <div>Loading users...</div>;
 
   return (
-    <div className="mt-6 p-4 border rounded bg-white">
-      <h3 className="text-lg font-semibold mb-2">Manage Users</h3>
+    <div style={{
+      marginTop: '1.5rem',
+      padding: '1rem',
+      border: '1px solid #e5e7eb',
+      borderRadius: '0.5rem',
+      backgroundColor: 'white'
+    }}>
+      <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '0.5rem' }}>
+        Manage Users
+      </h3>
 
-      <div className="mb-3 flex gap-2">
-        <button onClick={() => setFilterType('all')} className={filterType === 'all' ? 'font-bold' : ''}>All</button>
-        <button onClick={() => setFilterType('buyer')} className={filterType === 'buyer' ? 'font-bold' : ''}>Buyers</button>
-        <button onClick={() => setFilterType('seller')} className={filterType === 'seller' ? 'font-bold' : ''}>Sellers</button>
-        <button onClick={load} className="ml-auto">Refresh</button>
+      <div style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem' }}>
+        <button 
+          onClick={() => setFilterType('all')} 
+          style={{
+            padding: '0.5rem 1rem',
+            border: '1px solid #d1d5db',
+            borderRadius: '0.25rem',
+            backgroundColor: filterType === 'all' ? '#1f2937' : 'white',
+            color: filterType === 'all' ? 'white' : 'black',
+            cursor: 'pointer',
+            fontWeight: filterType === 'all' ? 600 : 400
+          }}
+        >
+          All
+        </button>
+        <button 
+          onClick={() => setFilterType('buyer')} 
+          style={{
+            padding: '0.5rem 1rem',
+            border: '1px solid #d1d5db',
+            borderRadius: '0.25rem',
+            backgroundColor: filterType === 'buyer' ? '#1f2937' : 'white',
+            color: filterType === 'buyer' ? 'white' : 'black',
+            cursor: 'pointer',
+            fontWeight: filterType === 'buyer' ? 600 : 400
+          }}
+        >
+          Buyers
+        </button>
+        <button 
+          onClick={() => setFilterType('seller')} 
+          style={{
+            padding: '0.5rem 1rem',
+            border: '1px solid #d1d5db',
+            borderRadius: '0.25rem',
+            backgroundColor: filterType === 'seller' ? '#1f2937' : 'white',
+            color: filterType === 'seller' ? 'white' : 'black',
+            cursor: 'pointer',
+            fontWeight: filterType === 'seller' ? 600 : 400
+          }}
+        >
+          Sellers
+        </button>
+        <button 
+          onClick={load} 
+          style={{
+            marginLeft: 'auto',
+            padding: '0.5rem 1rem',
+            border: '1px solid #d1d5db',
+            borderRadius: '0.25rem',
+            backgroundColor: 'white',
+            cursor: 'pointer'
+          }}
+        >
+          Refresh
+        </button>
       </div>
 
-      <div className="space-y-2">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         {users.map(u => (
-          <div key={u._id} className="p-3 border rounded flex justify-between items-start">
-            <div style={{ minWidth: 0 }}>
+          <div 
+            key={u._id} 
+            style={{
+              padding: '1.5rem',
+              border: '1px solid #e5e7eb',
+              borderRadius: '0.5rem',
+              backgroundColor: 'white',
+              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start'
+            }}
+          >
+            <div style={{ minWidth: 0, flex: 1 }}>
               {editingId === u._id ? (
-                <>
-                  <input className="w-full mb-1" value={form.name || ''} onChange={e => setForm({...form, name: e.target.value})} />
-                  <input className="w-full mb-1" value={form.email || ''} onChange={e => setForm({...form, email: e.target.value})} />
-                  <input className="w-full mb-1" value={form.campus || ''} onChange={e => setForm({...form, campus: e.target.value})} />
-                  <input className="w-full" value={form.whatsapp || ''} onChange={e => setForm({...form, whatsapp: e.target.value})} />
-                </>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.25rem' }}>
+                      Name
+                    </label>
+                    <input 
+                      value={form.name || ''} 
+                      onChange={e => setForm({...form, name: e.target.value})}
+                      style={{
+                        width: '100%',
+                        padding: '0.5rem',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '0.375rem'
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.25rem' }}>
+                      Email
+                    </label>
+                    <input 
+                      value={form.email || ''} 
+                      onChange={e => setForm({...form, email: e.target.value})}
+                      style={{
+                        width: '100%',
+                        padding: '0.5rem',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '0.375rem'
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.25rem' }}>
+                      Campus
+                    </label>
+                    <input 
+                      value={form.campus || ''} 
+                      onChange={e => setForm({...form, campus: e.target.value})}
+                      style={{
+                        width: '100%',
+                        padding: '0.5rem',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '0.375rem'
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.25rem' }}>
+                      WhatsApp
+                    </label>
+                    <input 
+                      value={form.whatsapp || ''} 
+                      onChange={e => setForm({...form, whatsapp: e.target.value})}
+                      style={{
+                        width: '100%',
+                        padding: '0.5rem',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '0.375rem'
+                      }}
+                    />
+                  </div>
+                </div>
               ) : (
                 <>
-                  <div className="font-semibold truncate">{u.name} <span className="text-xs text-gray-500">({u.type})</span></div>
-                  <div className="text-sm text-gray-600 truncate">{u.email}</div>
-                  <div className="text-sm text-gray-600">{u.campus}</div>
-                  <div className="text-sm text-gray-600">{u.whatsapp}</div>
+                  <div style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '0.25rem' }}>
+                    {u.name} 
+                    <span style={{ fontSize: '0.75rem', color: '#6b7280', fontWeight: 400, marginLeft: '0.5rem' }}>
+                      ({u.type})
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '0.875rem', color: '#4b5563', marginBottom: '0.25rem' }}>
+                    {u.email}
+                  </div>
+                  {u.campus && (
+                    <div style={{ fontSize: '0.875rem', color: '#4b5563', marginBottom: '0.25rem' }}>
+                      Campus: {u.campus}
+                    </div>
+                  )}
+                  {u.whatsapp && (
+                    <div style={{ fontSize: '0.875rem', color: '#4b5563' }}>
+                      WhatsApp: {u.whatsapp}
+                    </div>
+                  )}
+                  {u.updatedAt && (
+                    <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.5rem' }}>
+                      Last updated: {new Date(u.updatedAt).toLocaleString()}
+                    </div>
+                  )}
                 </>
               )}
             </div>
 
-            <div className="flex flex-col gap-2 ml-4">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginLeft: '1rem' }}>
               {editingId === u._id ? (
                 <>
-                  <button onClick={save} style={{ backgroundColor: '#2563eb', color: 'white', padding: '0.25rem 0.75rem', borderRadius: 4 }}>Save</button>
-                  <button onClick={() => { setEditingId(null); setForm({}); }} style={{ padding: '0.25rem 0.75rem' }}>Cancel</button>
+                  <button 
+                    onClick={save} 
+                    style={{ 
+                      backgroundColor: '#2563eb', 
+                      color: 'white', 
+                      padding: '0.5rem 1rem', 
+                      borderRadius: '0.25rem',
+                      border: 'none',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Save
+                  </button>
+                  <button 
+                    onClick={() => { setEditingId(null); setForm({}); }} 
+                    style={{ 
+                      padding: '0.5rem 1rem',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '0.25rem',
+                      backgroundColor: 'white',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Cancel
+                  </button>
                 </>
               ) : (
-                <>
-                  <button onClick={() => startEdit(u)} style={{ padding: '0.25rem 0.75rem' }}>Edit</button>
-                </>
+                <button 
+                  onClick={() => startEdit(u)} 
+                  style={{ 
+                    padding: '0.5rem 1rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '0.25rem',
+                    backgroundColor: 'white',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Edit
+                </button>
               )}
             </div>
           </div>
         ))}
-        {users.length === 0 && <div>No users</div>}
+        {users.length === 0 && <div style={{ textAlign: 'center', color: '#6b7280', padding: '2rem' }}>No users found</div>}
       </div>
     </div>
   );

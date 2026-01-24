@@ -375,7 +375,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div className="h-16 w-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                <UserIC className="h-12 w-12 text-white" />
+                <UserIC className="h-12 w-12 text-black" />
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">User Profile</h1>

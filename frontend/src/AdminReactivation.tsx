@@ -154,60 +154,88 @@ const AdminReactivation: React.FC = () => {
 
         {/* Requests List */}
         {filtered.length === 0 ? <p>No requests</p> : (
-          <ul className="space-y-3">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             {filtered.map(r => (
-              <li key={r._id} className="p-4 border rounded">
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex-1">
-                    <div className="font-semibold text-lg">{r.user?.name || r.userId}</div>
-                    <div className="text-sm text-gray-600">{r.user?.email}</div>
-                    {r.userNote && (
-                      <div className="mt-2 p-2 bg-blue-50 rounded text-sm">
-                        <strong>User Note:</strong> {r.userNote}
-                      </div>
-                    )}
-                    <div className="text-xs text-gray-500 mt-2">
-                      Requested: {new Date(r.requestedAt).toLocaleString()}
-                    </div>
-                    <div className="text-xs mt-1">
-                      Status: <span style={{
-                        fontWeight: 500,
-                        color: r.status === 'approved' ? '#16a34a' : r.status === 'rejected' ? '#ef4444' : '#ca8a04'
-                      }}>{r.status}</span>
-                    </div>
-                    {r.processedAt && (
-                      <>
-                        <div className="text-xs text-gray-500 mt-1">
-                          Processed: {new Date(r.processedAt).toLocaleString()}
-                        </div>
-                        {r.admin && (
-                          <div className="text-xs text-gray-500">
-                            By: {r.admin.name} ({r.admin.email})
-                          </div>
-                        )}
-                        {r.adminNote && (
-                          <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
-                            <strong>Admin Note:</strong> {r.adminNote}
-                          </div>
-                        )}
-                      </>
-                    )}
+              <div 
+                key={r._id} 
+                style={{
+                  padding: '1.5rem',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '0.5rem',
+                  backgroundColor: 'white',
+                  boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)'
+                }}
+              >
+                <div style={{ marginBottom: '1rem' }}>
+                  <div style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '0.25rem' }}>
+                    {r.user?.name || r.userId}
                   </div>
+                  <div style={{ fontSize: '0.875rem', color: '#4b5563' }}>
+                    {r.user?.email}
+                  </div>
+                  {r.userNote && (
+                    <div style={{
+                      marginTop: '0.75rem',
+                      padding: '0.75rem',
+                      backgroundColor: '#dbeafe',
+                      borderRadius: '0.375rem',
+                      fontSize: '0.875rem'
+                    }}>
+                      <strong>User Note:</strong> {r.userNote}
+                    </div>
+                  )}
+                  <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.75rem' }}>
+                    Requested: {new Date(r.requestedAt).toLocaleString()}
+                  </div>
+                  <div style={{ fontSize: '0.75rem', marginTop: '0.25rem' }}>
+                    Status: <span style={{
+                      fontWeight: 500,
+                      color: r.status === 'approved' ? '#16a34a' : r.status === 'rejected' ? '#ef4444' : '#ca8a04'
+                    }}>{r.status}</span>
+                  </div>
+                  {r.processedAt && (
+                    <>
+                      <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
+                        Processed: {new Date(r.processedAt).toLocaleString()}
+                      </div>
+                      {r.admin && (
+                        <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+                          By: {r.admin.name} ({r.admin.email})
+                        </div>
+                      )}
+                      {r.adminNote && (
+                        <div style={{
+                          marginTop: '0.75rem',
+                          padding: '0.75rem',
+                          backgroundColor: '#f9fafb',
+                          borderRadius: '0.375rem',
+                          fontSize: '0.875rem'
+                        }}>
+                          <strong>Admin Note:</strong> {r.adminNote}
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
 
                 {/* Processing Section */}
                 {r.status === 'pending' && (
-                  <div className="mt-3 pt-3 border-t">
+                  <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #e5e7eb' }}>
                     {processingId === r._id ? (
-                      <div className="space-y-3">
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                         <div>
-                          <label className="block text-sm font-medium mb-1">
+                          <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.25rem' }}>
                             Subscription Type
                           </label>
                           <select
                             value={subscriptionType}
                             onChange={(e) => setSubscriptionType(e.target.value as 'monthly' | 'yearly')}
-                            className="w-full p-2 border rounded"
+                            style={{
+                              width: '100%',
+                              padding: '0.5rem',
+                              border: '1px solid #d1d5db',
+                              borderRadius: '0.375rem'
+                            }}
                           >
                             <option value="monthly">Monthly (30 days)</option>
                             <option value="yearly">Yearly (365 days)</option>
@@ -215,34 +243,62 @@ const AdminReactivation: React.FC = () => {
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium mb-1">
+                          <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.25rem' }}>
                             Admin Note *
                           </label>
                           <textarea
                             value={adminNote}
                             onChange={(e) => setAdminNote(e.target.value)}
                             placeholder="Enter reason for approval/rejection..."
-                            className="w-full p-2 border rounded resize-none"
+                            style={{
+                              width: '100%',
+                              padding: '0.5rem',
+                              border: '1px solid #d1d5db',
+                              borderRadius: '0.375rem',
+                              resize: 'none'
+                            }}
                             rows={3}
                           />
                         </div>
 
-                        <div className="flex gap-2">
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
                           <button
                             onClick={() => handleProcess(r._id, 'approve')}
-                            className="flex-1 bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700"
+                            style={{
+                              backgroundColor: '#16a34a',
+                              color: 'white',
+                              padding: '0.5rem 1rem',
+                              borderRadius: '0.25rem',
+                              border: 'none',
+                              cursor: 'pointer',
+                              flex: 1
+                            }}
                           >
                             Approve
                           </button>
                           <button
                             onClick={() => handleProcess(r._id, 'reject')}
-                            className="flex-1 bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700"
+                            style={{
+                              backgroundColor: '#ef4444',
+                              color: 'white',
+                              padding: '0.5rem 1rem',
+                              borderRadius: '0.25rem',
+                              border: 'none',
+                              cursor: 'pointer',
+                              flex: 1
+                            }}
                           >
                             Reject
                           </button>
                           <button
                             onClick={cancelProcessing}
-                            className="px-4 py-2 border rounded hover:bg-gray-50"
+                            style={{
+                              padding: '0.5rem 1rem',
+                              border: '1px solid #d1d5db',
+                              borderRadius: '0.25rem',
+                              backgroundColor: 'white',
+                              cursor: 'pointer'
+                            }}
                           >
                             Cancel
                           </button>
@@ -251,7 +307,15 @@ const AdminReactivation: React.FC = () => {
                     ) : (
                       <button
                         onClick={() => startProcessing(r._id)}
-                        className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
+                        style={{
+                          width: '100%',
+                          backgroundColor: '#2563eb',
+                          color: 'white',
+                          padding: '0.5rem 1rem',
+                          borderRadius: '0.25rem',
+                          border: 'none',
+                          cursor: 'pointer'
+                        }}
                       >
                         Process Request
                       </button>
@@ -260,13 +324,13 @@ const AdminReactivation: React.FC = () => {
                 )}
 
                 {r.status !== 'pending' && (
-                  <div className="mt-3 text-sm text-gray-500 italic">
+                  <div style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#6b7280', fontStyle: 'italic' }}>
                     Already processed - no actions available
                   </div>
                 )}
-              </li>
+              </div>
             ))}
-          </ul>
+          </div>
         )}
       </div>
     </div>
