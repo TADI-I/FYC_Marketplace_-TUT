@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { registerUser } from "./api";
+import { loginUser } from './api';
 
 type User = {
   id: number;
@@ -11,202 +11,105 @@ type User = {
   campus: string;
 };
 
-interface RegisterFormProps {
-  onRegisterSuccess: (user: User) => void;
-  onShowLogin: () => void;
+interface LoginFormProps {
+  onLoginSuccess: (user: User) => void;
+  onShowRegister: () => void;
   onClose: () => void;
 }
 
-const RegisterForm: React.FC<RegisterFormProps> = ({
-  onRegisterSuccess,
-  onShowLogin,
-  onClose,
-}) => {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [campus, setCampus] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [whatsapp, setWhatsapp] = useState("");
-  const [accountType, setAccountType] = useState<"buyer" | "seller">("buyer");
+const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess, onShowRegister, onClose }) => {
+  const [loginData, setLoginData] = useState({ email: '', password: '' });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const campuses = [
-    { id: "pretoria-main", name: "Pretoria Central" },
-    { id: "soshanguve-S", name: "Soshanguve South" },
-    { id: "soshanguve-N", name: "Soshanguve North" },
-    { id: "ga-rankuwa", name: "Ga-Rankuwa" },
-    { id: "pretoria-west", name: "Pretoria Arcadia" },
-    { id: "arts", name: "Arts" },
-    { id: "emalahleni", name: "eMalahleni" },
-    { id: "mbombela", name: "Mbombela" },
-    { id: "polokwane", name: "Polokwane" },
-  ];
-
-  const handleRegister = async () => {
-    if (!name || !email || !password || !confirmPassword || !campus) {
-      alert("Please fill in all fields");
+  const handleLogin = async () => {
+    if (!loginData.email || !loginData.password) {
+      setError('Please fill in all fields');
       return;
     }
 
-    if (password.length < 8) {
-      alert("Password must be at least 8 characters long");
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      alert("Passwords do not match");
-      return;
-    }
+    setLoading(true);
+    setError('');
 
     try {
-      const response = await registerUser({
-        name,
-        email,
-        password,
-        campus,
-        whatsapp,
-        type: accountType,
+      
+      const response = await loginUser({
+        email: loginData.email,
+        password: loginData.password
       });
-
-      onRegisterSuccess(response.user);
-
-      setName("");
-      setEmail("");
-      setPassword("");
-      setConfirmPassword("");
-      setCampus("");
-      setWhatsapp("");
-
+      
+      onLoginSuccess(response.user);
+      setLoginData({ email: '', password: '' });
+      
+      // Show success message
       setTimeout(() => {
-        alert(`Welcome to FYC Marketplace, ${response.user.name}!`);
+        alert(`Welcome back, ${response.user.name}!`);
       }, 100);
+
     } catch (error) {
-      let errorMessage = "Registration failed. Please try again.";
-      if (error && typeof error === "object" && "message" in error) {
+      let errorMessage = 'Login failed. Please try again.';
+      if (error && typeof error === 'object' && 'message' in error) {
         errorMessage = (error as { message: string }).message;
       }
-      alert(errorMessage);
+      console.error('❌ Login failed:', errorMessage);
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleSwitchToLogin = () => {
+  const handleSwitchToRegister = () => {
     onClose();
-    onShowLogin();
+    onShowRegister();
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-96 max-h-[90vh] overflow-y-auto">
-        <h2 className="text-xl font-bold mb-4">
-          Register for FYC Marketplace
-        </h2>
-
-        <input
-          type="text"
-          placeholder="Full Name"
-          className="w-full p-3 border rounded mb-4"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          autoFocus
-        />
-
+      <div className="bg-white rounded-lg p-6 w-96">
+        <h2 className="text-xl font-bold mb-4">Login to FYC Marketplace</h2>
+        {error && <p className="text-red-600 mb-4">{error}</p>}
         <input
           type="email"
           placeholder="Email Address"
           className="w-full p-3 border rounded mb-4"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          value={loginData.email}
+          onChange={e => setLoginData(prev => ({ ...prev, email: e.target.value }))}
+          autoFocus
+          disabled={loading}
         />
-
         <input
           type="password"
-          placeholder="Password (min 8 characters)"
+          placeholder="Password"
           className="w-full p-3 border rounded mb-4"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          value={loginData.password}
+          onChange={e => setLoginData(prev => ({ ...prev, password: e.target.value }))}
+          onFocus={(e) => e.target.select()}
+          disabled={loading}
         />
-
-        <input
-          type="password"
-          placeholder="Confirm Password"
-          className={`w-full p-3 border rounded mb-4 ${
-            confirmPassword
-              ? password !== confirmPassword
-                ? "border-red-500"
-                : "border-green-500"
-              : ""
-          }`}
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-        />
-
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Account Type
-          </label>
-          <div className="flex gap-4">
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                checked={accountType === "buyer"}
-                onChange={() => setAccountType("buyer")}
-              />
-              Buyer
-            </label>
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                checked={accountType === "seller"}
-                onChange={() => setAccountType("seller")}
-              />
-              Seller
-            </label>
-          </div>
-        </div>
-
-        <select
-          className="w-full p-3 border rounded mb-4"
-          value={campus}
-          onChange={(e) => setCampus(e.target.value)}
-        >
-          <option value="">Select Your Location</option>
-          {campuses.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
-
-        <input
-          type="tel"
-          placeholder="WhatsApp (+27...)"
-          className="w-full p-3 border rounded mb-4"
-          value={whatsapp}
-          onChange={(e) => setWhatsapp(e.target.value)}
-        />
-
         <div className="flex gap-2">
-          <button
-            onClick={handleRegister}
-            className="flex-1 bg-orange-600 text-white p-3 rounded hover:bg-orange-700"
+          <button 
+            onClick={handleLogin} 
+            disabled={loading}
+            className="flex-1 bg-orange-600 text-white p-3 rounded hover:bg-orange-700 disabled:bg-orange-400 disabled:cursor-not-allowed"
           >
-            Register
+            {loading ? 'Logging in...' : 'Login'}
           </button>
-          <button
-            onClick={onClose}
-            className="flex-1 bg-gray-300 p-3 rounded hover:bg-gray-400"
+          <button 
+            onClick={onClose} 
+            disabled={loading}
+            className="flex-1 bg-gray-300 p-3 rounded hover:bg-gray-400 disabled:bg-gray-200 disabled:cursor-not-allowed"
           >
             Cancel
           </button>
         </div>
-
         <p className="text-center mt-4 text-sm text-gray-600">
-          Already have an account?{" "}
-          <button
+          Don't have an account?{' '}
+          <button 
             className="text-blue-600 hover:underline"
-            onClick={handleSwitchToLogin}
+            onClick={handleSwitchToRegister}
+            disabled={loading}
           >
-            Login here
+            Register here
           </button>
         </p>
       </div>
@@ -214,4 +117,4 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
   );
 };
 
-export default RegisterForm;
+export default LoginForm;

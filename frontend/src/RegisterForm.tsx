@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { registerUser } from "./api";
 
@@ -102,123 +101,114 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
           Register for FYC Marketplace
         </h2>
 
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleRegister();
-          }}
-          className="space-y-4"
-        >
-          <input
-            type="text"
-            placeholder="Full Name"
-            className="w-full p-3 border rounded"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
+        <input
+          type="text"
+          placeholder="Full Name"
+          className="w-full p-3 border rounded mb-4"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          autoFocus
+        />
 
-          <input
-            type="email"
-            placeholder="Email Address"
-            className="w-full p-3 border rounded"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
+        <input
+          type="email"
+          placeholder="Email Address"
+          className="w-full p-3 border rounded mb-4"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
 
-          <input
-            type="password"
-            placeholder="Password (min 8 characters)"
-            className="w-full p-3 border rounded"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
+        <input
+          type="password"
+          placeholder="Password (min 8 characters)"
+          className="w-full p-3 border rounded mb-4"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
 
-          <input
-            type="password"
-            placeholder="Confirm Password"
-            className={`w-full p-3 border rounded ${
-              confirmPassword
-                ? password !== confirmPassword
-                  ? "border-red-500"
-                  : "border-green-500"
-                : ""
-            }`}
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-          />
+        <input
+          type="password"
+          placeholder="Confirm Password"
+          className={`w-full p-3 border rounded mb-4 ${
+            confirmPassword
+              ? password !== confirmPassword
+                ? "border-red-500"
+                : "border-green-500"
+              : ""
+          }`}
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+        />
 
-          <div>
-            <label className="block text-sm font-medium mb-2">
-              Account Type
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Account Type
+          </label>
+          <div className="flex gap-4">
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                checked={accountType === "buyer"}
+                onChange={() => setAccountType("buyer")}
+              />
+              Buyer
             </label>
-            <div className="flex gap-4">
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  checked={accountType === "buyer"}
-                  onChange={() => setAccountType("buyer")}
-                />
-                Buyer
-              </label>
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  checked={accountType === "seller"}
-                  onChange={() => setAccountType("seller")}
-                />
-                Seller
-              </label>
-            </div>
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                checked={accountType === "seller"}
+                onChange={() => setAccountType("seller")}
+              />
+              Seller
+            </label>
           </div>
+        </div>
 
-          <select
-            className="w-full p-3 border rounded"
-            value={campus}
-            onChange={(e) => setCampus(e.target.value)}
+        <select
+          className="w-full p-3 border rounded mb-4"
+          value={campus}
+          onChange={(e) => setCampus(e.target.value)}
+        >
+          <option value="">Select Your Location</option>
+          {campuses.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+
+        <input
+          type="tel"
+          placeholder="WhatsApp (+27...)"
+          className="w-full p-3 border rounded mb-4"
+          value={whatsapp}
+          onChange={(e) => setWhatsapp(e.target.value)}
+        />
+
+        <div className="flex gap-2">
+          <button
+            onClick={handleRegister}
+            className="flex-1 bg-orange-600 text-white p-3 rounded hover:bg-orange-700"
           >
-            <option value="">Select Your Location</option>
-            {campuses.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+            Register
+          </button>
+          <button
+            onClick={onClose}
+            className="flex-1 bg-gray-300 p-3 rounded hover:bg-gray-400"
+          >
+            Cancel
+          </button>
+        </div>
 
-          <input
-            type="tel"
-            placeholder="WhatsApp (+27...)"
-            className="w-full p-3 border rounded"
-            value={whatsapp}
-            onChange={(e) => setWhatsapp(e.target.value)}
-          />
-
-          <div className="flex gap-2">
-            <button
-              type="submit"
-              className="flex-1 bg-orange-600 text-white p-3 rounded hover:bg-orange-700"
-            >
-              Register
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 bg-gray-300 p-3 rounded hover:bg-gray-400"
-            >
-              Cancel
-            </button>
-          </div>
-
-          <p className="text-center text-sm text-gray-600">
-            Already have an account?{" "}
-            <button
-              type="button"
-              onClick={handleSwitchToLogin}
-              className="text-blue-600 hover:underline"
-            >
-              Login here
-            </button>
-          </p>
-        </form>
+        <p className="text-center mt-4 text-sm text-gray-600">
+          Already have an account?{" "}
+          <button
+            className="text-blue-600 hover:underline"
+            onClick={handleSwitchToLogin}
+          >
+            Login here
+          </button>
+        </p>
       </div>
     </div>
   );
