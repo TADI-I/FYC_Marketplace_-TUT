@@ -9,8 +9,8 @@ interface ReactivateModalProps {
 const ReactivateModal: React.FC<ReactivateModalProps> = ({ isOpen, onClose, userEmail }) => {
   if (!isOpen) return null;
 
-  const waLink = `https://wa.me/27629622755?text=${encodeURIComponent(
-    `Hi admin this is ${userEmail || ''} please see proof of payment for reactivating my subscription as a seller.`
+  const waLink = `https://wa.me/27711126204?text=${encodeURIComponent(
+    `Hi Market place admin this is: ${userEmail || ''} ,please see proof of payment for reactivating my subscription as a seller.`
   )}`;
 
   return (
