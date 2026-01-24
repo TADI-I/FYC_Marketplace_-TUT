@@ -382,6 +382,33 @@ export const processReactivationRequest = async (requestId, action, adminNote = 
   return response;
 };
 
+// Add these exports near the other admin functions
+
+export const getAllUsers = async (type = 'all') => {
+  try {
+    const queryParam = type && type !== 'all' ? `?type=${type}` : '';
+    const response = await apiCall(`/api/admin/users${queryParam}`);
+    return response;
+  } catch (error) {
+    console.error('❌ Failed to get users:', error);
+    throw new Error(error.message || 'Failed to load users');
+  }
+};
+
+export const updateUser = async (userId, updateData) => {
+  try {
+    const response = await apiCall(`/api/users/${userId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updateData),
+    });
+    return response;
+  } catch (error) {
+    console.error('❌ Failed to update user:', error);
+    throw new Error(error.message || 'Failed to update user');
+  }
+};
+
+
 // ==============================================
 // REFERENCE DATA API FUNCTIONS
 // ==============================================
@@ -625,6 +652,8 @@ const api = {
   loginUser,
   logoutUser,
   getCurrentUser,
+  getAllUsers,
+  updateUser,
   isAuthenticated,
   getProducts,
   getProduct,

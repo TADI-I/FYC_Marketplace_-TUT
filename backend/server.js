@@ -157,6 +157,12 @@ app.get('/api/user/subscription-status', authenticateToken, (req, res) => userCo
 app.post('/api/users/:id/reactivate-request', authenticateToken, validateObjectId('id'), (req, res) => {
   return userController.createReactivationRequest(req, res, req.db);
 });
+// Add this route with your other admin routes
+app.get('/api/admin/users', 
+  authenticateToken, 
+  requireAdmin, 
+  (req, res) => userController.getAllUsers(req, res, req.db)
+);
 
 // Admin endpoints: list and process reactivation requests
 app.get('/api/admin/reactivation-requests', authenticateToken, requireAdmin, (req, res) => {
