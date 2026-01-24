@@ -291,7 +291,7 @@ exports.createReactivationRequest = async (req, res, db) => {
 
     const doc = {
       userId: new ObjectId(userId),
-      note: req.body.note || '',
+      userNote: req.body.note || '', // Renamed from 'note' to 'userNote' for clarity
       status: 'pending',
       requestedAt: new Date(),
       processedAt: null,
@@ -331,6 +331,19 @@ exports.getReactivationRequests = async (req, res, db) => {
       usersMap = users.reduce((acc, u) => { acc[u._id.toString()] = u; return acc; }, {});
     }
 
+    // Include admin info for processed requests
+    const adminIds = requests
+      .map(r => r.adminId)
+      .filter(id => id && ObjectId.isValid(id));
+    let adminsMap = {};
+    if (adminIds.length) {
+      const admins = await db.collection('users')
+        .find({ _id: { $in: adminIds } })
+        .project({ name: 1, email: 1 })
+        .toArray();
+      adminsMap = admins.reduce((acc, a) => { acc[a._id.toString()] = a; return acc; }, {});
+    }
+
     const payload = requests.map(r => ({
       ...r,
       user: usersMap[r.userId?.toString()] ? {
@@ -338,6 +351,11 @@ exports.getReactivationRequests = async (req, res, db) => {
         name: usersMap[r.userId.toString()].name,
         email: usersMap[r.userId.toString()].email,
         subscriptionStatus: usersMap[r.userId.toString()].subscriptionStatus
+      } : null,
+      admin: r.adminId && adminsMap[r.adminId.toString()] ? {
+        _id: adminsMap[r.adminId.toString()]._id,
+        name: adminsMap[r.adminId.toString()].name,
+        email: adminsMap[r.adminId.toString()].email
       } : null
     }));
 
@@ -365,6 +383,10 @@ exports.processReactivationRequest = async (req, res, db) => {
       return res.status(400).json({ error: 'Invalid request ID', success: false });
     }
 
+    if (!action || !['approve', 'reject'].includes(action)) {
+      return res.status(400).json({ error: 'Invalid action. Must be "approve" or "reject"', success: false });
+    }
+
     const requestDoc = await db.collection('reactivationRequests').findOne({ _id: new ObjectId(requestId) });
     if (!requestDoc) return res.status(404).json({ error: 'Request not found', success: false });
     if (requestDoc.status !== 'pending') return res.status(409).json({ error: 'Request already processed', success: false });
@@ -374,7 +396,7 @@ exports.processReactivationRequest = async (req, res, db) => {
       status: action === 'approve' ? 'approved' : 'rejected',
       processedAt: new Date(),
       adminId,
-      adminNote
+      adminNote: adminNote.trim() // Store admin's note
     };
 
     await db.collection('reactivationRequests').updateOne({ _id: new ObjectId(requestId) }, { $set: patch });
@@ -391,6 +413,7 @@ exports.processReactivationRequest = async (req, res, db) => {
             subscriptionStatus: 'active',
             subscriptionStartDate: new Date(),
             subscriptionEndDate,
+            subscriptionType,
             type: 'seller',
             updatedAt: new Date()
           }
@@ -398,7 +421,7 @@ exports.processReactivationRequest = async (req, res, db) => {
       );
     }
 
-    res.json({ success: true, message: `Request ${action}ed` });
+    res.json({ success: true, message: `Request ${action}ed successfully` });
   } catch (error) {
     console.error('❌ Process reactivation request error:', error);
     res.status(500).json({ error: 'Failed to process request', success: false });
