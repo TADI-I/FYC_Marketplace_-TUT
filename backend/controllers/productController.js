@@ -1,4 +1,4 @@
-// controllers/productController.js
+// controllers/productController.js - Updated with verification support
 const { ObjectId } = require('mongodb');
 
 const isValidCategory = (category) => {
@@ -35,7 +35,7 @@ exports.getProducts = async (req, res, db) => {
 
     console.log('🔍 Filter:', filter);
 
-    // Aggregation pipeline to exclude products whose seller account is not active
+    // Aggregation pipeline to include seller verification and whatsapp dynamically
     const pageNum = Math.max(parseInt(page, 10) || 1, 1);
     const pageLimit = Math.max(parseInt(limit, 10) || 12, 1);
     const skip = (pageNum - 1) * pageLimit;
@@ -62,10 +62,11 @@ exports.getProducts = async (req, res, db) => {
           ]
         }
       },
-      // expose a couple of seller fields on the product document so frontend can use them
+      // Add seller fields dynamically (whatsapp, verified status, name, campus)
       {
         $addFields: {
           sellerWhatsApp: '$seller.whatsapp',
+          sellerVerified: { $ifNull: ['$seller.verified', false] }, // Add verified status
           sellerName: '$seller.name',
           sellerCampus: '$seller.campus'
         }
@@ -75,7 +76,8 @@ exports.getProducts = async (req, res, db) => {
       {
         $facet: {
           data: [
-            { $sort: { createdAt: -1 } },
+            // Sort by verified status first (verified sellers first), then by date
+            { $sort: { sellerVerified: -1, createdAt: -1 } },
             { $skip: skip },
             { $limit: pageLimit }
           ],
@@ -127,7 +129,7 @@ exports.getProductById = async (req, res, db) => {
       });
     }
     
-    // Lookup product and seller, ensure seller active
+    // Lookup product and seller, ensure seller active, get verification status
     const pipeline = [
       { $match: { _id: new ObjectId(productId), status: 'active' } },
       {
@@ -146,6 +148,15 @@ exports.getProductById = async (req, res, db) => {
             { 'seller.subscriptionEndDate': { $exists: false } },
             { 'seller.subscriptionEndDate': { $gte: new Date() } }
           ]
+        }
+      },
+      // Add seller fields dynamically
+      {
+        $addFields: {
+          sellerWhatsApp: '$seller.whatsapp',
+          sellerVerified: { $ifNull: ['$seller.verified', false] },
+          sellerName: '$seller.name',
+          sellerCampus: '$seller.campus'
         }
       },
       { $project: { seller: 0 } }
@@ -190,11 +201,16 @@ exports.getProductsBySeller = async (req, res, db) => {
       });
     }
 
-    // Ensure seller exists and is active
-    const seller = await db.collection('users').findOne({ _id: new ObjectId(sellerId) });
+    // Ensure seller exists and is active, get their verification status
+    const seller = await db.collection('users').findOne(
+      { _id: new ObjectId(sellerId) },
+      { projection: { subscribed: 1, subscriptionEndDate: 1, verified: 1, whatsapp: 1, name: 1, campus: 1 } }
+    );
+    
     if (!seller) {
       return res.status(404).json({ error: 'Seller not found', success: false });
     }
+    
     const hasActiveSubscription = seller.subscribed && (!seller.subscriptionEndDate || new Date() <= new Date(seller.subscriptionEndDate));
     if (!hasActiveSubscription) {
       return res.status(404).json({ error: 'Seller account not active', success: false });
@@ -208,11 +224,20 @@ exports.getProductsBySeller = async (req, res, db) => {
       .sort({ createdAt: -1 })
       .toArray();
 
-    console.log(`✅ Found ${products.length} products for seller ${sellerId}`);
+    // Add seller's current whatsapp, verification, name, campus to each product dynamically
+    const enhancedProducts = products.map(product => ({
+      ...product,
+      sellerWhatsApp: seller.whatsapp || null,
+      sellerVerified: seller.verified || false,
+      sellerName: seller.name,
+      sellerCampus: seller.campus
+    }));
+
+    console.log(`✅ Found ${enhancedProducts.length} products for seller ${sellerId}`);
     
     res.json({
       success: true,
-      products
+      products: enhancedProducts
     });
 
   } catch (error) {
@@ -224,7 +249,7 @@ exports.getProductsBySeller = async (req, res, db) => {
   }
 };
 
-// Create product
+// Create product - DO NOT STORE whatsapp or verified status
 exports.createProduct = async (req, res, db) => {
   try {
     console.log('➕ Creating product:', req.body);
@@ -254,10 +279,12 @@ exports.createProduct = async (req, res, db) => {
       });
     }
 
-    // Get seller information
+    // Get seller information (only name and campus for metadata)
     const seller = req.userProfile;
 
     // Create product object
+    // NOTE: We do NOT store whatsapp or verified status here
+    // These will be fetched dynamically from the seller's user record
     const product = {
       title: title.trim(),
       description: description.trim(),
@@ -281,13 +308,32 @@ exports.createProduct = async (req, res, db) => {
     const result = await db.collection('products').insertOne(product);
     console.log('✅ Product insertion result:', result.insertedId);
     
-    const createdProduct = { ...product, _id: result.insertedId };
+    // Fetch the created product with seller info added dynamically
+    const createdProduct = await db.collection('products').aggregate([
+      { $match: { _id: result.insertedId } },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'sellerId',
+          foreignField: '_id',
+          as: 'seller'
+        }
+      },
+      { $unwind: '$seller' },
+      {
+        $addFields: {
+          sellerWhatsApp: '$seller.whatsapp',
+          sellerVerified: { $ifNull: ['$seller.verified', false] }
+        }
+      },
+      { $project: { seller: 0 } }
+    ]).toArray();
 
     res.status(201).json({
       success: true,
       message: 'Product created successfully',
       productId: result.insertedId,
-      product: createdProduct
+      product: createdProduct[0] || { ...product, _id: result.insertedId }
     });
 
   } catch (error) {

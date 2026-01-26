@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { getSubscriptionStatus, updateUserProfile, upgradeUserToSeller, getCurrentUser, requestReactivation, requestUpgrade } from './api'; 
 import { User as UserIC, ArrowLeft, Mail, Building, CreditCard, Edit3, Save, X, Zap, AlertTriangle, Clock, CheckCircle } from 'lucide-react';
 import ReactivateModal from './reactivatemodal'; // <-- new import
+import VerificationSection from './VerificationSection';
 
 // Use shared types (remove duplicate User type to avoid redeclare)
 type User = {
@@ -634,6 +635,15 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
                   )}
                 </div>
               </div>
+
+              {user?.type === 'seller' && (
+                <div className="bg-white rounded-xl shadow-sm border p-6">
+                  <VerificationSection 
+                    userId={user._id || String(user.id)} 
+                    userType={user.type}
+                  />
+                </div>
+              )}
 
               {(user.type === 'customer' || user.type === 'buyer') && (
                 <div className="bg-white rounded-xl shadow-sm border p-6">

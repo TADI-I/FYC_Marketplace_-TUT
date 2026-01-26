@@ -5,6 +5,9 @@ require('dotenv').config();
 const { MongoClient, ServerApiVersion, ObjectId, GridFSBucket } = require('mongodb');
 const multer = require('multer');
 const path = require('path');
+const verificationController = require('./controllers/verificationController');
+
+
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -15,7 +18,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // MongoDB connection
-const uri = process.env.MONGODB_URI || "mongodb+srv://tadiwasongore_db_user:BigdaddyT@sales.o3ww0ii.mongodb.net/tut_marketplace?retryWrites=true&w=majority&appName=sales";
+const uri = process.env.MONGODB_URI;
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
@@ -56,6 +59,18 @@ async function connectToMongoDB() {
     process.exit(1);
   }
 }
+
+const requireUpload = (fieldName) => (req, res, next) => {
+  if (!upload) {
+    return res.status(503).json({
+      error: 'Upload service not initialized',
+      success: false
+    });
+  }
+
+  upload.single(fieldName)(req, res, next);
+};
+
 
 // Configure multer storage with GridFS (after DB connection)
 function initializeGridFSStorage() {
@@ -142,6 +157,83 @@ const withOwnershipCheck = (resourceType) => (req, res, next) => {
 // Health checks
 app.get('/api/health', (req, res) => healthController.healthCheck(req, res, req.db));
 app.get('/api/test-db', (req, res) => healthController.testDbConnection(req, res, req.db));
+
+// Replace ONLY the verification image endpoint in server.js
+// This should be placed BEFORE any other /api/verification routes
+
+// THIS MUST COME FIRST - Before any other /api/verification routes
+app.get('/api/verification/image/:imageId', async (req, res) => {
+  try {
+    const imageId = req.params.imageId;
+    
+    console.log('🖼️ IMAGE REQUEST - imageId:', imageId);
+
+    if (!ObjectId.isValid(imageId)) {
+      return res.status(400).send('Invalid image ID');
+    }
+
+    const bucket = new GridFSBucket(db, { bucketName: 'verification_images' });
+
+    const files = await db
+      .collection('verification_images.files')
+      .find({ _id: new ObjectId(imageId) })
+      .toArray();
+
+    if (!files || files.length === 0) {
+      return res.status(404).send('Image not found');
+    }
+
+    const file = files[0];
+
+    // FORCE NO CACHE
+    res.setHeader('Content-Type', file.contentType || 'image/jpeg');
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.removeHeader('ETag');
+
+    const downloadStream = bucket.openDownloadStream(new ObjectId(imageId));
+    downloadStream.pipe(res);
+
+  } catch (error) {
+    console.error('❌ Image error:', error);
+    res.status(500).send('Server error');
+  }
+});
+
+// Admin: Get all verification requests
+app.get(
+  '/api/verification-requests',
+  authenticateToken,
+  requireAdmin,
+  (req, res) => verificationController.getVerificationRequests(req, res, req.db)
+);
+
+// Admin: Process a verification request
+app.post(
+  '/api/verification-requests/:requestId/process',
+  authenticateToken,
+  requireAdmin,
+  validateObjectId('requestId'),
+  (req, res) => verificationController.processVerificationRequest(req, res, req.db)
+);
+
+// User: Submit verification request
+app.post(
+  '/api/verification/:userId/submit',
+  authenticateToken,
+  validateObjectId('userId'),
+  requireUpload('idPhoto'),
+  (req, res) => verificationController.submitVerificationRequest(req, res, req.db)
+);
+
+// User: Get verification status
+app.get(
+  '/api/verification/:userId/status',
+  authenticateToken,
+  validateObjectId('userId'),
+  (req, res) => verificationController.getVerificationStatus(req, res, req.db)
+);
 
 // Auth routes
 app.post('/api/auth/register', (req, res) => authController.register(req, res, req.db));

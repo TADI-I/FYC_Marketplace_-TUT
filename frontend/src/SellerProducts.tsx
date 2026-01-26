@@ -1,41 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Edit, Trash2, ArrowLeft, Plus, Loader, X } from 'lucide-react';
+import { User, Product, getProductId, getImageUrl as getProductImageUrl } from './types';
+
 import { deleteProduct, getProductsBySeller } from './api';
 
-type Product = {
-  id: number;
-  _id?: string; 
-  title: string;
-  description: string;
-  price: number;
-  category: string;
-  sellerId: number;
-  sellerName: string;
-  sellerCampus: string;
-  image?: string | {
-    id: string;
-    filename: string;
-    contentType: string;
-    uploadDate: Date;
-  };
-  imageUrl?: string;
-  rating: number;
-  type: string;
-};
-
-const getProductId = (product: Product): string => {
-  return product._id ? product._id.toString() : product.id.toString();
-};
-
-type User = {
-  id: number;
-  _id?: string;
-  name: string;
-  email: string;
-  type: string;
-  subscribed: boolean;
-  campus: string;
-};
 
 interface SellerProductsProps {
   currentUser: User | null;
@@ -282,14 +250,7 @@ const SellerProducts: React.FC<SellerProductsProps> = ({
   };
 
   const getImageUrl = (product: Product) => {
-    if (product.imageUrl) return product.imageUrl;
-    if (typeof product.image === 'object' && product.image?.id) {
-      return `${API_BASE}/images/${product.image.id}`;
-    }
-    if (typeof product.image === 'string') {
-      return product.image;
-    }
-    return null;
+    return getProductImageUrl(product, API_BASE || '');
   };
 
   if (!currentUser || currentUser.type !== 'seller') {

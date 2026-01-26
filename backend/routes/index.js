@@ -9,6 +9,7 @@ const userController = require('../controllers/userController');
 const messageController = require('../controllers/messageController');
 const referenceController = require('../controllers/referenceController');
 const healthController = require('../controllers/healthController');
+const verificationController = require('../controllers/verificationController');
 
 // Import middleware
 const { 
@@ -58,7 +59,44 @@ module.exports = (db) => {
   // Admin endpoints
   router.get('/admin/reactivation-requests', authenticateToken, requireAdmin, withDb(userController.getReactivationRequests));
   router.post('/admin/reactivation-requests/:requestId/process', authenticateToken, requireAdmin, validateObjectId('requestId'), withDb(userController.processReactivationRequest));
+// Verification routes
+ router.post(
+    '/verification/:userId/submit',
+    authenticateToken,
+    validateObjectId('userId'),
+    withOwnershipCheck('user'),
+    verificationController.upload.single('idPhoto'),
+    withDb(verificationController.submitVerificationRequest)
+  );
 
+  router.get(
+    '/verification/:userId/status',
+    authenticateToken,
+    validateObjectId('userId'),
+    withDb(verificationController.getVerificationStatus)
+  );
+
+  router.get(
+    '/verification/requests',
+    authenticateToken,
+    requireAdmin,
+    withDb(verificationController.getVerificationRequests)
+  );
+
+  router.get(
+    '/verification/image/:imageId',
+    authenticateToken,
+    requireAdmin,
+    withDb(verificationController.getVerificationImage)
+  );
+
+  router.post(
+    '/verification/:requestId/process',
+    authenticateToken,
+    requireAdmin,
+    validateObjectId('requestId'),
+    withDb(verificationController.processVerificationRequest)
+  );
   // Product routes
   router.get('/products', withDb(productController.getProducts));
   router.get('/products/:id', validateObjectId('id'), withDb(productController.getProductById));

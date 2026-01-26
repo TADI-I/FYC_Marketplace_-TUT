@@ -1,5 +1,5 @@
 // controllers/userController.js
-const { ObjectId } = require('mongodb');
+const { ObjectId, GridFSBucket } = require('mongodb');
 
 // Get subscription status
 exports.getSubscriptionStatus = async (req, res, db) => {
@@ -429,33 +429,36 @@ exports.processReactivationRequest = async (req, res, db) => {
 };
 
 // Admin: list users (buyers/sellers/all)
+
+
+// Get all users (admin only)
 exports.getAllUsers = async (req, res, db) => {
   try {
-    // ensure only admins call this
-    if (!req.user || req.user.type !== 'admin') {
-      return res.status(403).json({ error: 'Not allowed', success: false });
+    const { type } = req.query;
+    
+    let filter = {};
+    if (type && type !== 'all') {
+      filter.type = type;
     }
-
-    const type = req.query.type; // optional: buyer | seller | all
-    const filter = {};
-    if (type === 'seller') filter.type = 'seller';
-    if (type === 'buyer') filter.type = 'buyer';
 
     const users = await db.collection('users')
       .find(filter)
-      .project({ password: 0 })
-      .sort({ updatedAt: -1 })
+      .project({ password: 0 }) // Don't send passwords
+      .sort({ createdAt: -1 })
       .toArray();
 
-    const counts = {
-      total: users.length,
-      sellers: users.filter(u => u.type === 'seller').length,
-      buyers: users.filter(u => u.type === 'buyer').length
-    };
+    console.log(`✅ Retrieved ${users.length} users`);
 
-    res.json({ success: true, users, counts });
+    res.json({
+      success: true,
+      users
+    });
+
   } catch (error) {
     console.error('❌ Get all users error:', error);
-    res.status(500).json({ error: 'Failed to load users', success: false });
+    res.status(500).json({ 
+      error: 'Failed to retrieve users',
+      success: false
+    });
   }
 };

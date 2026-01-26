@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingBag, Plus, Search, User, Star, Filter, Locate } from 'lucide-react';
+import { ShoppingBag, Plus, Search, User as Useric, Star, Filter, Locate } from 'lucide-react';
+import { User, Product, Message, MessageMap, Category, Campus, getImageUrl as getProductImageUrl, normalizeSAPhoneNumber } from './types';
+
 import './App.css';
 import {
   logoutUser,
@@ -16,51 +18,11 @@ import UserProfile from './UserProfile';
 import AdminReactivation from './AdminReactivation';
 import logo from './assets/facicon.jpeg';
 
+
 const App = () => {
  
   const API_BASE = process.env.REACT_APP_API_BASE ;
   
-  type User = {
-    id: number;
-    name: string;
-    email: string;
-    type: string;
-    subscribed: boolean;
-    campus: string;
-  };
-  
-  type Product = {
-    id: number;
-    title: string;
-    description: string;
-    price: number;
-    category: string;
-    sellerId: number;
-    sellerName: string;
-    sellerCampus: string;
-    image?: {
-      id: string;
-      filename: string;
-      contentType: string;
-      uploadDate: Date;
-    } | string;
-    imageUrl?: string; 
-    rating: number;
-    type: string;
-  };
-  
-  type Message = {
-    id: number;
-    senderId: number;
-    receiverId: number;
-    text: string;
-    timestamp: string;
-    read: boolean;
-  };
-  
-  type MessageMap = {
-    [key: string]: Message[];
-  };
 
   // prefix unused state values with _ to satisfy eslint
   const [_error, setError] = useState<string>('');
@@ -115,34 +77,41 @@ const App = () => {
   const [hasPrev, setHasPrev] = useState(false);
 
   const fetchProducts = async (page = 1, filters = {}) => {
-    try {
-      setLoading(true);
-      const response = await getProducts({
-        page,
-        limit: 12,
-        category: selectedCategory !== 'all' ? selectedCategory : '',
-        campus: selectedCampus !== 'all' ? selectedCampus : '',
-        search: searchTerm || '',
-        ...filters
-      });
+  try {
+    setLoading(true);
+    const response = await getProducts({
+      page,
+      limit: 12,
+      category: selectedCategory !== 'all' ? selectedCategory : '',
+      campus: selectedCampus !== 'all' ? selectedCampus : '',
+      search: searchTerm || '',
+      ...filters
+    });
 
-      const sortedProducts = Array.isArray(response.products) 
-        ? response.products.sort((a: Product, b: Product) => a.title.localeCompare(b.title))
-        : [];
-      setProducts(sortedProducts);
-      setCurrentPage(response.pagination.currentPage);
-      setTotalPages(response.pagination.totalPages);
-      setTotalProducts(response.pagination.totalProducts);
-      setHasNext(response.pagination.hasNext);
-      setHasPrev(response.pagination.hasPrev);
-      setError('');
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch products');
-      console.error('Error fetching products:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    // Sort products: verified sellers first, then by title
+    const sortedProducts = Array.isArray(response.products) 
+      ? response.products.sort((a: Product, b: Product) => {
+          // First sort by verification status (verified first)
+          if (a.sellerVerified && !b.sellerVerified) return -1;
+          if (!a.sellerVerified && b.sellerVerified) return 1;
+          // Then sort alphabetically by title
+          return a.title.localeCompare(b.title);
+        })
+      : [];
+    setProducts(sortedProducts);
+    setCurrentPage(response.pagination.currentPage);
+    setTotalPages(response.pagination.totalPages);
+    setTotalProducts(response.pagination.totalProducts);
+    setHasNext(response.pagination.hasNext);
+    setHasPrev(response.pagination.hasPrev);
+    setError('');
+  } catch (err: any) {
+    setError(err.message || 'Failed to fetch products');
+    console.error('Error fetching products:', err);
+  } finally {
+    setLoading(false);
+  }
+};
 
   // intentionally ignore exhaustive-deps here to avoid re-creating fetchProducts;
   // fetchProducts is stable for this simple usage
@@ -296,15 +265,8 @@ const App = () => {
     }));
   };
 
-  const getImageUrl = (product: Product) => {
-    if (product.imageUrl) return product.imageUrl;
-    if (typeof product.image === 'object' && product.image?.id) {
-      return `${API_BASE}/images/${product.image.id}`;
-    }
-    if (typeof product.image === 'string') {
-      return product.image;
-    }
-    return null;
+ const getImageUrl = (product: Product) => {
+    return getProductImageUrl(product, API_BASE || '');
   };
 
   const ProductSkeleton = () => (
@@ -349,7 +311,7 @@ const App = () => {
                   className="p-2 rounded-lg hover:bg-gray-100 transition-colors group"
                   title="My Profile"
                 >
-                  <User className="h-6 w-6 text-gray-600 group-hover:text-blue-600 transition-colors" />
+                  <Useric className="h-6 w-6 text-gray-600 group-hover:text-blue-600 transition-colors" />
                 </button>
 
                 {currentUser.type === 'seller' && currentUser.subscribed && (
@@ -551,10 +513,10 @@ const App = () => {
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {products.map(product => {
                 const imageUrl = getImageUrl(product);
-                const raw = (product as any).sellerWhatsApp || (product as any).seller?.whatsapp || (product as any).whatsapp || '';
-                const normalized = raw ? String(raw).replace(/\D/g, '') : '';
-                const waMessage = encodeURIComponent(`Hi ${product.sellerName || ''}, I'm interested in your listing "${product.title}".`);
-                const waLink = normalized ? `https://wa.me/${normalized}?text=${waMessage}` : null;
+                  const raw = (product as any).sellerWhatsApp || (product as any).seller?.whatsapp || (product as any).whatsapp || '';
+                  const normalized = normalizeSAPhoneNumber(raw);
+                  const waMessage = encodeURIComponent(`Hi ${product.sellerName || ''}, I'm interested in your listing "${product.title}".`);
+                  const waLink = normalized ? `https://wa.me/${normalized}?text=${waMessage}` : null;
 
                 return (
                   <div key={product.id} className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
@@ -587,13 +549,38 @@ const App = () => {
                       </div>
 
                       <p className="text-gray-600 text-sm mb-4 line-clamp-3">{product.description}</p>
-
+                        <div className="flex items-center space-x-2 mb-3">
+                          {product.sellerVerified ? (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            
+                              Verified Seller
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                              Unverified Seller
+                            </span>
+                          )}
+                        </div>
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center text-sm text-gray-500 space-x-6">
-                          <div className="flex items-center">
-                            <User className="h-4 w-4 mr-1" />
-                            <span>{product.sellerName}</span>
-                          </div>
+                        <div className="flex items-center">
+                          <Useric className="h-4 w-4 mr-1" />
+                          <span>{product.sellerName}</span>
+                          {product.sellerVerified && (
+                            <svg 
+                              className="h-4 w-4 ml-1 text-blue-600" 
+                              fill="currentColor" 
+                              viewBox="0 0 20 20"
+                             // title="Verified Seller"
+                            >
+                              <path 
+                                fillRule="evenodd" 
+                                d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" 
+                                clipRule="evenodd" 
+                              />
+                            </svg>
+                          )}
+                        </div>
                           <div className="flex items-center">
                             <Locate className="h-4 w-4 mr-1" />
                             <span>{product.sellerCampus}</span>

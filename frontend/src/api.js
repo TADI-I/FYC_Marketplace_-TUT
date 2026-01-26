@@ -646,6 +646,94 @@ export async function requestUpgrade(userId) {
   }
 }
 
+export const submitVerificationRequest = async (userId, idPhotoFile) => {
+  try {
+    const token = localStorage.getItem('auth_token');
+    if (!token) throw new Error('Authentication required');
+
+    const formData = new FormData();
+    formData.append('idPhoto', idPhotoFile);
+
+    const response = await fetch(`${API_BASE}/api/verification/${userId}/submit`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Failed to submit verification');
+    return data;
+  } catch (error) {
+    console.error('❌ Submit verification failed:', error);
+    throw error;
+  }
+};
+
+export const getVerificationStatus = async (userId) => {
+  try {
+    const token = localStorage.getItem('auth_token');
+    if (!token) throw new Error('Authentication required');
+
+    const response = await fetch(`${API_BASE}/api/verification/${userId}/status`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Failed to get verification status');
+    return data;
+  } catch (error) {
+    console.error('❌ Get verification status failed:', error);
+    throw error;
+  }
+};
+
+export const getVerificationRequests = async (status = 'pending') => {
+  try {
+    const token = localStorage.getItem('auth_token');
+    if (!token) throw new Error('Authentication required');
+
+    const response = await fetch(`${API_BASE}/api/verification-requests?status=${status}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Failed to get verification requests');
+    return data;
+  } catch (error) {
+    console.error('❌ Get verification requests failed:', error);
+    throw error;
+  }
+};
+
+export const processVerificationRequest = async (requestId, action, adminNote = '') => {
+  try {
+    const token = localStorage.getItem('auth_token');
+    if (!token) throw new Error('Authentication required');
+
+    const response = await fetch(`${API_BASE}/api/verification-requests/${requestId}/process`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ action, adminNote }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Failed to process verification');
+    return data;
+  } catch (error) {
+    console.error('❌ Process verification failed:', error);
+    throw error;
+  }
+};
+
 // assign export to a named variable to satisfy import/no-anonymous-default-export
 const api = {
   registerUser,
@@ -675,6 +763,10 @@ const api = {
   getCampuses,
   getCategories,
   testConnection,
-  generateConversationId
+  generateConversationId,
+  submitVerificationRequest,
+  getVerificationStatus,
+  getVerificationRequests,
+  processVerificationRequest
 };
 export default api;
