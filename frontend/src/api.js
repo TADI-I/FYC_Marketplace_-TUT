@@ -1,4 +1,4 @@
-const API_BASE = process.env.REACT_APP_API_BASE ;
+const API_BASE = 'http://localhost:5001';
 
 // API Helper function
 const apiCall = async (endpoint, options = {}) => {

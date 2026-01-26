@@ -7,6 +7,16 @@ type RequestItem = any;
 type TabKey = 'all' | 'pending' | 'approved' | 'rejected';
 type MainTabKey = 'reactivation' | 'verification' | 'users';
 
+// CRITICAL: Must match backend URL
+const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001';
+
+const FALLBACK_IMAGE = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+  `<svg xmlns='http://www.w3.org/2000/svg' width='800' height='600'>
+     <rect width='100%' height='100%' fill='#f3f4f6'/>
+     <text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='#9ca3af' font-family='Arial, Helvetica, sans-serif' font-size='22'>Image unavailable</text>
+   </svg>`
+);
+
 const AdminReactivation: React.FC = () => {
   const [requests, setRequests] = useState<RequestItem[]>([]);
   const [verificationRequests, setVerificationRequests] = useState<any[]>([]);
@@ -20,6 +30,23 @@ const AdminReactivation: React.FC = () => {
   const [subscriptionType, setSubscriptionType] = useState<'monthly' | 'yearly'>('monthly');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [verificationFilter, setVerificationFilter] = useState<'pending' | 'approved' | 'rejected' | 'all'>('pending');
+
+  // Build proper image URL with API_BASE
+  const buildImageUrl = (imageUrl: string): string => {
+    if (!imageUrl) return FALLBACK_IMAGE;
+    
+    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://') || imageUrl.startsWith('data:')) {
+      return imageUrl;
+    }
+    
+    const cleanBase = API_BASE.replace(/\/$/, '');
+    const cleanPath = imageUrl.replace(/^\/+/, '');
+    const cacheBuster = `?t=${Date.now()}`;
+    const fullUrl = `${cleanBase}/${cleanPath}${cacheBuster}`;
+    
+    console.log('🔗 Built image URL:', fullUrl);
+    return fullUrl;
+  };
 
   const loadReactivation = async () => {
     setLoading(true);
@@ -308,7 +335,6 @@ const AdminReactivation: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Processing Section */}
                   {r.status === 'pending' && (
                     <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #e5e7eb' }}>
                       {processingId === r._id ? (
@@ -471,142 +497,151 @@ const AdminReactivation: React.FC = () => {
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {verificationRequests.map((request) => (
-                <div 
-                  key={request._id} 
-                  style={{
-                    padding: '1rem',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '0.5rem',
-                    backgroundColor: 'white',
-                    boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
-                  }}
-                >
-                  <div style={{ display: 'flex', gap: '1rem' }}>
-                    {/* ID Photo Thumbnail */}
-                    <div style={{ flexShrink: 0 }}>
-                      <button
-                        onClick={() => setSelectedImage(request.imageUrl)}
-                        style={{
-                          position: 'relative',
-                          cursor: 'pointer',
-                          border: 'none',
-                          padding: 0,
-                          background: 'none'
-                        }}
-                      >
-                        <img
-                          src={request.imageUrl}
-                          alt="ID verification"
+              {verificationRequests.map((request) => {
+                const imageUrl = buildImageUrl(request.imageUrl);
+                
+                return (
+                  <div 
+                    key={request._id} 
+                    style={{
+                      padding: '1rem',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '0.5rem',
+                      backgroundColor: 'white',
+                      boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
+                    }}
+                  >
+                    <div style={{ display: 'flex', gap: '1rem' }}>
+                      {/* ID Photo Thumbnail */}
+                      <div style={{ flexShrink: 0 }}>
+                        <button
+                          onClick={() => setSelectedImage(imageUrl)}
                           style={{
-                            width: '8rem',
-                            height: '8rem',
-                            objectFit: 'cover',
-                            borderRadius: '0.5rem',
-                            border: '2px solid #d1d5db'
+                            position: 'relative',
+                            cursor: 'pointer',
+                            border: 'none',
+                            padding: 0,
+                            background: 'none'
                           }}
-                        />
-                        <div style={{
-                          position: 'absolute',
-                          inset: 0,
-                          backgroundColor: 'rgba(0, 0, 0, 0)',
-                          borderRadius: '0.5rem',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          transition: 'background-color 0.2s'
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.3)'}
-                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0)'}
                         >
-                          <Eye style={{ width: '2rem', height: '2rem', color: 'white', opacity: 0 }} 
-                            onMouseEnter={(e) => (e.currentTarget as SVGElement).style.opacity = '1'}
+                          <img
+                            src={imageUrl}
+                            alt="ID verification"
+                            onError={(e) => {
+                              console.error('❌ Image failed:', imageUrl);
+                              (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE;
+                            }}
+                            onLoad={() => console.log('✅ Image loaded:', imageUrl)}
+                            style={{
+                              width: '8rem',
+                              height: '8rem',
+                              objectFit: 'cover',
+                              borderRadius: '0.5rem',
+                              border: '2px solid #d1d5db'
+                            }}
                           />
-                        </div>
-                      </button>
-                    </div>
-
-                    {/* Request Details */}
-                    <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '0.5rem' }}>
-                        <div>
-                          <h4 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '0.25rem' }}>
-                            {request.user?.name || 'Unknown'}
-                          </h4>
-                          <p style={{ fontSize: '0.875rem', color: '#6b7280' }}>{request.user?.email}</p>
-                          <p style={{ fontSize: '0.875rem', color: '#6b7280' }}>Campus: {request.user?.campus}</p>
-                        </div>
-                        {getStatusBadge(request.status)}
+                          <div style={{
+                            position: 'absolute',
+                            inset: 0,
+                            backgroundColor: 'rgba(0, 0, 0, 0)',
+                            borderRadius: '0.5rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            transition: 'background-color 0.2s'
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.3)'}
+                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0)'}
+                          >
+                            <Eye style={{ width: '2rem', height: '2rem', color: 'white', opacity: 0 }} 
+                              onMouseEnter={(e) => (e.currentTarget as SVGElement).style.opacity = '1'}
+                            />
+                          </div>
+                        </button>
                       </div>
 
-                      <div style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.75rem' }}>
-                        Requested: {new Date(request.requestedAt).toLocaleString()}
-                        {request.processedAt && (
-                          <> • Processed: {new Date(request.processedAt).toLocaleString()}</>
+                      {/* Request Details */}
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '0.5rem' }}>
+                          <div>
+                            <h4 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '0.25rem' }}>
+                              {request.user?.name || 'Unknown'}
+                            </h4>
+                            <p style={{ fontSize: '0.875rem', color: '#6b7280' }}>{request.user?.email}</p>
+                            <p style={{ fontSize: '0.875rem', color: '#6b7280' }}>Campus: {request.user?.campus}</p>
+                          </div>
+                          {getStatusBadge(request.status)}
+                        </div>
+
+                        <div style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.75rem' }}>
+                          Requested: {new Date(request.requestedAt).toLocaleString()}
+                          {request.processedAt && (
+                            <> • Processed: {new Date(request.processedAt).toLocaleString()}</>
+                          )}
+                        </div>
+
+                        {request.adminNote && (
+                          <div style={{
+                            backgroundColor: '#f9fafb',
+                            padding: '0.5rem',
+                            borderRadius: '0.375rem',
+                            marginBottom: '0.75rem'
+                          }}>
+                            <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+                              <strong>Admin Note:</strong> {request.adminNote}
+                            </p>
+                          </div>
+                        )}
+
+                        {request.status === 'pending' && (
+                          <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <button
+                              onClick={() => {
+                                const note = prompt('Add an optional note (or leave blank):');
+                                if (note !== null) handleVerificationProcess(request._id, 'approve', note);
+                              }}
+                              style={{
+                                backgroundColor: '#16a34a',
+                                color: 'white',
+                                padding: '0.5rem 1rem',
+                                borderRadius: '0.375rem',
+                                border: 'none',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem'
+                              }}
+                            >
+                              <CheckCircle style={{ width: '1rem', height: '1rem' }} />
+                              <span>Approve</span>
+                            </button>
+                            <button
+                              onClick={() => {
+                                const note = prompt('Reason for rejection:');
+                                if (note) handleVerificationProcess(request._id, 'reject', note);
+                              }}
+                              style={{
+                                backgroundColor: '#ef4444',
+                                color: 'white',
+                                padding: '0.5rem 1rem',
+                                borderRadius: '0.375rem',
+                                border: 'none',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem'
+                              }}
+                            >
+                              <XCircle style={{ width: '1rem', height: '1rem' }} />
+                              <span>Reject</span>
+                            </button>
+                          </div>
                         )}
                       </div>
-
-                      {request.adminNote && (
-                        <div style={{
-                          backgroundColor: '#f9fafb',
-                          padding: '0.5rem',
-                          borderRadius: '0.375rem',
-                          marginBottom: '0.75rem'
-                        }}>
-                          <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>
-                            <strong>Admin Note:</strong> {request.adminNote}
-                          </p>
-                        </div>
-                      )}
-
-                      {request.status === 'pending' && (
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                          <button
-                            onClick={() => {
-                              const note = prompt('Add an optional note (or leave blank):');
-                              if (note !== null) handleVerificationProcess(request._id, 'approve', note);
-                            }}
-                            style={{
-                              backgroundColor: '#16a34a',
-                              color: 'white',
-                              padding: '0.5rem 1rem',
-                              borderRadius: '0.375rem',
-                              border: 'none',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '0.5rem'
-                            }}
-                          >
-                            <CheckCircle style={{ width: '1rem', height: '1rem' }} />
-                            <span>Approve</span>
-                          </button>
-                          <button
-                            onClick={() => {
-                              const note = prompt('Reason for rejection:');
-                              if (note) handleVerificationProcess(request._id, 'reject', note);
-                            }}
-                            style={{
-                              backgroundColor: '#ef4444',
-                              color: 'white',
-                              padding: '0.5rem 1rem',
-                              borderRadius: '0.375rem',
-                              border: 'none',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '0.5rem'
-                            }}
-                          >
-                            <XCircle style={{ width: '1rem', height: '1rem' }} />
-                            <span>Reject</span>
-                          </button>
-                        </div>
-                      )}
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -645,6 +680,10 @@ const AdminReactivation: React.FC = () => {
             <img
               src={selectedImage}
               alt="ID verification full size"
+              onError={(e) => {
+                console.error('❌ Full size failed:', selectedImage);
+                (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE;
+              }}
               style={{
                 maxWidth: '90vw',
                 maxHeight: '90vh',

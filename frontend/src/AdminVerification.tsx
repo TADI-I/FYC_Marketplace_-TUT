@@ -1,7 +1,14 @@
-// AdminVerification.tsx - Fixed with aggressive cache busting
+// AdminVerification.tsx - Fixed with proper API_BASE
 import React, { useState, useEffect } from 'react';
 import { CheckCircle, XCircle, Clock, Eye } from 'lucide-react';
 import { getVerificationRequests, processVerificationRequest } from './api';
+
+// CRITICAL: Must match the API_BASE in api.js
+const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001';
+
+// DEBUGGING - This should print in console when component loads
+console.log('🚨 AdminVerification loaded with API_BASE:', API_BASE);
+console.log('🚨 Window location:', window.location.href);
 
 const FALLBACK_IMAGE = 'data:image/svg+xml;utf8,' + encodeURIComponent(
   `<svg xmlns='http://www.w3.org/2000/svg' width='800' height='600'>
@@ -17,8 +24,6 @@ const AdminVerification: React.FC = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [processing, setProcessing] = useState<string | null>(null);
   const [counts, setCounts] = useState<any>({});
-
-  const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001';
 
   useEffect(() => {
     fetchRequests();
@@ -68,7 +73,7 @@ const AdminVerification: React.FC = () => {
     );
   };
 
-  // Build image URL with aggressive cache busting
+  // Build image URL with proper API_BASE
   const buildImageUrl = (imageUrl: string): string => {
     if (!imageUrl) return FALLBACK_IMAGE;
     
@@ -79,9 +84,9 @@ const AdminVerification: React.FC = () => {
     const cleanBase = API_BASE.replace(/\/$/, '');
     const cleanPath = imageUrl.replace(/^\/+/, '');
     
-    // Add timestamp + random to force fresh load every time
-    const cacheBuster = `v=${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const fullUrl = `${cleanBase}/${cleanPath}?${cacheBuster}`;
+    // Add cache-busting timestamp
+    const cacheBuster = `?t=${Date.now()}`;
+    const fullUrl = `${cleanBase}/${cleanPath}${cacheBuster}`;
     
     console.log('🔗 Built image URL:', fullUrl);
     return fullUrl;
@@ -229,9 +234,7 @@ const AdminVerification: React.FC = () => {
             className="absolute top-4 right-4 w-10 h-10 flex items-center justify-center text-white bg-red-600 hover:bg-red-700 rounded-full transition-all z-50 shadow-lg"
             aria-label="Close"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <XCircle className="h-8 w-8" />
           </button>
           <img
             src={selectedImage}
