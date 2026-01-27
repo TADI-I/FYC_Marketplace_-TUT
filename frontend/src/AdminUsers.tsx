@@ -18,6 +18,11 @@ const AdminUsers: React.FC = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<Partial<User>>({});
 
+  // Calculate counts
+  const buyerCount = users.filter(u => u.type === 'buyer').length;
+  const sellerCount = users.filter(u => u.type === 'seller').length;
+  const totalCount = users.length;
+
   const load = async () => {
     setLoading(true);
     try {
@@ -65,6 +70,42 @@ const AdminUsers: React.FC = () => {
       <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '0.5rem' }}>
         Manage Users
       </h3>
+
+      {/* Stats Display */}
+      <div style={{
+        display: 'flex',
+        gap: '1rem',
+        marginBottom: '1rem',
+        padding: '1rem',
+        backgroundColor: '#f9fafb',
+        borderRadius: '0.5rem',
+        border: '1px solid #e5e7eb'
+      }}>
+        <div style={{ flex: 1, textAlign: 'center' }}>
+          <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1f2937' }}>
+            {totalCount}
+          </div>
+          <div style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.25rem' }}>
+            Total Users
+          </div>
+        </div>
+        <div style={{ flex: 1, textAlign: 'center' }}>
+          <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#2563eb' }}>
+            {buyerCount}
+          </div>
+          <div style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.25rem' }}>
+            Buyers
+          </div>
+        </div>
+        <div style={{ flex: 1, textAlign: 'center' }}>
+          <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#f97316' }}>
+            {sellerCount}
+          </div>
+          <div style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.25rem' }}>
+            Sellers
+          </div>
+        </div>
+      </div>
 
       <div style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem' }}>
         <button 

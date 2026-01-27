@@ -30,6 +30,8 @@ const AdminReactivation: React.FC = () => {
   const [subscriptionType, setSubscriptionType] = useState<'monthly' | 'yearly'>('monthly');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [verificationFilter, setVerificationFilter] = useState<'pending' | 'approved' | 'rejected' | 'all'>('pending');
+  const [verificationProcessingId, setVerificationProcessingId] = useState<string | null>(null);
+  const [verificationNote, setVerificationNote] = useState<string>('');
 
   // Build proper image URL with API_BASE
   const buildImageUrl = (imageUrl: string): string => {
@@ -97,10 +99,17 @@ const AdminReactivation: React.FC = () => {
     }
   };
 
-  const handleVerificationProcess = async (requestId: string, action: 'approve' | 'reject', note: string = '') => {
+  const handleVerificationProcess = async (requestId: string, action: 'approve' | 'reject') => {
+    if (!verificationNote.trim()) {
+      alert('Please enter a note before processing the verification');
+      return;
+    }
+
     try {
-      await processVerificationRequest(requestId, action, note);
+      await processVerificationRequest(requestId, action, verificationNote);
       await loadVerification();
+      setVerificationProcessingId(null);
+      setVerificationNote('');
       alert(`Verification ${action}d successfully`);
     } catch (err: any) {
       alert(err.message || `Failed to ${action} verification`);
@@ -117,6 +126,16 @@ const AdminReactivation: React.FC = () => {
     setProcessingId(null);
     setAdminNote('');
     setSubscriptionType('monthly');
+  };
+
+  const startVerificationProcessing = (id: string) => {
+    setVerificationProcessingId(id);
+    setVerificationNote('');
+  };
+
+  const cancelVerificationProcessing = () => {
+    setVerificationProcessingId(null);
+    setVerificationNote('');
   };
 
   const getStatusBadge = (status: string) => {
@@ -594,47 +613,95 @@ const AdminReactivation: React.FC = () => {
                         )}
 
                         {request.status === 'pending' && (
-                          <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            <button
-                              onClick={() => {
-                                const note = prompt('Add an optional note (or leave blank):');
-                                if (note !== null) handleVerificationProcess(request._id, 'approve', note);
-                              }}
-                              style={{
-                                backgroundColor: '#16a34a',
-                                color: 'white',
-                                padding: '0.5rem 1rem',
-                                borderRadius: '0.375rem',
-                                border: 'none',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.5rem'
-                              }}
-                            >
-                              <CheckCircle style={{ width: '1rem', height: '1rem' }} />
-                              <span>Approve</span>
-                            </button>
-                            <button
-                              onClick={() => {
-                                const note = prompt('Reason for rejection:');
-                                if (note) handleVerificationProcess(request._id, 'reject', note);
-                              }}
-                              style={{
-                                backgroundColor: '#ef4444',
-                                color: 'white',
-                                padding: '0.5rem 1rem',
-                                borderRadius: '0.375rem',
-                                border: 'none',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.5rem'
-                              }}
-                            >
-                              <XCircle style={{ width: '1rem', height: '1rem' }} />
-                              <span>Reject</span>
-                            </button>
+                          <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid #e5e7eb' }}>
+                            {verificationProcessingId === request._id ? (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                <div>
+                                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.25rem' }}>
+                                    Admin Note *
+                                  </label>
+                                  <textarea
+                                    value={verificationNote}
+                                    onChange={(e) => setVerificationNote(e.target.value)}
+                                    placeholder="Enter reason for approval/rejection..."
+                                    style={{
+                                      width: '100%',
+                                      padding: '0.5rem',
+                                      border: '1px solid #d1d5db',
+                                      borderRadius: '0.375rem',
+                                      resize: 'none'
+                                    }}
+                                    rows={3}
+                                  />
+                                </div>
+
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                  <button
+                                    onClick={() => handleVerificationProcess(request._id, 'approve')}
+                                    style={{
+                                      backgroundColor: '#16a34a',
+                                      color: 'white',
+                                      padding: '0.5rem 1rem',
+                                      borderRadius: '0.375rem',
+                                      border: 'none',
+                                      cursor: 'pointer',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '0.5rem',
+                                      flex: 1
+                                    }}
+                                  >
+                                    <CheckCircle style={{ width: '1rem', height: '1rem' }} />
+                                    <span>Approve</span>
+                                  </button>
+                                  <button
+                                    onClick={() => handleVerificationProcess(request._id, 'reject')}
+                                    style={{
+                                      backgroundColor: '#ef4444',
+                                      color: 'white',
+                                      padding: '0.5rem 1rem',
+                                      borderRadius: '0.375rem',
+                                      border: 'none',
+                                      cursor: 'pointer',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '0.5rem',
+                                      flex: 1
+                                    }}
+                                  >
+                                    <XCircle style={{ width: '1rem', height: '1rem' }} />
+                                    <span>Reject</span>
+                                  </button>
+                                  <button
+                                    onClick={cancelVerificationProcessing}
+                                    style={{
+                                      padding: '0.5rem 1rem',
+                                      border: '1px solid #d1d5db',
+                                      borderRadius: '0.375rem',
+                                      backgroundColor: 'white',
+                                      cursor: 'pointer'
+                                    }}
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => startVerificationProcessing(request._id)}
+                                style={{
+                                  width: '100%',
+                                  backgroundColor: '#2563eb',
+                                  color: 'white',
+                                  padding: '0.5rem 1rem',
+                                  borderRadius: '0.375rem',
+                                  border: 'none',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                Process Request
+                              </button>
+                            )}
                           </div>
                         )}
                       </div>

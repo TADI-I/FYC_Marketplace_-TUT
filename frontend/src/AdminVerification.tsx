@@ -24,6 +24,7 @@ const AdminVerification: React.FC = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [processing, setProcessing] = useState<string | null>(null);
   const [counts, setCounts] = useState<any>({});
+  const [verificationNote, setVerificationNote] = useState<string>('');
 
   useEffect(() => {
     fetchRequests();
@@ -43,17 +44,31 @@ const AdminVerification: React.FC = () => {
     }
   };
 
-  const handleProcess = async (requestId: string, action: 'approve' | 'reject', note: string = '') => {
-    setProcessing(requestId);
+  const handleProcess = async (requestId: string, action: 'approve' | 'reject') => {
+    if (!verificationNote.trim()) {
+      alert('Please enter a note before processing the verification');
+      return;
+    }
+
     try {
-      await processVerificationRequest(requestId, action, note);
+      await processVerificationRequest(requestId, action, verificationNote);
       await fetchRequests();
+      setProcessing(null);
+      setVerificationNote('');
       alert(`Verification ${action}d successfully`);
     } catch (err: any) {
       alert(err.message || `Failed to ${action} verification`);
-    } finally {
-      setProcessing(null);
     }
+  };
+
+  const startProcessing = (id: string) => {
+    setProcessing(id);
+    setVerificationNote('');
+  };
+
+  const cancelProcessing = () => {
+    setProcessing(null);
+    setVerificationNote('');
   };
 
   const getStatusBadge = (status: string) => {
@@ -103,7 +118,118 @@ const AdminVerification: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="bg-white rounded-xl shadow-sm border p-6 mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Seller Verification Requests</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Seller Verification Requests</h2>
+
+        {/* Summary Stats - Similar to AdminUsers */}
+        <div style={{
+          display: 'flex',
+          gap: '1rem',
+          marginBottom: '1.5rem',
+          padding: '1rem',
+          backgroundColor: '#f9fafb',
+          borderRadius: '0.5rem',
+          border: '1px solid #e5e7eb'
+        }}>
+          <div style={{ flex: 1, textAlign: 'center' }}>
+            <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1f2937' }}>
+              {counts.all || 0}
+            </div>
+            <div style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.25rem' }}>
+              Total Requests
+            </div>
+          </div>
+          <div style={{ flex: 1, textAlign: 'center' }}>
+            <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#eab308' }}>
+              {counts.pending || 0}
+            </div>
+            <div style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.25rem' }}>
+              Pending
+            </div>
+          </div>
+          <div style={{ flex: 1, textAlign: 'center' }}>
+            <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#16a34a' }}>
+              {counts.approved || 0}
+            </div>
+            <div style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.25rem' }}>
+              Approved
+            </div>
+          </div>
+          <div style={{ flex: 1, textAlign: 'center' }}>
+            <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#dc2626' }}>
+              {counts.rejected || 0}
+            </div>
+            <div style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.25rem' }}>
+              Rejected
+            </div>
+          </div>
+        </div>
+
+        {/* Detailed Stats Display */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {counts.all || 0}
+                </div>
+                <div className="text-sm text-gray-600 mt-1">
+                  Total Requests
+                </div>
+              </div>
+              <div className="bg-gray-200 rounded-full p-3">
+                <Clock className="h-6 w-6 text-gray-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-2xl font-bold text-yellow-900">
+                  {counts.pending || 0}
+                </div>
+                <div className="text-sm text-yellow-700 mt-1">
+                  Pending
+                </div>
+              </div>
+              <div className="bg-yellow-200 rounded-full p-3">
+                <Clock className="h-6 w-6 text-yellow-700" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-2xl font-bold text-green-900">
+                  {counts.approved || 0}
+                </div>
+                <div className="text-sm text-green-700 mt-1">
+                  Approved
+                </div>
+              </div>
+              <div className="bg-green-200 rounded-full p-3">
+                <CheckCircle className="h-6 w-6 text-green-700" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-red-50 rounded-lg p-4 border border-red-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-2xl font-bold text-red-900">
+                  {counts.rejected || 0}
+                </div>
+                <div className="text-sm text-red-700 mt-1">
+                  Rejected
+                </div>
+              </div>
+              <div className="bg-red-200 rounded-full p-3">
+                <XCircle className="h-6 w-6 text-red-700" />
+              </div>
+            </div>
+          </div>
+        </div>
 
         <div className="flex space-x-2 mb-6">
           {['pending', 'approved', 'rejected', 'all'].map((status) => (
@@ -186,29 +312,53 @@ const AdminVerification: React.FC = () => {
                       )}
 
                       {request.status === 'pending' && (
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => {
-                              const note = prompt('Add an optional note (or leave blank):');
-                              if (note !== null) handleProcess(request._id, 'approve', note);
-                            }}
-                            disabled={processing === request._id}
-                            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center space-x-2"
-                          >
-                            <CheckCircle className="h-4 w-4" />
-                            <span>Approve</span>
-                          </button>
-                          <button
-                            onClick={() => {
-                              const note = prompt('Reason for rejection:');
-                              if (note) handleProcess(request._id, 'reject', note);
-                            }}
-                            disabled={processing === request._id}
-                            className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center space-x-2"
-                          >
-                            <XCircle className="h-4 w-4" />
-                            <span>Reject</span>
-                          </button>
+                        <div className="mt-3 pt-3 border-t border-gray-200">
+                          {processing === request._id ? (
+                            <div className="flex flex-col gap-3">
+                              <div>
+                                <label className="block text-sm font-medium mb-1">
+                                  Admin Note *
+                                </label>
+                                <textarea
+                                  value={verificationNote}
+                                  onChange={(e) => setVerificationNote(e.target.value)}
+                                  placeholder="Enter reason for approval/rejection..."
+                                  className="w-full p-2 border border-gray-300 rounded resize-none"
+                                  rows={3}
+                                />
+                              </div>
+
+                              <div className="flex space-x-2">
+                                <button
+                                  onClick={() => handleProcess(request._id, 'approve')}
+                                  className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center justify-center space-x-2"
+                                >
+                                  <CheckCircle className="h-4 w-4" />
+                                  <span>Approve</span>
+                                </button>
+                                <button
+                                  onClick={() => handleProcess(request._id, 'reject')}
+                                  className="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 flex items-center justify-center space-x-2"
+                                >
+                                  <XCircle className="h-4 w-4" />
+                                  <span>Reject</span>
+                                </button>
+                                <button
+                                  onClick={cancelProcessing}
+                                  className="px-4 py-2 border border-gray-300 rounded-lg bg-white hover:bg-gray-50"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => startProcessing(request._id)}
+                              className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+                            >
+                              Process Request
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>
