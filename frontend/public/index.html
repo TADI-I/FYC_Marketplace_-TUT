@@ -2,98 +2,32 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
-    <meta name="theme-color" content="#000000" />
-    <meta name="description" content="A marketplace for first year students to buy and sell items." />
-    
-    <!-- Prevent iOS from scaling text -->
-    <meta name="format-detection" content="telephone=no" />
-    
     <link rel="icon" href="facicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta
+      name="FYC Marketplace"
+      content="A marketplace for first year students to buy and sell items."
+    />
     <link rel="apple-touch-icon" href="facicon.ico" />
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
-    
+
     <title>FYC MarketPlace</title>
-    
-    <style>
-      /* Ensure proper scaling on all devices */
-      html {
-        -webkit-text-size-adjust: 100%;
-        -ms-text-size-adjust: 100%;
-        text-size-adjust: 100%;
-      }
-      
-      body {
-        margin: 0;
-        padding: 0;
-        min-width: 320px;
-        overflow-x: hidden;
-      }
-      
-      /* Loading spinner */
-      #root-loading {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-        width: 100vw;
-        background-color: #f9fafb;
-      }
-      
-      .spinner {
-        width: 40px;
-        height: 40px;
-        border: 4px solid #e5e7eb;
-        border-top-color: #2563eb;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-      }
-      
-      @keyframes spin {
-        to { transform: rotate(360deg); }
-      }
-      
-      /* Footer styles */
-      footer {
-        width: 100%;
-        text-align: center;
-        padding: 1rem 0;
-        background-color: #f9f9f9;
-        border-top: 1px solid #e5e7eb;
-        margin-top: 2rem;
-      }
-      
-      footer p {
-        margin: 0;
-        font-size: 0.875rem;
-        color: #555;
-      }
-      
-      @media (max-width: 640px) {
-        footer p {
-          font-size: 0.75rem;
-          padding: 0 1rem;
-        }
-      }
-    </style>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root">
-      <div id="root-loading">
-        <div class="spinner"></div>
-      </div>
-    </div>
+    <div id="root"></div>
 
-    <footer>
-      <p>
-        Designed by Big Daddy T &copy; <span id="current-year"></span> FYC Marketplace. All rights reserved.
-      </p>
-    </footer>
-
-    <script>
-      // Set the current year in the footer
-      document.getElementById('current-year').textContent = new Date().getFullYear();
-    </script>
   </body>
+  <footer style="width: 100%; text-align: center; padding: 1rem 0; background-color: #f9f9f9;">
+  <p style="margin: 0; font-size: 0.875rem; color: #555;">
+     Designed by Big Daddy T &copy; <span id="current-year"></span> FYC Marketplace. All rights reserved.
+  </p>
+</footer>
+
 </html>
+
+<script>
+  // Set the current year in the footer
+  document.getElementById('current-year').textContent = new Date().getFullYear();
+</script>
