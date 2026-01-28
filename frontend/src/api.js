@@ -76,10 +76,6 @@ export const registerUser = async (userData) => {
       
       // VERIFY storage worked
       const storedToken = localStorage.getItem('auth_token');
-      console.log('✔️ Verified storage:', { 
-        tokenStored: !!storedToken,
-        tokenMatches: storedToken === response.token 
-      });
     } else {
       console.warn('⚠️ No token in registration response!');
     }
@@ -98,12 +94,6 @@ export const loginUser = async (credentials) => {
       method: 'POST',
       body: JSON.stringify(credentials),
     });
-    
-    console.log('✅ Login response:', { 
-      hasToken: !!response.token, 
-      hasUser: !!response.user,
-      tokenPreview: response.token ? response.token.substring(0, 20) + '...' : 'NO TOKEN'
-    });
 
     if (response.token) {
       localStorage.setItem('auth_token', response.token);
@@ -112,10 +102,6 @@ export const loginUser = async (credentials) => {
       
       // VERIFY storage worked
       const storedToken = localStorage.getItem('auth_token');
-      console.log('✔️ Verified storage:', { 
-        tokenStored: !!storedToken,
-        tokenMatches: storedToken === response.token 
-      });
     } else {
       console.warn('⚠️ No token in login response!');
     }
@@ -128,10 +114,8 @@ export const loginUser = async (credentials) => {
 };
 
 export const logoutUser = () => {
-  console.log('👋 Logging out - clearing storage');
   localStorage.removeItem('auth_token');
   localStorage.removeItem('user_data');
-  console.log('✔️ Storage cleared');
 };
 
 // FIXED: getCurrentUser now makes an API call to get fresh data from backend
@@ -139,24 +123,19 @@ export const getCurrentUser = async () => {
   try {
     const token = localStorage.getItem('auth_token');
     
-    console.log('👤 Getting current user:', { hasToken: !!token });
-    
     if (!token) {
-      console.log('⚠️ No token found, returning cached data');
       const userData = localStorage.getItem('user_data');
       return userData ? JSON.parse(userData) : null;
     }
 
     // Try to fetch fresh user data from API
     try {
-      console.log('📡 Fetching fresh user from API...');
       const response = await apiCall('/users/me');
       
       // Update localStorage with fresh data
       if (response.user || response) {
         const freshUser = response.user || response;
         localStorage.setItem('user_data', JSON.stringify(freshUser));
-        console.log('✅ Fresh user data received and cached');
         return freshUser;
       }
     } catch (apiError) {
@@ -175,7 +154,6 @@ export const getCurrentUser = async () => {
 
 export const isAuthenticated = () => {
   const token = localStorage.getItem('auth_token');
-  console.log('🔐 Checking authentication:', { isAuthenticated: !!token });
   return !!token;
 };
 
@@ -247,7 +225,7 @@ export const getProductsBySeller = async (sellerId) => {
 
 export const createProduct = async (productData) => {
   try {
-    console.log('➕ Creating product via FormData:', productData);
+    
     
     const token = localStorage.getItem('auth_token');
     
@@ -265,7 +243,6 @@ export const createProduct = async (productData) => {
     
     if (productData.image && productData.image instanceof File) {
       formData.append('image', productData.image);
-      console.log('📁 Adding image file:', productData.image.name);
     }
 
     const response = await fetch(`${API_BASE}/api/products`, {
@@ -281,9 +258,6 @@ export const createProduct = async (productData) => {
     if (!response.ok) {
       throw new Error(data.error || data.message || `HTTP error! status: ${response.status}`);
     }
-
-    console.log('✅ Product created successfully:', data);
-    
     // Return product with imageUrl
     return addImageUrl(data.product || data);
   } catch (error) {
@@ -323,9 +297,7 @@ export const deleteProduct = async (productId) => {
 
 export const getMessages = async (conversationId) => {
   try {
-    console.log('💬 Getting messages for:', conversationId);
     const response = await apiCall(`/api/messages/${conversationId}`);
-    console.log(`✅ Retrieved ${response.messages ? response.messages.length : 0} messages`);
     return response.messages || [];
   } catch (error) {
     console.error('❌ Failed to get messages:', error);
