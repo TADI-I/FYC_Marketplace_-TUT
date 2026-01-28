@@ -581,22 +581,12 @@ const App = () => {
                 return (
                   <div key={product.id} className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
                     <div className="relative overflow-hidden" style={{ height: '25rem' }}>
-                      {/* WhatsApp Redirect Counter Badge - NEW */}
-                      {whatsappRedirects > 0 && (
-                        <div 
-                          className="absolute top-3 right-3 z-10 bg-green-600 text-white px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5"
-                          title={`${whatsappRedirects} WhatsApp ${whatsappRedirects === 1 ? 'click' : 'clicks'}`}
-                        >
-                          <TrendingUp className="h-3.5 w-3.5" />
-                          <span className="text-xs font-semibold">{whatsappRedirects}</span>
-                        </div>
-                      )}
 
                       {imageUrl ? (
                         <img
                           src={imageUrl}
                           alt={product.title}
-                          className="absolute inset-0 w-full h-full object-cover object-center hover:scale-105 transition-transform duration-300 cursor-pointer"
+                          className="absolute inset-0 w-full h-full object-cover object-center hover:scale-105 transition-transform duration-300 cursor-pointer z-0"
                           onClick={() => setMaximizedImage(imageUrl)}
                           onError={(e) => {
                             const imgElement = e.currentTarget as HTMLImageElement;
@@ -611,7 +601,18 @@ const App = () => {
                           </svg>
                         </div>
                       )}
+                           {/* WhatsApp Redirect Counter Badge - NEW */}
+                      {whatsappRedirects > 0 && (
+                        <div 
+                          className="absolute top-3 right-3 z-10 bg-green-600 text-white px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5"
+                          title={`${whatsappRedirects} WhatsApp ${whatsappRedirects === 1 ? 'click' : 'clicks'}`}
+                        >
+                          <TrendingUp className="h-3.5 w-3.5" />
+                          <span className="text-xs font-semibold">{whatsappRedirects}</span>
+                        </div>
+                      )}
                     </div>
+                 
 
                     <div className="p-6">
                       <div className="flex justify-between items-start mb-2">

@@ -185,7 +185,7 @@ const SellerProducts: React.FC<SellerProductsProps> = ({
       console.log('📤 Sending update request for product:', productId);
 
       // Use the correct endpoint without /api prefix (API_BASE already includes it)
-      const response = await fetch(`${API_BASE}/products/${productId}`, {
+      const response = await fetch(`${API_BASE}/api/products/${productId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
