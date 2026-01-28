@@ -276,28 +276,28 @@ const App = () => {
   };
 
   const ProductSkeleton = () => (
-  <div className="bg-white rounded-lg shadow-sm overflow-hidden animate-pulse">
-    <div className="h-96 bg-gray-200" />
+    <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+      <div className="h-96 shimmer rounded-t-lg" />
 
-    <div className="p-6 space-y-4">
-      <div className="flex justify-between">
-        <div className="h-5 w-2/3 bg-gray-200 rounded" />
-        <div className="h-5 w-16 bg-gray-200 rounded" />
-      </div>
+      <div className="p-6 space-y-4">
+        <div className="flex justify-between">
+          <div className="h-5 w-2/3 shimmer rounded" />
+          <div className="h-5 w-16 shimmer rounded" />
+        </div>
 
-      <div className="space-y-2">
-        <div className="h-4 bg-gray-200 rounded w-full" />
-        <div className="h-4 bg-gray-200 rounded w-5/6" />
-        <div className="h-4 bg-gray-200 rounded w-4/6" />
-      </div>
+        <div className="space-y-2">
+          <div className="h-4 shimmer rounded w-full" />
+          <div className="h-4 shimmer rounded w-5/6" />
+          <div className="h-4 shimmer rounded w-4/6" />
+        </div>
 
-      <div className="flex justify-between items-center pt-2">
-        <div className="h-4 w-32 bg-gray-200 rounded" />
-        <div className="h-8 w-24 bg-gray-200 rounded" />
+        <div className="flex justify-between items-center pt-2">
+          <div className="h-4 w-32 shimmer rounded" />
+          <div className="h-8 w-24 shimmer rounded" />
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">
