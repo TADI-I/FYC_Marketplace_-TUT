@@ -1,8 +1,9 @@
 const API_BASE = process.env.REACT_APP_API_BASE;
 
-// API Helper function
+// API Helper function with DEBUG LOGGING
 const apiCall = async (endpoint, options = {}) => {
   const token = localStorage.getItem('auth_token');
+  
   
   const config = {
     headers: {
@@ -31,9 +32,13 @@ const apiCall = async (endpoint, options = {}) => {
     }
 
     if (!response.ok) {
+      console.error('❌ API Error Response:', {
+        status: response.status,
+        statusText: response.statusText,
+        data
+      });
       throw new Error(data.error || data.message || `HTTP error! status: ${response.status}`);
     }
-
     return data;
   } catch (error) {
     console.error('API Call Error:', error);
@@ -67,6 +72,16 @@ export const registerUser = async (userData) => {
     if (response.token) {
       localStorage.setItem('auth_token', response.token);
       localStorage.setItem('user_data', JSON.stringify(response.user));
+
+      
+      // VERIFY storage worked
+      const storedToken = localStorage.getItem('auth_token');
+      console.log('✔️ Verified storage:', { 
+        tokenStored: !!storedToken,
+        tokenMatches: storedToken === response.token 
+      });
+    } else {
+      console.warn('⚠️ No token in registration response!');
     }
 
     return response;
@@ -78,14 +93,31 @@ export const registerUser = async (userData) => {
 
 export const loginUser = async (credentials) => {
   try {
+  
     const response = await apiCall('/api/auth/login', {
       method: 'POST',
       body: JSON.stringify(credentials),
     });
     
+    console.log('✅ Login response:', { 
+      hasToken: !!response.token, 
+      hasUser: !!response.user,
+      tokenPreview: response.token ? response.token.substring(0, 20) + '...' : 'NO TOKEN'
+    });
+
     if (response.token) {
       localStorage.setItem('auth_token', response.token);
       localStorage.setItem('user_data', JSON.stringify(response.user));
+ 
+      
+      // VERIFY storage worked
+      const storedToken = localStorage.getItem('auth_token');
+      console.log('✔️ Verified storage:', { 
+        tokenStored: !!storedToken,
+        tokenMatches: storedToken === response.token 
+      });
+    } else {
+      console.warn('⚠️ No token in login response!');
     }
 
     return response;
@@ -96,14 +128,45 @@ export const loginUser = async (credentials) => {
 };
 
 export const logoutUser = () => {
+  console.log('👋 Logging out - clearing storage');
   localStorage.removeItem('auth_token');
   localStorage.removeItem('user_data');
+  console.log('✔️ Storage cleared');
 };
 
-export const getCurrentUser = () => {
+// FIXED: getCurrentUser now makes an API call to get fresh data from backend
+export const getCurrentUser = async () => {
   try {
-    const userData = localStorage.getItem('user_data');
-    return userData ? JSON.parse(userData) : null;
+    const token = localStorage.getItem('auth_token');
+    
+    console.log('👤 Getting current user:', { hasToken: !!token });
+    
+    if (!token) {
+      console.log('⚠️ No token found, returning cached data');
+      const userData = localStorage.getItem('user_data');
+      return userData ? JSON.parse(userData) : null;
+    }
+
+    // Try to fetch fresh user data from API
+    try {
+      console.log('📡 Fetching fresh user from API...');
+      const response = await apiCall('/users/me');
+      
+      // Update localStorage with fresh data
+      if (response.user || response) {
+        const freshUser = response.user || response;
+        localStorage.setItem('user_data', JSON.stringify(freshUser));
+        console.log('✅ Fresh user data received and cached');
+        return freshUser;
+      }
+    } catch (apiError) {
+      console.warn('Failed to fetch user from API, using cached data:', apiError);
+      // If API call fails, fall back to cached data
+      const userData = localStorage.getItem('user_data');
+      return userData ? JSON.parse(userData) : null;
+    }
+    
+    return null;
   } catch (error) {
     console.error('Error getting current user:', error);
     return null;
@@ -112,8 +175,8 @@ export const getCurrentUser = () => {
 
 export const isAuthenticated = () => {
   const token = localStorage.getItem('auth_token');
-  const user = getCurrentUser();
-  return !!(token && user);
+  console.log('🔐 Checking authentication:', { isAuthenticated: !!token });
+  return !!token;
 };
 
 // ==============================================
@@ -696,7 +759,7 @@ export const getVerificationRequests = async (status = 'pending') => {
     const token = localStorage.getItem('auth_token');
     if (!token) throw new Error('Authentication required');
 
-    const response = await fetch(`${API_BASE}/api/verification-requests?status=${status}`, {
+    const response = await fetch(`${API_BASE}/api/verification/requests?status=${status}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
       },
@@ -716,7 +779,7 @@ export const processVerificationRequest = async (requestId, action, adminNote = 
     const token = localStorage.getItem('auth_token');
     if (!token) throw new Error('Authentication required');
 
-    const response = await fetch(`${API_BASE}/api/verification-requests/${requestId}/process`, {
+    const response = await fetch(`${API_BASE}/api/verification/${requestId}/process`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,

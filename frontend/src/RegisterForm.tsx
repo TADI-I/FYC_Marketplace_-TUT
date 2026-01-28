@@ -12,7 +12,7 @@ type User = {
 };
 
 interface RegisterFormProps {
-  onRegisterSuccess: (user: User) => void;
+  onRegisterSuccess: (user: User, token?: string) => void;
   onShowLogin: () => void;
   onClose: () => void;
 }
@@ -68,7 +68,8 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
         type: accountType,
       });
 
-      onRegisterSuccess(response.user);
+      // Pass both user AND token to parent component
+      onRegisterSuccess(response.user, response.token);
 
       setName("");
       setEmail("");

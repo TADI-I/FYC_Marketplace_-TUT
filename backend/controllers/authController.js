@@ -83,15 +83,42 @@ exports.register = async (req, res, db) => {
     const result = await db.collection('users').insertOne(userDoc);
     userDoc._id = result.insertedId;
 
-    // don't include password/hash in response
-    const safeUser = { ...userDoc, password: undefined };
+    // ✅ CREATE JWT TOKEN (THIS WAS MISSING!)
+    const token = jwt.sign(
+      { 
+        id: userDoc._id.toString(), 
+        email: userDoc.email, 
+        type: userDoc.type, 
+        campus: userDoc.campus 
+      },
+      process.env.JWT_SECRET || 'tut_marketplace_secret',
+      { expiresIn: '7d' }
+    );
+
+    // Build safe user object (same fields as login)
+    const safeUser = {
+      _id: userDoc._id,
+      name: userDoc.name,
+      email: userDoc.email,
+      type: userDoc.type,
+      campus: userDoc.campus,
+      subscribed: userDoc.subscribed,
+      subscriptionStatus: userDoc.subscriptionStatus,
+      subscriptionStartDate: userDoc.subscriptionStartDate,
+      subscriptionEndDate: userDoc.subscriptionEndDate,
+      whatsapp: userDoc.whatsapp || null,
+      createdAt: userDoc.createdAt,
+      updatedAt: userDoc.updatedAt
+    };
 
     console.log('✅ User registered successfully:', email);
 
+    // ✅ RETURN TOKEN (THIS WAS MISSING!)
     res.status(201).json({
       success: true,
       message: 'User registered successfully',
-      user: safeUser
+      user: safeUser,
+      token  // ← THIS IS THE FIX!
     });
 
   } catch (error) {
@@ -183,10 +210,18 @@ exports.login = async (req, res, db) => {
 exports.getCurrentUser = async (req, res, db) => {
   try {
     const userId = req.user?.id || req.user?._id;
-    if (!userId) return res.status(401).json({ success: false, error: 'Not authenticated' });
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'Not authenticated' });
+    }
 
-    const user = await db.collection('users').findOne({ _id: require('mongodb').ObjectId(userId) });
-    if (!user) return res.status(404).json({ success: false, error: 'User not found' });
+    // Use the ObjectId already imported at the top of the file
+    const user = await db.collection('users').findOne({ 
+      _id: new ObjectId(userId) 
+    });
+    
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
 
     // only return safe fields (include whatsapp)
     const safeUser = {
@@ -199,7 +234,7 @@ exports.getCurrentUser = async (req, res, db) => {
       subscriptionStatus: user.subscriptionStatus,
       subscriptionStartDate: user.subscriptionStartDate,
       subscriptionEndDate: user.subscriptionEndDate,
-      whatsapp: user.whatsapp || null, // <- ensure whatsapp is returned
+      whatsapp: user.whatsapp || null,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt
     };

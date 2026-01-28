@@ -12,7 +12,7 @@ type User = {
 };
 
 interface LoginFormProps {
-  onLoginSuccess: (user: User) => void;
+  onLoginSuccess: (user: User, token?: string) => void;
   onShowRegister: () => void;
   onClose: () => void;
 }
@@ -32,13 +32,13 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess, onShowRegister, o
     setError('');
 
     try {
-      
       const response = await loginUser({
         email: loginData.email,
         password: loginData.password
       });
       
-      onLoginSuccess(response.user);
+      // Pass both user AND token to parent component
+      onLoginSuccess(response.user, response.token);
       setLoginData({ email: '', password: '' });
       
       // Show success message

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { getSubscriptionStatus, updateUserProfile, upgradeUserToSeller, getCurrentUser, requestReactivation, requestUpgrade } from './api'; 
 import { User as UserIC, ArrowLeft, Mail, Building, CreditCard, Edit3, Save, X, Zap, AlertTriangle, Clock, CheckCircle } from 'lucide-react';
-import ReactivateModal from './reactivatemodal'; // <-- new import
+import ReactivateModal from './reactivatemodal';
 import VerificationSection from './VerificationSection';
 
 // Use shared types (remove duplicate User type to avoid redeclare)
@@ -22,9 +22,10 @@ interface UserProfileProps {
   currentUser: User | null;
   onLogout: () => void;
   onBack: () => void;
+  onUserUpdate?: (user: User) => void;
 }
 
-const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack }) => {
+const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack, onUserUpdate }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);  
@@ -41,6 +42,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showReactivationModal, setShowReactivationModal] = useState(false);
   const [showSupportTooltip, setShowSupportTooltip] = useState(false);
+  const [isPolling, setIsPolling] = useState(false);
 
   // debug: log modal state so we can see if click toggles it
   useEffect(() => {
@@ -89,11 +91,70 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
     });
   }, [user]);
 
+  // NEW: Poll for subscription status updates when user has pending request
+  useEffect(() => {
+    if (!user) return;
+    
+    const shouldPoll = user.type === 'seller' && 
+                       (user.subscriptionStatus === 'expired' || !user.subscribed);
+    
+    if (shouldPoll && !isPolling) {
+      setIsPolling(true);
+      console.log('🔄 Starting to poll for subscription updates...');
+      
+      const pollInterval = setInterval(async () => {
+        try {
+          const freshUser = await fetchCurrentUser();
+          if (freshUser) {
+            // Check if status changed to active
+            if (freshUser.subscribed && freshUser.subscriptionStatus === 'active') {
+              console.log('✅ Subscription activated! Stopping poll.');
+              setUser(freshUser);
+              setSuccessMessage('Your subscription has been activated! You can now add products.');
+              clearInterval(pollInterval);
+              setIsPolling(false);
+              
+              // Update parent component AND localStorage
+              if (onUserUpdate) {
+                onUserUpdate(freshUser);
+              }
+              localStorage.setItem('user_data', JSON.stringify(freshUser));
+              
+              // Auto-hide success message after 5 seconds
+              setTimeout(() => setSuccessMessage(null), 5000);
+            }
+          }
+        } catch (err) {
+          console.error('Polling error:', err);
+        }
+      }, 5000); // Poll every 5 seconds
+      
+      // Stop polling after 5 minutes to avoid infinite loops
+      setTimeout(() => {
+        clearInterval(pollInterval);
+        setIsPolling(false);
+        console.log('⏱️ Stopped polling after timeout');
+      }, 300000); // 5 minutes
+      
+      return () => {
+        clearInterval(pollInterval);
+        setIsPolling(false);
+      };
+    }
+  }, [user, isPolling, onUserUpdate]);
+
   const fetchCurrentUser = async () => {
     try {
-      const user = await getCurrentUser();
-      setUser(user);
-      return user;
+      const freshUser = await getCurrentUser();
+      if (freshUser) {
+        setUser(freshUser);
+        // Update parent component state
+        if (onUserUpdate) {
+          onUserUpdate(freshUser);
+        }
+        return freshUser;
+      }
+      return null;
     } catch (error) {
       console.error('Failed to fetch current user:', error);
       return null;
@@ -249,6 +310,13 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
       });
       
       setUser(updatedProfile);
+      
+      // Update parent component AND localStorage
+      if (onUserUpdate) {
+        onUserUpdate(updatedProfile);
+      }
+      localStorage.setItem('user_data', JSON.stringify(updatedProfile));
+      
       setEditing(false);
       setSuccessMessage('Profile updated successfully!');
       setTimeout(() => setSuccessMessage(null), 3000);
@@ -272,13 +340,17 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
     try {
       await upgradeUserToSeller(currentUser._id);
 
-      const updated = {
-        ...user!,
-        type: 'seller',
-        subscribed: true,
-      };
+      // Fetch fresh user data
+      const freshUser = await fetchCurrentUser();
+      if (freshUser) {
+        setUser(freshUser);
+        // Update parent component AND localStorage
+        if (onUserUpdate) {
+          onUserUpdate(freshUser);
+        }
+        localStorage.setItem('user_data', JSON.stringify(freshUser));
+      }
 
-      setUser(updated);
       setSuccessMessage('Account upgraded to seller successfully!');
       await fetchSubscriptionStatus();
     } catch (err: any) {
@@ -303,21 +375,30 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
     }
 
     // open modal immediately so the buyer sees the WhatsApp instructions
-    // even if the API call takes a while or fails
     setShowReactivationModal(true);
     
     setLoading(true);
     try {
       await requestReactivation(userId);
-      // keep modal open; show success message in-banner
-      setSuccessMessage('Reactivation request sent to admin. You will be notified when it is processed.');
+      setSuccessMessage('Reactivation request sent to admin. Checking for approval...');
+      
+      // Immediately fetch fresh user data
+      const freshUser = await fetchCurrentUser();
+      if (freshUser && freshUser.subscribed && freshUser.subscriptionStatus === 'active') {
+        setSuccessMessage('Your subscription has been activated! You can now add products.');
+        setShowReactivationModal(false);
+      }
+      
     } catch (err: any) {
       console.error('Reactivation request failed:', err);
-      // keep the modal visible so user can still send proof of payment manually
       setError(err?.message || 'Failed to send reactivation request');
     } finally {
       setLoading(false);
-      setTimeout(() => setSuccessMessage(null), 5000);
+      setTimeout(() => {
+        if (successMessage?.includes('Checking')) {
+          setSuccessMessage(null);
+        }
+      }, 5000);
     }
   };
 
@@ -339,6 +420,9 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
       await requestUpgrade(userId);
       setUpgradeRequested(true);
       setSuccessMessage('Upgrade request sent. Admin will review your request.');
+      
+      // Start polling for approval
+      setIsPolling(false); // Reset to trigger the polling effect
     } catch (err: any) {
       setError(err?.message || 'Failed to send upgrade request');
     } finally {
@@ -377,6 +461,16 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
         onClose={() => setShowReactivationModal(false)}
         userEmail={user?.email}
       />
+
+      {/* Polling Indicator */}
+      {isPolling && (
+        <div className="fixed top-20 right-4 bg-blue-50 border border-blue-200 rounded-lg p-4 shadow-lg z-50">
+          <div className="flex items-center space-x-3">
+            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+            <span className="text-sm text-blue-800">Checking for admin approval...</span>
+          </div>
+        </div>
+      )}
 
       {/* WhatsApp Support Button - Fixed at bottom right */}
       <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999 }}>

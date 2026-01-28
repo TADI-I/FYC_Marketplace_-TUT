@@ -200,6 +200,49 @@ const App = () => {
     setCurrentView('home');
   };
 
+  // Function to refresh current user from API
+  const refreshCurrentUser = async () => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (token) {
+        const fresh = await getCurrentUser();
+        if (fresh) {
+          setCurrentUser(fresh);
+          localStorage.setItem('user_data', JSON.stringify(fresh));
+          return fresh;
+        }
+      }
+      return null;
+    } catch (err) {
+      console.warn('Failed to refresh user:', err);
+      return null;
+    }
+  };
+
+  // Periodically refresh user data when on home view to catch admin updates
+  useEffect(() => {
+    if (currentView === 'home' && currentUser && currentUser.type === 'seller') {
+      // Check if subscription is expired/inactive
+      const needsCheck = currentUser.subscriptionStatus === 'expired' || !currentUser.subscribed;
+      
+      if (needsCheck) {
+        const interval = setInterval(async () => {
+          const fresh = await refreshCurrentUser();
+          if (fresh && fresh.subscribed && fresh.subscriptionStatus === 'active') {
+            // Subscription was activated!
+            console.log('✅ Detected subscription activation on home page');
+            clearInterval(interval);
+          }
+        }, 10000); // Check every 10 seconds
+        
+        // Stop after 5 minutes
+        setTimeout(() => clearInterval(interval), 300000);
+        
+        return () => clearInterval(interval);
+      }
+    }
+  }, [currentView, currentUser]);
+
   // fetchProducts is stable for this usage, skip exhaustive-deps
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -331,7 +374,7 @@ const App = () => {
                 )}
               
 
-{/* Admin button: visible only for admin users */}
+                {/* Admin button: visible only for admin users */}
                 {currentUser.type === 'admin' && (
                   <button
                     onClick={() => setCurrentView('admin-reactivation')}
@@ -357,11 +400,9 @@ const App = () => {
 
                 )}
                 
+                {/* FIXED: Now calls handleLogout instead of inline function */}
                 <button 
-                  onClick={() => {
-                    setCurrentUser(null);
-                    setCurrentView('home');
-                  }}
+                  onClick={handleLogout}
                   style={{
                     backgroundColor: '#ef4444',
                     color: 'white',
@@ -445,6 +486,10 @@ const App = () => {
             currentUser={currentUser}
             onLogout={handleLogout}
             onBack={() => setCurrentView('home')}
+            onUserUpdate={(updatedUser) => {
+              setCurrentUser(updatedUser);
+              localStorage.setItem('user_data', JSON.stringify(updatedUser));
+            }}
           />
         ) : currentView === 'admin-reactivation' && currentUser?.type === 'admin' ? (
           <AdminReactivation />
@@ -717,8 +762,10 @@ const App = () => {
       )}
       {showRegister && (
         <RegisterForm
-          onRegisterSuccess={(user) => {
+          onRegisterSuccess={(user, token) => {
             setCurrentUser(user);
+            if (token) localStorage.setItem('auth_token', token);
+            localStorage.setItem('user_data', JSON.stringify(user));
             setShowRegister(false);
           }}
           onShowLogin={() => {
