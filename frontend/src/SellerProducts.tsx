@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Edit, Trash2, ArrowLeft, Plus, Loader, X } from 'lucide-react';
+import { Edit, Trash2, ArrowLeft, Plus, Loader, X, TrendingUp } from 'lucide-react';
 import { User, Product, getProductId, getImageUrl as getProductImageUrl } from './types';
-
+import ProductAnalytics from './ProductAnalytics';
 import { deleteProduct, getProductsBySeller } from './api';
 
 
@@ -36,8 +36,9 @@ const SellerProducts: React.FC<SellerProductsProps> = ({
   const [error, setError] = useState('');
   const [maximizedImage, setMaximizedImage] = useState<string | null>(null);
   const [showSupportTooltip, setShowSupportTooltip] = useState(false);
+  const [viewingAnalytics, setViewingAnalytics] = useState<string | null>(null);
 
-  const API_BASE = process.env.REACT_APP_API_BASE ;
+  const API_BASE = process.env.REACT_APP_API_BASE;
 
   // Show support tooltip after 30 seconds
   useEffect(() => {
@@ -274,13 +275,13 @@ const SellerProducts: React.FC<SellerProductsProps> = ({
         <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 text-center">
           <h2 className="text-xl font-bold text-red-600">Access Denied</h2>
           <p className="text-gray-600 mt-2">You need to be a seller to access this page.</p>
-           <button 
-                    onClick={onBack}
-                   className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center space-x-2"
-                  >
-                    <ArrowLeft className="h-5 w-5" />
-                    <span className="font-medium">Back to Home</span>
-                  </button>
+          <button 
+            onClick={onBack}
+            className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center space-x-2 mx-auto"
+          >
+            <ArrowLeft className="h-5 w-5" />
+            <span className="font-medium">Back to Home</span>
+          </button>
         </div>
       </div>
     );
@@ -437,13 +438,13 @@ const SellerProducts: React.FC<SellerProductsProps> = ({
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-3">
-           <button 
-                    onClick={onBack}
-                   className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center space-x-2"
-                  >
-                    <ArrowLeft className="h-5 w-5" />
-                    <span className="font-medium">Back to Home</span>
-                  </button>
+          <button 
+            onClick={onBack}
+            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center space-x-2"
+          >
+            <ArrowLeft className="h-5 w-5" />
+            <span className="font-medium">Back to Home</span>
+          </button>
           
           <div className="flex items-center gap-3">
             <h1 className="text-2xl sm:text-3xl font-bold">My Products</h1>
@@ -614,6 +615,30 @@ const SellerProducts: React.FC<SellerProductsProps> = ({
         </div>
       )}
 
+      {/* Analytics Modal - NEW */}
+      {viewingAnalytics && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center z-10">
+              <h2 className="text-2xl font-bold">Product Analytics</h2>
+              <button
+                onClick={() => setViewingAnalytics(null)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <ProductAnalytics 
+                productId={viewingAnalytics}
+                productTitle={products.find(p => getProductId(p) === viewingAnalytics)?.title || ''}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Products Grid */}
       {products.length === 0 ? (
         <div className="bg-white rounded-lg shadow-lg p-6 sm:p-12 text-center">
@@ -676,6 +701,18 @@ const SellerProducts: React.FC<SellerProductsProps> = ({
                   </div>
                   
                   <div className="flex gap-2 mt-auto">
+                    {/* Analytics Button - NEW */}
+                    <button 
+                      onClick={() => setViewingAnalytics(getProductId(product) || null)}
+                      disabled={loading}
+                      className="flex-1 flex items-center justify-center gap-1 bg-orange-600 text-white py-2 px-1 rounded hover:bg-purple-700 disabled:bg-purple-400 disabled:cursor-not-allowed text-sm"
+                      title="View Analytics"
+                    >
+                      <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4" />
+                      <span>Stats</span>
+                    </button>
+
+                    {/* Edit button */}
                     <button 
                       onClick={() => handleEditClick(product)}
                       disabled={loading}
@@ -684,6 +721,8 @@ const SellerProducts: React.FC<SellerProductsProps> = ({
                       <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
                       <span>Edit</span>
                     </button>
+                    
+                    {/* Delete button */}
                     <button
                       onClick={() => handleDeleteClick(product)}
                       disabled={loading}

@@ -1,4 +1,4 @@
-// controllers/productController.js - Updated with verification support
+// controllers/productController.js - Updated with whatsappRedirects support
 const { ObjectId } = require('mongodb');
 
 const isValidCategory = (category) => {
@@ -66,9 +66,11 @@ exports.getProducts = async (req, res, db) => {
       {
         $addFields: {
           sellerWhatsApp: '$seller.whatsapp',
-          sellerVerified: { $ifNull: ['$seller.verified', false] }, // Add verified status
+          sellerVerified: { $ifNull: ['$seller.verified', false] },
           sellerName: '$seller.name',
-          sellerCampus: '$seller.campus'
+          sellerCampus: '$seller.campus',
+          // Ensure whatsappRedirects is always present
+          whatsappRedirects: { $ifNull: ['$whatsappRedirects', 0] }
         }
       },
       // project seller object away to keep response small
@@ -156,7 +158,9 @@ exports.getProductById = async (req, res, db) => {
           sellerWhatsApp: '$seller.whatsapp',
           sellerVerified: { $ifNull: ['$seller.verified', false] },
           sellerName: '$seller.name',
-          sellerCampus: '$seller.campus'
+          sellerCampus: '$seller.campus',
+          // Ensure whatsappRedirects is always present
+          whatsappRedirects: { $ifNull: ['$whatsappRedirects', 0] }
         }
       },
       { $project: { seller: 0 } }
@@ -172,7 +176,7 @@ exports.getProductById = async (req, res, db) => {
       });
     }
 
-    console.log('✅ Product found:', product.title);
+    console.log('✅ Product found:', product.title, 'WhatsApp clicks:', product.whatsappRedirects);
     
     res.json({
       success: true,
@@ -225,12 +229,14 @@ exports.getProductsBySeller = async (req, res, db) => {
       .toArray();
 
     // Add seller's current whatsapp, verification, name, campus to each product dynamically
+    // Also ensure whatsappRedirects is present
     const enhancedProducts = products.map(product => ({
       ...product,
       sellerWhatsApp: seller.whatsapp || null,
       sellerVerified: seller.verified || false,
       sellerName: seller.name,
-      sellerCampus: seller.campus
+      sellerCampus: seller.campus,
+      whatsappRedirects: product.whatsappRedirects || 0 // Ensure this field exists
     }));
 
     console.log(`✅ Found ${enhancedProducts.length} products for seller ${sellerId}`);
@@ -249,7 +255,7 @@ exports.getProductsBySeller = async (req, res, db) => {
   }
 };
 
-// Create product - DO NOT STORE whatsapp or verified status
+// Create product - Initialize whatsappRedirects to 0
 exports.createProduct = async (req, res, db) => {
   try {
     console.log('➕ Creating product:', req.body);
@@ -283,8 +289,6 @@ exports.createProduct = async (req, res, db) => {
     const seller = req.userProfile;
 
     // Create product object
-    // NOTE: We do NOT store whatsapp or verified status here
-    // These will be fetched dynamically from the seller's user record
     const product = {
       title: title.trim(),
       description: description.trim(),
@@ -299,6 +303,7 @@ exports.createProduct = async (req, res, db) => {
       images: [],
       status: 'active',
       views: 0,
+      whatsappRedirects: 0, // Initialize counter
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -323,7 +328,8 @@ exports.createProduct = async (req, res, db) => {
       {
         $addFields: {
           sellerWhatsApp: '$seller.whatsapp',
-          sellerVerified: { $ifNull: ['$seller.verified', false] }
+          sellerVerified: { $ifNull: ['$seller.verified', false] },
+          whatsappRedirects: { $ifNull: ['$whatsappRedirects', 0] }
         }
       },
       { $project: { seller: 0 } }

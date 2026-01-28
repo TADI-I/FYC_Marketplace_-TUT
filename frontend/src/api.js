@@ -769,6 +769,33 @@ export const processVerificationRequest = async (requestId, action, adminNote = 
   }
 };
 
+// ==============================================
+// ANALYTICS API FUNCTIONS
+// ==============================================
+
+export const trackWhatsAppClick = async (productId) => {
+  try {
+    const response = await apiCall(`/api/analytics/whatsapp-click/${productId}`, {
+      method: 'POST'
+    });
+    return response;
+  } catch (error) {
+    console.error('❌ Failed to track WhatsApp click:', error);
+    // Don't throw - we don't want tracking failures to block the user
+    return { success: false };
+  }
+};
+
+export const getProductAnalytics = async (productId) => {
+  try {
+    const response = await apiCall(`/api/analytics/product/${productId}`);
+    return response;
+  } catch (error) {
+    console.error('❌ Failed to get product analytics:', error);
+    throw new Error(error.message || 'Failed to retrieve analytics');
+  }
+};
+
 // assign export to a named variable to satisfy import/no-anonymous-default-export
 const api = {
   registerUser,
@@ -802,6 +829,8 @@ const api = {
   submitVerificationRequest,
   getVerificationStatus,
   getVerificationRequests,
-  processVerificationRequest
+  processVerificationRequest,
+  trackWhatsAppClick,
+  getProductAnalytics,
 };
 export default api;

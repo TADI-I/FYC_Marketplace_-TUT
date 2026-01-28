@@ -1,4 +1,4 @@
-// server.js - Fixed GridFS Implementation
+// server.js - With Analytics Tracking
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
@@ -6,8 +6,6 @@ const { MongoClient, ServerApiVersion, ObjectId, GridFSBucket } = require('mongo
 const multer = require('multer');
 const path = require('path');
 const verificationController = require('./controllers/verificationController');
-
-
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -29,7 +27,7 @@ const client = new MongoClient(uri, {
 
 let db;
 let gridfsBucket;
-let upload; // We'll initialize this after DB connection
+let upload;
 
 // Connect to MongoDB with GridFS
 async function connectToMongoDB() {
@@ -42,7 +40,6 @@ async function connectToMongoDB() {
       bucketName: 'images'
     });
   
-    
     // Create indexes for better performance
     try {
       await db.collection('users').createIndex({ email: 1 }, { unique: true });
@@ -50,7 +47,10 @@ async function connectToMongoDB() {
       await db.collection('products').createIndex({ category: 1 });
       await db.collection('products').createIndex({ sellerCampus: 1 });
       await db.collection('images.files').createIndex({ filename: 1 });
+      // Add index for analytics
+      await db.collection('analytics_events').createIndex({ productId: 1, timestamp: -1 });
     } catch (indexError) {
+      console.log('Some indexes already exist');
     }
     
     return db;
@@ -71,14 +71,13 @@ const requireUpload = (fieldName) => (req, res, next) => {
   upload.single(fieldName)(req, res, next);
 };
 
-
 // Configure multer storage with GridFS (after DB connection)
 function initializeGridFSStorage() {
-  const storage = multer.memoryStorage(); // Use memory storage temporarily
+  const storage = multer.memoryStorage();
   
   upload = multer({ 
     storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    limits: { fileSize: 5 * 1024 * 1024 },
     fileFilter: (req, file, cb) => {
       const allowedTypes = /jpeg|jpg|png|gif|webp/;
       const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
@@ -91,8 +90,6 @@ function initializeGridFSStorage() {
       }
     }
   });
-  
-
 }
 
 // Helper function to upload buffer to GridFS
@@ -105,7 +102,6 @@ async function uploadToGridFS(buffer, filename, mimetype, metadata = {}) {
     
     uploadStream.on('error', reject);
     uploadStream.on('finish', () => {
-      // The file ID is available on the uploadStream itself
       resolve({
         id: uploadStream.id,
         filename: filename,
@@ -132,6 +128,7 @@ const userController = require('./controllers/userController');
 const messageController = require('./controllers/messageController');
 const referenceController = require('./controllers/referenceController');
 const healthController = require('./controllers/healthController');
+const analyticsController = require('./controllers/analyticsController');
 
 const { 
   authenticateToken, 
@@ -158,10 +155,7 @@ const withOwnershipCheck = (resourceType) => (req, res, next) => {
 app.get('/api/health', (req, res) => healthController.healthCheck(req, res, req.db));
 app.get('/api/test-db', (req, res) => healthController.testDbConnection(req, res, req.db));
 
-// Replace ONLY the verification image endpoint in server.js
-// This should be placed BEFORE any other /api/verification routes
-
-// THIS MUST COME FIRST - Before any other /api/verification routes
+// Verification image endpoint
 app.get('/api/verification/image/:imageId', async (req, res) => {
   try {
     const imageId = req.params.imageId;
@@ -185,7 +179,6 @@ app.get('/api/verification/image/:imageId', async (req, res) => {
 
     const file = files[0];
 
-    // FORCE NO CACHE
     res.setHeader('Content-Type', file.contentType || 'image/jpeg');
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
     res.setHeader('Pragma', 'no-cache');
@@ -201,24 +194,22 @@ app.get('/api/verification/image/:imageId', async (req, res) => {
   }
 });
 
-// Admin: Get all verification requests
+// Verification routes
 app.get(
-  '/api/verification-requests',
+  '/api/verification/requests',
   authenticateToken,
   requireAdmin,
   (req, res) => verificationController.getVerificationRequests(req, res, req.db)
 );
 
-// Admin: Process a verification request
 app.post(
-  '/api/verification-requests/:requestId/process',
+  '/api/verification/:requestId/process',
   authenticateToken,
   requireAdmin,
   validateObjectId('requestId'),
   (req, res) => verificationController.processVerificationRequest(req, res, req.db)
 );
 
-// User: Submit verification request
 app.post(
   '/api/verification/:userId/submit',
   authenticateToken,
@@ -227,7 +218,6 @@ app.post(
   (req, res) => verificationController.submitVerificationRequest(req, res, req.db)
 );
 
-// User: Get verification status
 app.get(
   '/api/verification/:userId/status',
   authenticateToken,
@@ -245,21 +235,21 @@ app.get('/api/users/:id', authenticateToken, validateObjectId('id'), (req, res) 
 app.put('/api/users/:id', authenticateToken, validateObjectId('id'), withOwnershipCheck('user'), (req, res) => userController.updateUserProfile(req, res, req.db));
 app.post('/api/users/:id/upgrade', authenticateToken, validateObjectId('id'), withOwnershipCheck('user'), (req, res) => userController.upgradeUserToSeller(req, res, req.db));
 app.get('/api/user/subscription-status', authenticateToken, (req, res) => userController.getSubscriptionStatus(req, res, req.db));
-// User can create a reactivation request (sent to admin)
 app.post('/api/users/:id/reactivate-request', authenticateToken, validateObjectId('id'), (req, res) => {
   return userController.createReactivationRequest(req, res, req.db);
 });
-// Add this route with your other admin routes
+
+// Admin routes
 app.get('/api/admin/users', 
   authenticateToken, 
   requireAdmin, 
   (req, res) => userController.getAllUsers(req, res, req.db)
 );
 
-// Admin endpoints: list and process reactivation requests
 app.get('/api/admin/reactivation-requests', authenticateToken, requireAdmin, (req, res) => {
   return userController.getReactivationRequests(req, res, req.db);
 });
+
 app.post('/api/admin/reactivation-requests/:requestId/process',
   authenticateToken,
   requireAdmin,
@@ -267,13 +257,26 @@ app.post('/api/admin/reactivation-requests/:requestId/process',
   (req, res) => userController.processReactivationRequest(req, res, req.db)
 );
 
+// Analytics routes - NEW
+app.post('/api/analytics/whatsapp-click/:productId',
+  validateObjectId('productId'),
+  (req, res) => analyticsController.trackWhatsAppClick(req, res, req.db)
+);
+
+app.get('/api/analytics/product/:productId',
+  authenticateToken,
+  validateObjectId('productId'),
+  (req, res) => analyticsController.getProductAnalytics(req, res, req.db)
+);
+
 // Product routes
 app.get('/api/products', (req, res) => productController.getProducts(req, res, req.db));
 app.get('/api/products/:id', validateObjectId('id'), (req, res) => productController.getProductById(req, res, req.db));
 app.get('/api/products/seller/:sellerId', validateObjectId('sellerId'), (req, res) => productController.getProductsBySeller(req, res, req.db));
 
-// POST route with GridFS - using upload middleware
-app.post('/api/products', authenticateToken, withSubscriptionCheck, (req, res, next) => {upload.single('image')(req, res, async (err) => {
+// POST route with GridFS
+app.post('/api/products', authenticateToken, withSubscriptionCheck, (req, res, next) => {
+  upload.single('image')(req, res, async (err) => {
     if (err) {
       console.error('❌ Multer error:', err);
       return res.status(400).json({ 
@@ -283,11 +286,8 @@ app.post('/api/products', authenticateToken, withSubscriptionCheck, (req, res, n
     }
     
     try {
-
-      
       const { title, description, price, category, type } = req.body;
 
-      // Validation
       if (!title || !description || !price || !category) {
         return res.status(400).json({ 
           error: 'All fields are required',
@@ -295,7 +295,6 @@ app.post('/api/products', authenticateToken, withSubscriptionCheck, (req, res, n
         });
       }
 
-      // Upload image to GridFS if provided
       let imageInfo = null;
       if (req.file) {
         const filename = `${Date.now()}-${Math.round(Math.random() * 1E9)}${path.extname(req.file.originalname)}`;
@@ -310,10 +309,8 @@ app.post('/api/products', authenticateToken, withSubscriptionCheck, (req, res, n
             uploadDate: new Date()
           }
         );
-        
       }
 
-      // Create product object with GridFS reference
       const product = {
         title: title.trim(),
         description: description.trim(),
@@ -328,10 +325,10 @@ app.post('/api/products', authenticateToken, withSubscriptionCheck, (req, res, n
         reviews: [],
         status: 'active',
         views: 0,
+        whatsappRedirects: 0, // NEW: Initialize redirect counter
         createdAt: new Date(),
         updatedAt: new Date()
       };
-
 
       const result = await db.collection('products').insertOne(product);
       
@@ -350,7 +347,6 @@ app.post('/api/products', authenticateToken, withSubscriptionCheck, (req, res, n
 
     } catch (error) {
       console.error('❌ Create product error:', error);
-      // Clean up uploaded file on error
       if (req.file && imageInfo && imageInfo.id) {
         try {
           await req.gridfsBucket.delete(new ObjectId(imageInfo.id));
@@ -379,7 +375,6 @@ app.put('/api/products/:id', authenticateToken, validateObjectId('id'), withOwne
     
     try {
       const productId = req.params.id;
-
       
       const existingProduct = await db.collection('products').findOne({ 
         _id: new ObjectId(productId) 
@@ -410,7 +405,6 @@ app.put('/api/products/:id', authenticateToken, validateObjectId('id'), withOwne
       if (type) updateData.type = type;
       if (status) updateData.status = status;
 
-      // Handle image update
       if (req.file) {
         const filename = `${Date.now()}-${Math.round(Math.random() * 1E9)}${path.extname(req.file.originalname)}`;
         
@@ -427,7 +421,6 @@ app.put('/api/products/:id', authenticateToken, validateObjectId('id'), withOwne
         
         updateData.image = imageInfo;
         
-        // Delete old image from GridFS if it exists
         if (existingProduct.image && existingProduct.image.id) {
           try {
             await req.gridfsBucket.delete(new ObjectId(existingProduct.image.id));
@@ -438,7 +431,6 @@ app.put('/api/products/:id', authenticateToken, validateObjectId('id'), withOwne
       } else if (removeImage === 'true' && existingProduct.image) {
         updateData.image = null;
         
-        // Delete old image from GridFS
         if (existingProduct.image.id) {
           try {
             await req.gridfsBucket.delete(new ObjectId(existingProduct.image.id));
@@ -453,7 +445,6 @@ app.put('/api/products/:id', authenticateToken, validateObjectId('id'), withOwne
         { $set: updateData }
       );
 
-      // Fetch the updated product to return complete data
       const updatedProduct = await db.collection('products').findOne({ 
         _id: new ObjectId(productId) 
       });
@@ -491,11 +482,11 @@ app.delete('/api/products/:id', authenticateToken, validateObjectId('id'), withO
       });
     }
 
-    // Delete associated image from GridFS
     if (existingProduct.image && existingProduct.image.id) {
       try {
         await req.gridfsBucket.delete(new ObjectId(existingProduct.image.id));
       } catch (deleteError) {
+        console.error('Failed to delete image:', deleteError);
       }
     }
 
@@ -568,7 +559,6 @@ app.get('/api/images/:id', async (req, res) => {
   }
 });
 
-// Get image by product ID
 app.get('/api/products/:id/image', async (req, res) => {
   try {
     const productId = req.params.id;
@@ -630,7 +620,7 @@ app.use('*', (req, res) => {
 // Start server
 const startServer = async () => {
   await connectToMongoDB();
-  initializeGridFSStorage(); // Initialize multer AFTER DB connection
+  initializeGridFSStorage();
   
   app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);

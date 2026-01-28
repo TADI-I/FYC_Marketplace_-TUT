@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingBag, Plus, Search, User as Useric, Star, Filter, Locate } from 'lucide-react';
+import { ShoppingBag, Plus, Search, User as Useric, Star, Filter, Locate, TrendingUp } from 'lucide-react';
 import { User, Product, Message, MessageMap, Category, Campus, getImageUrl as getProductImageUrl, normalizeSAPhoneNumber } from './types';
 
 import './App.css';
@@ -7,7 +7,8 @@ import {
   logoutUser,
   getProducts,
   getCurrentUser,
-  upgradeUserToSeller
+  upgradeUserToSeller,
+  trackWhatsAppClick
 } from './api';
 import LoginForm from './LoginForm';
 import RegisterForm from './RegisterForm';
@@ -573,10 +574,24 @@ const App = () => {
                   const normalized = normalizeSAPhoneNumber(raw);
                   const waMessage = encodeURIComponent(`Hi ${product.sellerName || ''}, I'm interested in your listing "${product.title}".`);
                   const waLink = normalized ? `https://wa.me/${normalized}?text=${waMessage}` : null;
+                  
+                  // Get WhatsApp redirect count
+                  const whatsappRedirects = (product as any).whatsappRedirects || 0;
 
                 return (
                   <div key={product.id} className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-                    <div className="relative overflow-hidden" style={{ height: '25rem' }}> {/* adjust height as needed */}
+                    <div className="relative overflow-hidden" style={{ height: '25rem' }}>
+                      {/* WhatsApp Redirect Counter Badge - NEW */}
+                      {whatsappRedirects > 0 && (
+                        <div 
+                          className="absolute top-3 right-3 z-10 bg-green-600 text-white px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5"
+                          title={`${whatsappRedirects} WhatsApp ${whatsappRedirects === 1 ? 'click' : 'clicks'}`}
+                        >
+                          <TrendingUp className="h-3.5 w-3.5" />
+                          <span className="text-xs font-semibold">{whatsappRedirects}</span>
+                        </div>
+                      )}
+
                       {imageUrl ? (
                         <img
                           src={imageUrl}
@@ -608,7 +623,6 @@ const App = () => {
                         <div className="flex items-center space-x-2 mb-3">
                           {product.sellerVerified ? (
                             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            
                               Verified Seller
                             </span>
                           ) : (
@@ -627,7 +641,6 @@ const App = () => {
                               className="h-4 w-4 ml-1 text-blue-600" 
                               fill="currentColor" 
                               viewBox="0 0 20 20"
-                             // title="Verified Seller"
                             >
                               <path 
                                 fillRule="evenodd" 
@@ -652,28 +665,38 @@ const App = () => {
                           )}
 
                           <div className="flex items-center space-x-2">
-                              {waLink && (
+                             {waLink && (
                                 <a
                                   href={waLink}
                                   target="_blank"
                                   rel="noreferrer noopener"
+                                  onClick={async (e) => {
+                                    // Track the click before redirecting
+                                    const productId = product._id?.toString() || product.id?.toString();
+                                    if (productId) {
+                                      // Don't await - let it happen in background
+                                      trackWhatsAppClick(productId).catch(err => 
+                                        console.warn('Analytics tracking failed:', err)
+                                      );
+                                    }
+                                  }}
                                   style={{
-                                    backgroundColor: '#16a34a',   // Tailwind green-600 hex
+                                    backgroundColor: '#16a34a',
                                     color: 'white',
-                                    padding: '0.5rem 0.75rem',    // px-3 py-2 equivalent
-                                    borderRadius: '0.25rem',      // rounded
+                                    padding: '0.5rem 0.75rem',
+                                    borderRadius: '0.25rem',
                                     border: 'none',
                                     cursor: 'pointer',
-                                    fontSize: '0.875rem',  // text-sm
+                                    fontSize: '0.875rem',
                                     fontWeight: 500,
-                                    textDecoration: 'none',       // removes underline
+                                    textDecoration: 'none',
                                     transition: 'background-color 0.3s ease'
                                   }}
                                   onMouseEnter={(e) => {
-                                    (e.currentTarget as HTMLAnchorElement).style.backgroundColor = '#15803d'; // green-700
+                                    (e.currentTarget as HTMLAnchorElement).style.backgroundColor = '#15803d';
                                   }}
                                   onMouseLeave={(e) => {
-                                    (e.currentTarget as HTMLAnchorElement).style.backgroundColor = '#16a34a'; // back to green-600
+                                    (e.currentTarget as HTMLAnchorElement).style.backgroundColor = '#16a34a';
                                   }}
                                   title="Contact seller on WhatsApp"
                                 >
@@ -681,7 +704,6 @@ const App = () => {
                                 </a>
                               )}
                             
-
 
                            {product?.id && (
                                 <button
