@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { getSubscriptionStatus, updateUserProfile, upgradeUserToSeller, getCurrentUser, requestReactivation, requestUpgrade } from './api'; 
-import { User as UserIC, ArrowLeft, Mail, Building, CreditCard, Edit3, Save, X, Zap, AlertTriangle, Clock, CheckCircle } from 'lucide-react';
+import { User as UserIC, ArrowLeft, Mail, Building, CreditCard, Edit3, Save, X, Zap, AlertTriangle, Clock, CheckCircle, MessageCircle } from 'lucide-react';
 import ReactivateModal from './reactivatemodal';
 import VerificationSection from './VerificationSection';
 
@@ -43,6 +43,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
   const [showReactivationModal, setShowReactivationModal] = useState(false);
   const [showSupportTooltip, setShowSupportTooltip] = useState(false);
   const [isPolling, setIsPolling] = useState(false);
+  const [showUpgradeContactModal, setShowUpgradeContactModal] = useState(false); // NEW
 
   // debug: log modal state so we can see if click toggles it
   useEffect(() => {
@@ -419,7 +420,10 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
     try {
       await requestUpgrade(userId);
       setUpgradeRequested(true);
-      setSuccessMessage('Upgrade request sent. Admin will review your request.');
+      setSuccessMessage('Upgrade request sent successfully!');
+      
+      // Show the WhatsApp contact modal
+      setShowUpgradeContactModal(true);
       
       // Start polling for approval
       setIsPolling(false); // Reset to trigger the polling effect
@@ -461,6 +465,61 @@ const UserProfile: React.FC<UserProfileProps> = ({ currentUser, onLogout, onBack
         onClose={() => setShowReactivationModal(false)}
         userEmail={user?.email}
       />
+
+      {/* NEW: Upgrade Contact Admin Modal */}
+      {showUpgradeContactModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+            <div className="text-center mb-6">
+              <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                <CheckCircle className="h-10 w-10 text-green-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Request Sent!</h2>
+              <p className="text-gray-600">
+                Your seller upgrade request has been submitted successfully.
+              </p>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <div className="flex items-start space-x-3">
+                <MessageCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <h3 className="font-semibold text-blue-900 mb-1">
+                    Speed Up Your Approval
+                  </h3>
+                  <p className="text-sm text-blue-800">
+                    Contact admin directly on WhatsApp for faster processing of your seller account upgrade.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <a
+                href="https://wa.me/27711126204?text=Hi%2C%20I%20just%20requested%20a%20seller%20account%20upgrade%20for%20FYC%20Marketplace.%20Can%20you%20please%20help%20me%20get%20approved%3F"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setShowUpgradeContactModal(false)}
+                className="w-full bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-2 font-medium"
+              >
+                <MessageCircle className="h-5 w-5" />
+                <span>Contact Admin on WhatsApp</span>
+              </a>
+              
+              <button
+                onClick={() => setShowUpgradeContactModal(false)}
+                className="w-full bg-gray-100 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+              >
+                I'll Wait for Email
+              </button>
+            </div>
+
+            <p className="text-xs text-gray-500 text-center mt-4">
+              You'll receive an email once your request is reviewed
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Polling Indicator */}
       {isPolling && (
