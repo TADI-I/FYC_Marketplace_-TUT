@@ -4,7 +4,28 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
     <meta name="theme-color" content="#000000" />
-    <meta name="description" content="A marketplace for first year students to buy and sell items." />
+    
+    <!-- Enhanced SEO Meta Tags -->
+    <meta name="description" content="FYC Marketplace - The official First Year Council marketplace for first year students to buy and sell textbooks, stationery, and student essentials." />
+    <meta name="keywords" content="FYC, FYC Marketplace, First Year Council, student marketplace, buy textbooks, sell textbooks, student essentials, first year students" />
+    <meta name="author" content="First Year Council" />
+    
+    <!-- Open Graph Meta Tags for Social Media -->
+    <meta property="og:title" content="FYC Marketplace - First Year Council Student Marketplace" />
+    <meta property="og:description" content="Buy and sell textbooks, stationery, and student essentials at the official FYC Marketplace." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://www.firstyearcouncil.co.za/" />
+    <meta property="og:site_name" content="FYC Marketplace" />
+    <meta property="og:image" content="https://www.firstyearcouncil.co.za/og-image.jpg" />
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="FYC Marketplace - First Year Council Student Marketplace" />
+    <meta name="twitter:description" content="Buy and sell textbooks, stationery, and student essentials at the official FYC Marketplace." />
+    <meta name="twitter:image" content="https://www.firstyearcouncil.co.za/og-image.jpg" />
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://www.firstyearcouncil.co.za/" />
     
     <!-- Prevent iOS from scaling text -->
     <meta name="format-detection" content="telephone=no" />
@@ -13,7 +34,25 @@
     <link rel="apple-touch-icon" href="facicon.ico" />
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
     
-    <title>FYC MarketPlace</title>
+    <!-- Enhanced Title with Keywords -->
+    <title>FYC Marketplace | First Year Council Student Marketplace</title>
+    
+    <!-- Structured Data for Rich Snippets -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "FYC Marketplace",
+      "alternateName": ["First Year Council Marketplace", "FYC"],
+      "url": "https://www.firstyearcouncil.co.za/",
+      "description": "The official First Year Council marketplace for students to buy and sell textbooks and essentials.",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://www.firstyearcouncil.co.za/search?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
     
     <style>
       /* Ensure proper scaling on all devices */
@@ -75,10 +114,29 @@
           padding: 0 1rem;
         }
       }
+      
+      /* Hidden SEO content */
+      .seo-content {
+        position: absolute;
+        left: -9999px;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+      }
     </style>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
+    
+    <!-- Hidden semantic HTML with keywords for SEO -->
+    <div class="seo-content">
+      <header>
+        <h1>FYC Marketplace - First Year Council Student Marketplace</h1>
+        <h2>Buy and Sell Student Essentials</h2>
+        <p>Welcome to the official FYC (First Year Council) Marketplace where first year students can buy and sell textbooks, stationery, and other student essentials. Join the FYC community today!</p>
+      </header>
+    </div>
+    
     <div id="root">
       <div id="root-loading">
         <div class="spinner"></div>
