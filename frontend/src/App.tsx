@@ -17,6 +17,13 @@ import ChatWindow from './ChatWindow';
 import SellerProducts from './SellerProducts';
 import UserProfile from './UserProfile';
 import AdminReactivation from './AdminReactivation';
+import AboutPage from './AboutPage';
+import HowItWorksPage from './HowItWorksPage';
+import FAQPage from './FAQPage';
+import ContactPage from './ContactPage';
+import TermsPage from './TermsPage';
+import PrivacyPage from './PrivacyPage';
+import Footer from './Footer';
 import logo from './assets/facicon.jpeg';
 
 
@@ -494,8 +501,22 @@ const App = () => {
           />
         ) : currentView === 'admin-reactivation' && currentUser?.type === 'admin' ? (
           <AdminReactivation />
-        ) : (
-          <>
+     ) : currentView === 'about' ? (
+  <AboutPage onBack={() => setCurrentView('home')} />
+) : currentView === 'how-it-works' ? (
+  <HowItWorksPage onBack={() => setCurrentView('home')} />
+) : currentView === 'faq' ? (
+  <FAQPage onBack={() => setCurrentView('home')} />
+) : currentView === 'contact' ? (
+  <ContactPage onBack={() => setCurrentView('home')} />
+) : currentView === 'terms' ? (
+  <TermsPage onBack={() => setCurrentView('home')} />
+) : currentView === 'privacy' ? (
+  <PrivacyPage onBack={() => setCurrentView('home')} />
+) : currentView === 'about' ? (
+  <AboutPage onBack={() => setCurrentView('home')} />
+) : (
+  <>
             <div className="flex justify-between items-center mb-8">
               {currentUser?.type === 'seller' && (
                 <button 
@@ -775,6 +796,7 @@ const App = () => {
           </>
         )}
       </main>
+       <Footer onNavigate={(view) => setCurrentView(view)} />
 
       {showLogin && (
         <LoginForm
