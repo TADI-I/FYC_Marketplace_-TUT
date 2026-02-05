@@ -16,13 +16,13 @@ const AboutPage: React.FC<AboutPageProps> = ({ onBack }) => {
         <span>Back to Home</span>
       </button>
 
-      <div className="bg-white rounded-lg shadow-sm p-8">
+      <div className="bg-white rounded-lg shadow-sm p-6">
         <h1 className="text-4xl font-bold text-gray-900 mb-6">About FYC Marketplace</h1>
         
         <div className="prose max-w-none">
           <p className="text-lg text-gray-700 mb-6">
             Welcome to FYC Marketplace, the official First Year Council marketplace designed specifically 
-            for first-year students across South Africa. Our platform connects students who need to buy 
+            for all students across South Africa. Our platform connects students who need to buy 
             and sell textbooks, stationery, electronics, and other student essentials in a safe, convenient, 
             and affordable way.
           </p>
