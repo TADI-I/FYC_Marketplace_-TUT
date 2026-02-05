@@ -6,34 +6,98 @@ interface FooterProps {
 }
 
 const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
+  const handleNavigate = (view: string) => {
+    // Scroll to top first
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Then navigate
+    onNavigate(view);
+  };
+
   return (
-    <footer className="bg-gray-900 text-white mt-16 py-12 border-t border-gray-800">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+    <footer style={{
+      backgroundColor: '#111827', // Dark gray/black background
+      color: 'white',
+      marginTop: '4rem',
+      paddingTop: '3rem',
+      paddingBottom: '3rem',
+      borderTop: '1px solid #374151'
+    }}>
+      <div style={{
+        maxWidth: '1280px',
+        margin: '0 auto',
+        padding: '0 1rem'
+      }}>
+        {/* Main Grid */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: '2rem',
+          marginBottom: '2rem'
+        }}>
           {/* About Section */}
           <div>
-            <h3 className="text-lg font-bold mb-4 text-white">About FYC</h3>
-            <ul className="space-y-2">
-              <li>
+            <h3 style={{
+              fontSize: '1.125rem',
+              fontWeight: 'bold',
+              marginBottom: '1rem',
+              color: 'white'
+            }}>
+              About FYC
+            </h3>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+              <li style={{ marginBottom: '0.5rem' }}>
                 <button 
-                  onClick={() => onNavigate('about')}
-                  className="text-gray-400 hover:text-white transition-colors text-left"
+                  onClick={() => handleNavigate('about')}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#9CA3AF',
+                    cursor: 'pointer',
+                    padding: 0,
+                    textAlign: 'left',
+                    fontSize: '0.875rem',
+                    transition: 'color 0.2s'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = 'white'}
+                  onMouseLeave={(e) => e.currentTarget.style.color = '#9CA3AF'}
                 >
                   About Us
                 </button>
               </li>
-              <li>
+              <li style={{ marginBottom: '0.5rem' }}>
                 <button 
-                  onClick={() => onNavigate('how-it-works')}
-                  className="text-gray-400 hover:text-white transition-colors text-left"
+                  onClick={() => handleNavigate('how-it-works')}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#9CA3AF',
+                    cursor: 'pointer',
+                    padding: 0,
+                    textAlign: 'left',
+                    fontSize: '0.875rem',
+                    transition: 'color 0.2s'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = 'white'}
+                  onMouseLeave={(e) => e.currentTarget.style.color = '#9CA3AF'}
                 >
                   How It Works
                 </button>
               </li>
-              <li>
+              <li style={{ marginBottom: '0.5rem' }}>
                 <button 
-                  onClick={() => onNavigate('faq')}
-                  className="text-gray-400 hover:text-white transition-colors text-left"
+                  onClick={() => handleNavigate('faq')}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#9CA3AF',
+                    cursor: 'pointer',
+                    padding: 0,
+                    textAlign: 'left',
+                    fontSize: '0.875rem',
+                    transition: 'color 0.2s'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = 'white'}
+                  onMouseLeave={(e) => e.currentTarget.style.color = '#9CA3AF'}
                 >
                   FAQ
                 </button>
@@ -43,24 +107,52 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
 
           {/* Support Section */}
           <div>
-            <h3 className="text-lg font-bold mb-4 text-white">Support</h3>
-            <ul className="space-y-2">
-              <li>
+            <h3 style={{
+              fontSize: '1.125rem',
+              fontWeight: 'bold',
+              marginBottom: '1rem',
+              color: 'white'
+            }}>
+              Support
+            </h3>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+              <li style={{ marginBottom: '0.5rem' }}>
                 <button 
-                  onClick={() => onNavigate('contact')}
-                  className="text-gray-400 hover:text-white transition-colors text-left"
+                  onClick={() => handleNavigate('contact')}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#9CA3AF',
+                    cursor: 'pointer',
+                    padding: 0,
+                    textAlign: 'left',
+                    fontSize: '0.875rem',
+                    transition: 'color 0.2s'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = 'white'}
+                  onMouseLeave={(e) => e.currentTarget.style.color = '#9CA3AF'}
                 >
                   Contact Us
                 </button>
               </li>
-              <li>
+              <li style={{ marginBottom: '0.5rem' }}>
                 <a 
                   href="https://wa.me/27711126204?text=Hi%2C%20I%20need%20support%20with%20FYC%20Marketplace"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-gray-400 hover:text-white transition-colors flex items-center gap-2"
+                  style={{
+                    color: '#9CA3AF',
+                    textDecoration: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    fontSize: '0.875rem',
+                    transition: 'color 0.2s'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = 'white'}
+                  onMouseLeave={(e) => e.currentTarget.style.color = '#9CA3AF'}
                 >
-                  <MessageCircle className="h-4 w-4" />
+                  <MessageCircle style={{ height: '1rem', width: '1rem' }} />
                   WhatsApp Support
                 </a>
               </li>
@@ -69,20 +161,49 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
 
           {/* Legal Section */}
           <div>
-            <h3 className="text-lg font-bold mb-4 text-white">Legal</h3>
-            <ul className="space-y-2">
-              <li>
+            <h3 style={{
+              fontSize: '1.125rem',
+              fontWeight: 'bold',
+              marginBottom: '1rem',
+              color: 'white'
+            }}>
+              Legal
+            </h3>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+              <li style={{ marginBottom: '0.5rem' }}>
                 <button 
-                  onClick={() => onNavigate('terms')}
-                  className="text-gray-400 hover:text-white transition-colors text-left"
+                  onClick={() => handleNavigate('terms')}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#9CA3AF',
+                    cursor: 'pointer',
+                    padding: 0,
+                    textAlign: 'left',
+                    fontSize: '0.875rem',
+                    transition: 'color 0.2s'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = 'white'}
+                  onMouseLeave={(e) => e.currentTarget.style.color = '#9CA3AF'}
                 >
                   Terms of Service
                 </button>
               </li>
-              <li>
+              <li style={{ marginBottom: '0.5rem' }}>
                 <button 
-                  onClick={() => onNavigate('privacy')}
-                  className="text-gray-400 hover:text-white transition-colors text-left"
+                  onClick={() => handleNavigate('privacy')}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#9CA3AF',
+                    cursor: 'pointer',
+                    padding: 0,
+                    textAlign: 'left',
+                    fontSize: '0.875rem',
+                    transition: 'color 0.2s'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = 'white'}
+                  onMouseLeave={(e) => e.currentTarget.style.color = '#9CA3AF'}
                 >
                   Privacy Policy
                 </button>
@@ -92,18 +213,54 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
 
           {/* Campus Locations */}
           <div>
-            <h3 className="text-lg font-bold mb-4 text-white">Campuses</h3>
-            <ul className="space-y-1 text-sm text-gray-400">
-              <li>Pretoria Central</li>
-              <li>Soshanguve South</li>
-              <li>Soshanguve North</li>
-              <li>Ga-Rankuwa</li>
-              <li>Pretoria Arcadia</li>
-              <li>eMalahleni</li>
-              <li>Mbombela</li>
-              <li>Polokwane</li>
+            <h3 style={{
+              fontSize: '1.125rem',
+              fontWeight: 'bold',
+              marginBottom: '1rem',
+              color: 'white'
+            }}>
+              Locations
+            </h3>
+            <ul style={{ 
+              listStyle: 'none', 
+              padding: 0, 
+              margin: 0,
+              fontSize: '0.875rem',
+              color: '#9CA3AF'
+            }}>
+              <li style={{ marginBottom: '0.25rem' }}>Pretoria Central</li>
+              <li style={{ marginBottom: '0.25rem' }}>Soshanguve South</li>
+              <li style={{ marginBottom: '0.25rem' }}>Soshanguve North</li>
+              <li style={{ marginBottom: '0.25rem' }}>Ga-Rankuwa</li>
+              <li style={{ marginBottom: '0.25rem' }}>Pretoria Arcadia</li>
+              <li style={{ marginBottom: '0.25rem' }}>eMalahleni</li>
+              <li style={{ marginBottom: '0.25rem' }}>Mbombela</li>
+              <li style={{ marginBottom: '0.25rem' }}>Polokwane</li>
             </ul>
           </div>
+        </div>
+
+        {/* Copyright Section */}
+        <div style={{
+          borderTop: '1px solid #374151',
+          paddingTop: '2rem',
+          marginTop: '2rem',
+          textAlign: 'center'
+        }}>
+          <p style={{
+            color: '#9CA3AF',
+            fontSize: '0.875rem',
+            marginBottom: '0.5rem'
+          }}>
+            © {new Date().getFullYear()} FYC Marketplace. All rights reserved.
+          </p>
+          <p style={{
+            color: '#9CA3AF',
+            fontSize: '0.875rem',
+            margin: 0
+          }}>
+            Designed by Big Daddy T
+          </p>
         </div>
       </div>
     </footer>

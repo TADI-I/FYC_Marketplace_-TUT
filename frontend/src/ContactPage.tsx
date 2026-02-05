@@ -28,120 +28,185 @@ const ContactPage: React.FC<ContactPageProps> = ({ onBack }) => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <div style={{ maxWidth: '56rem', margin: '0 auto', padding: '2rem 1rem' }}>
       <button 
         onClick={onBack}
-        className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 mb-6"
+        style={{
+          backgroundColor: '#2563eb',
+          color: 'white',
+          padding: '0.5rem 1.5rem',
+          borderRadius: '0.5rem',
+          border: 'none',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          marginBottom: '1.5rem',
+          transition: 'background-color 0.2s'
+        }}
+        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1d4ed8'}
+        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
       >
-        <ArrowLeft className="h-5 w-5" />
+        <ArrowLeft style={{ height: '1.25rem', width: '1.25rem' }} />
         <span>Back to Home</span>
       </button>
 
-      <div className="bg-white rounded-lg shadow-sm p-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-6">Contact Us</h1>
+      <div style={{ backgroundColor: 'white', borderRadius: '0.5rem', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)', padding: '2rem' }}>
+        <h1 style={{ fontSize: '2.25rem', fontWeight: 'bold', color: '#111827', marginBottom: '1.5rem' }}>Contact Us</h1>
         
-        <p className="text-lg text-gray-700 mb-8">
+        <p style={{ fontSize: '1.125rem', color: '#374151', marginBottom: '2rem' }}>
           Have questions, feedback, or need support? We're here to help! Reach out to the FYC Marketplace 
           team using any of the methods below.
         </p>
 
-        {/* Contact Methods Grid */}
-        <div className="grid md:grid-cols-2 gap-6 mb-12">
+        {/* Contact Methods Grid - FIXED WITH INLINE STYLES */}
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
+          gap: '1.5rem', 
+          marginBottom: '3rem' 
+        }}>
           {/* WhatsApp Support */}
-          <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="bg-green-600 rounded-full p-3">
-                <MessageCircle className="h-6 w-6 text-white" />
+          <div style={{ 
+            backgroundColor: '#f0fdf4', 
+            border: '1px solid #bbf7d0', 
+            borderRadius: '0.75rem', 
+            padding: '1.5rem' 
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+              <div style={{ backgroundColor: '#16a34a', borderRadius: '50%', padding: '0.75rem' }}>
+                <MessageCircle style={{ height: '1.5rem', width: '1.5rem', color: 'white' }} />
               </div>
-              <h3 className="text-xl font-bold text-gray-900">WhatsApp Support</h3>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#111827', margin: 0 }}>WhatsApp Support</h3>
             </div>
-            <p className="text-gray-700 mb-4">
+            <p style={{ color: '#374151', marginBottom: '1rem' }}>
               Get instant help via WhatsApp! Our support team responds within minutes during business hours.
             </p>
             <a
               href="https://wa.me/27711126204?text=Hi%2C%20I%20need%20support%20with%20FYC%20Marketplace"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 font-semibold"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                backgroundColor: '#16a34a',
+                color: 'white',
+                padding: '0.5rem 1rem',
+                borderRadius: '0.5rem',
+                fontWeight: '600',
+                textDecoration: 'none',
+                transition: 'background-color 0.2s'
+              }}
+              onMouseEnter={(e) => (e.currentTarget as HTMLAnchorElement).style.backgroundColor = '#15803d'}
+              onMouseLeave={(e) => (e.currentTarget as HTMLAnchorElement).style.backgroundColor = '#16a34a'}
             >
-              <MessageCircle className="h-4 w-4" />
+              <MessageCircle style={{ height: '1rem', width: '1rem' }} />
               Chat on WhatsApp
             </a>
-            <p className="text-sm text-gray-600 mt-3">
+            <p style={{ fontSize: '0.875rem', color: '#4b5563', marginTop: '0.75rem' }}>
               <strong>Phone:</strong> +27 71 112 6204
             </p>
           </div>
 
           {/* Email Support */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="bg-blue-600 rounded-full p-3">
-                <Mail className="h-6 w-6 text-white" />
+          <div style={{ 
+            backgroundColor: '#eff6ff', 
+            border: '1px solid #bfdbfe', 
+            borderRadius: '0.75rem', 
+            padding: '1.5rem' 
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+              <div style={{ backgroundColor: '#2563eb', borderRadius: '50%', padding: '0.75rem' }}>
+                <Mail style={{ height: '1.5rem', width: '1.5rem', color: 'white' }} />
               </div>
-              <h3 className="text-xl font-bold text-gray-900">Email Support</h3>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#111827', margin: 0 }}>Email Support</h3>
             </div>
-            <p className="text-gray-700 mb-4">
+            <p style={{ color: '#374151', marginBottom: '1rem' }}>
               Prefer email? Send us a detailed message and we'll respond within 24 hours.
             </p>
             <a
               href="mailto:support@firstyearcouncil.co.za"
-              className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-semibold"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                backgroundColor: '#2563eb',
+                color: 'white',
+                padding: '0.5rem 1rem',
+                borderRadius: '0.5rem',
+                fontWeight: '600',
+                textDecoration: 'none',
+                transition: 'background-color 0.2s'
+              }}
+              onMouseEnter={(e) => (e.currentTarget as HTMLAnchorElement).style.backgroundColor = '#1d4ed8'}
+              onMouseLeave={(e) => (e.currentTarget as HTMLAnchorElement).style.backgroundColor = '#2563eb'}
             >
-              <Mail className="h-4 w-4" />
+              <Mail style={{ height: '1rem', width: '1rem' }} />
               Email Us
             </a>
-            <p className="text-sm text-gray-600 mt-3">
+            <p style={{ fontSize: '0.875rem', color: '#4b5563', marginTop: '0.75rem' }}>
               <strong>Email:</strong> support@firstyearcouncil.co.za
             </p>
           </div>
 
           {/* Office Hours */}
-          <div className="bg-orange-50 border border-orange-200 rounded-lg p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="bg-orange-600 rounded-full p-3">
-                <Clock className="h-6 w-6 text-white" />
+          <div style={{ 
+            backgroundColor: '#fff7ed', 
+            border: '1px solid #fed7aa', 
+            borderRadius: '0.75rem', 
+            padding: '1.5rem' 
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+              <div style={{ backgroundColor: '#ea580c', borderRadius: '50%', padding: '0.75rem' }}>
+                <Clock style={{ height: '1.5rem', width: '1.5rem', color: 'white' }} />
               </div>
-              <h3 className="text-xl font-bold text-gray-900">Support Hours</h3>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#111827', margin: 0 }}>Support Hours</h3>
             </div>
-            <div className="space-y-2 text-gray-700">
-              <p><strong>Monday - Friday:</strong> 8:00 AM - 6:00 PM</p>
-              <p><strong>Saturday:</strong> 9:00 AM - 2:00 PM</p>
-              <p><strong>Sunday & Public Holidays:</strong> Closed</p>
-              <p className="text-sm text-gray-600 mt-3">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', color: '#374151' }}>
+              <p style={{ margin: 0 }}><strong>Monday - Friday:</strong> 8:00 AM - 6:00 PM</p>
+              <p style={{ margin: 0 }}><strong>Saturday:</strong> 9:00 AM - 2:00 PM</p>
+              <p style={{ margin: 0 }}><strong>Sunday & Public Holidays:</strong> Closed</p>
+              <p style={{ fontSize: '0.875rem', color: '#4b5563', marginTop: '0.75rem', marginBottom: 0 }}>
                 All times are in South African Standard Time (SAST)
               </p>
             </div>
           </div>
 
           {/* Location */}
-          <div className="bg-purple-50 border border-purple-200 rounded-lg p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="bg-purple-600 rounded-full p-3">
-                <MapPin className="h-6 w-6 text-white" />
+          <div style={{ 
+            backgroundColor: '#faf5ff', 
+            border: '1px solid #e9d5ff', 
+            borderRadius: '0.75rem', 
+            padding: '1.5rem' 
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+              <div style={{ backgroundColor: '#9333ea', borderRadius: '50%', padding: '0.75rem' }}>
+                <MapPin style={{ height: '1.5rem', width: '1.5rem', color: 'white' }} />
               </div>
-              <h3 className="text-xl font-bold text-gray-900">Location</h3>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#111827', margin: 0 }}>Location</h3>
             </div>
-            <p className="text-gray-700">
+            <p style={{ color: '#374151', marginBottom: '0.75rem' }}>
               We serve students across all TUT campuses in South Africa, including Pretoria Central, 
               Soshanguve, Ga-Rankuwa, and more.
             </p>
-            <p className="text-sm text-gray-600 mt-3">
+            <p style={{ fontSize: '0.875rem', color: '#4b5563', margin: 0 }}>
               <strong>Headquarters:</strong> Pretoria, Gauteng, South Africa
             </p>
           </div>
         </div>
 
         {/* Contact Form */}
-        <div className="bg-gray-50 rounded-lg p-6 mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Send Us a Message</h2>
-          <p className="text-gray-600 mb-6">
+        <div style={{ backgroundColor: '#f9fafb', borderRadius: '0.5rem', padding: '1.5rem', marginBottom: '2rem' }}>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#111827', marginBottom: '1rem' }}>Send Us a Message</h2>
+          <p style={{ color: '#4b5563', marginBottom: '1.5rem' }}>
             Fill out the form below and we'll send your message via WhatsApp to our support team.
           </p>
           
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid md:grid-cols-2 gap-4">
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#374151', marginBottom: '0.5rem' }}>
                   Your Name *
                 </label>
                 <input
@@ -149,13 +214,19 @@ const ContactPage: React.FC<ContactPageProps> = ({ onBack }) => {
                   required
                   value={formData.name}
                   onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '0.5rem',
+                    fontSize: '1rem'
+                  }}
                   placeholder="John Doe"
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#374151', marginBottom: '0.5rem' }}>
                   Your Email *
                 </label>
                 <input
@@ -163,21 +234,33 @@ const ContactPage: React.FC<ContactPageProps> = ({ onBack }) => {
                   required
                   value={formData.email}
                   onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '0.5rem',
+                    fontSize: '1rem'
+                  }}
                   placeholder="john@example.com"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#374151', marginBottom: '0.5rem' }}>
                 Subject *
               </label>
               <select
                 required
                 value={formData.subject}
                 onChange={(e) => setFormData(prev => ({ ...prev, subject: e.target.value }))}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '0.5rem',
+                  fontSize: '1rem'
+                }}
               >
                 <option value="">Select a subject</option>
                 <option value="Account Issues">Account Issues</option>
@@ -191,7 +274,7 @@ const ContactPage: React.FC<ContactPageProps> = ({ onBack }) => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#374151', marginBottom: '0.5rem' }}>
                 Your Message *
               </label>
               <textarea
@@ -199,77 +282,119 @@ const ContactPage: React.FC<ContactPageProps> = ({ onBack }) => {
                 value={formData.message}
                 onChange={(e) => setFormData(prev => ({ ...prev, message: e.target.value }))}
                 rows={6}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '0.5rem',
+                  fontSize: '1rem',
+                  fontFamily: 'inherit',
+                  resize: 'vertical'
+                }}
                 placeholder="Describe your issue or question in detail..."
               />
             </div>
 
             <button
               type="submit"
-              className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-semibold flex items-center justify-center gap-2"
+              style={{
+                width: '100%',
+                backgroundColor: '#2563eb',
+                color: 'white',
+                padding: '0.75rem 1.5rem',
+                borderRadius: '0.5rem',
+                border: 'none',
+                fontWeight: '600',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                transition: 'background-color 0.2s'
+              }}
+              onMouseEnter={(e) => (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#1d4ed8'}
+              onMouseLeave={(e) => (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#2563eb'}
             >
-              <MessageCircle className="h-5 w-5" />
+              <MessageCircle style={{ height: '1.25rem', width: '1.25rem' }} />
               Send via WhatsApp
             </button>
             
-            <p className="text-sm text-gray-600 text-center">
+            <p style={{ fontSize: '0.875rem', color: '#6b7280', textAlign: 'center', margin: 0 }}>
               This will open WhatsApp with your message pre-filled. Click send to submit.
             </p>
           </form>
         </div>
 
-        {/* Common Issues */}
-        <div className="border-t pt-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Common Support Topics</h2>
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
-              <h3 className="font-bold text-gray-900 mb-2">Account & Login</h3>
-              <ul className="text-sm text-gray-700 space-y-1">
-                <li>• Password reset</li>
-                <li>• Account verification</li>
-                <li>• Profile updates</li>
+        {/* Common Issues - FIXED BULLETS */}
+        <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '2rem' }}>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#111827', marginBottom: '1rem' }}>Common Support Topics</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
+            <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '0.5rem', padding: '1rem' }}>
+              <h3 style={{ fontWeight: 'bold', color: '#111827', marginBottom: '0.5rem' }}>Account & Login</h3>
+              <ul style={{ fontSize: '0.875rem', color: '#374151', paddingLeft: '1.25rem', margin: 0 }}>
+                <li>Password reset</li>
+                <li>Account verification</li>
+                <li>Profile updates</li>
               </ul>
             </div>
             
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
-              <h3 className="font-bold text-gray-900 mb-2">Payments</h3>
-              <ul className="text-sm text-gray-700 space-y-1">
-                <li>• Subscription activation</li>
-                <li>• Payment issues</li>
-                <li>• Refund requests</li>
+            <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '0.5rem', padding: '1rem' }}>
+              <h3 style={{ fontWeight: 'bold', color: '#111827', marginBottom: '0.5rem' }}>Payments</h3>
+              <ul style={{ fontSize: '0.875rem', color: '#374151', paddingLeft: '1.25rem', margin: 0 }}>
+                <li>Subscription activation</li>
+                <li>Payment issues</li>
+                <li>Refund requests</li>
               </ul>
             </div>
             
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
-              <h3 className="font-bold text-gray-900 mb-2">Listings</h3>
-              <ul className="text-sm text-gray-700 space-y-1">
-                <li>• Unable to add products</li>
-                <li>• Edit or delete listings</li>
-                <li>• Image upload problems</li>
+            <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '0.5rem', padding: '1rem' }}>
+              <h3 style={{ fontWeight: 'bold', color: '#111827', marginBottom: '0.5rem' }}>Listings</h3>
+              <ul style={{ fontSize: '0.875rem', color: '#374151', paddingLeft: '1.25rem', margin: 0 }}>
+                <li>Unable to add products</li>
+                <li>Edit or delete listings</li>
+                <li>Image upload problems</li>
               </ul>
             </div>
             
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
-              <h3 className="font-bold text-gray-900 mb-2">Safety & Reports</h3>
-              <ul className="text-sm text-gray-700 space-y-1">
-                <li>• Report suspicious users</li>
-                <li>• Scam prevention</li>
-                <li>• Dispute resolution</li>
+            <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '0.5rem', padding: '1rem' }}>
+              <h3 style={{ fontWeight: 'bold', color: '#111827', marginBottom: '0.5rem' }}>Safety & Reports</h3>
+              <ul style={{ fontSize: '0.875rem', color: '#374151', paddingLeft: '1.25rem', margin: 0 }}>
+                <li>Report suspicious users</li>
+                <li>Scam prevention</li>
+                <li>Dispute resolution</li>
               </ul>
             </div>
           </div>
         </div>
 
         {/* FAQ Link */}
-        <div className="mt-8 bg-gradient-to-r from-blue-50 to-orange-50 border border-blue-200 rounded-lg p-6 text-center">
-          <h3 className="text-xl font-bold text-gray-900 mb-2">Check Our FAQ First</h3>
-          <p className="text-gray-700 mb-4">
+        <div style={{
+          marginTop: '2rem',
+          background: 'linear-gradient(to right, #eff6ff, #fff7ed)',
+          border: '1px solid #bfdbfe',
+          borderRadius: '0.5rem',
+          padding: '1.5rem',
+          textAlign: 'center'
+        }}>
+          <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#111827', marginBottom: '0.5rem' }}>Check Our FAQ First</h3>
+          <p style={{ color: '#374151', marginBottom: '1rem' }}>
             Many common questions are answered in our comprehensive FAQ section. You might find 
             your answer there instantly!
           </p>
           <button
             onClick={onBack}
-            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-semibold"
+            style={{
+              backgroundColor: '#2563eb',
+              color: 'white',
+              padding: '0.75rem 1.5rem',
+              borderRadius: '0.5rem',
+              border: 'none',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'background-color 0.2s'
+            }}
+            onMouseEnter={(e) => (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#1d4ed8'}
+            onMouseLeave={(e) => (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#2563eb'}
           >
             View FAQs
           </button>

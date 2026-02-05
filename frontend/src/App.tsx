@@ -502,21 +502,21 @@ const App = () => {
         ) : currentView === 'admin-reactivation' && currentUser?.type === 'admin' ? (
           <AdminReactivation />
      ) : currentView === 'about' ? (
-  <AboutPage onBack={() => setCurrentView('home')} />
-) : currentView === 'how-it-works' ? (
-  <HowItWorksPage onBack={() => setCurrentView('home')} />
-) : currentView === 'faq' ? (
-  <FAQPage onBack={() => setCurrentView('home')} />
-) : currentView === 'contact' ? (
-  <ContactPage onBack={() => setCurrentView('home')} />
-) : currentView === 'terms' ? (
-  <TermsPage onBack={() => setCurrentView('home')} />
-) : currentView === 'privacy' ? (
-  <PrivacyPage onBack={() => setCurrentView('home')} />
-) : currentView === 'about' ? (
-  <AboutPage onBack={() => setCurrentView('home')} />
-) : (
-  <>
+            <AboutPage onBack={() => setCurrentView('home')} />
+          ) : currentView === 'how-it-works' ? (
+            <HowItWorksPage onBack={() => setCurrentView('home')} />
+          ) : currentView === 'faq' ? (
+            <FAQPage onBack={() => setCurrentView('home')} />
+          ) : currentView === 'contact' ? (
+            <ContactPage onBack={() => setCurrentView('home')} />
+          ) : currentView === 'terms' ? (
+            <TermsPage onBack={() => setCurrentView('home')} />
+          ) : currentView === 'privacy' ? (
+            <PrivacyPage onBack={() => setCurrentView('home')} />
+          ) : currentView === 'about' ? (
+            <AboutPage onBack={() => setCurrentView('home')} />
+          ) : (
+            <>
             <div className="flex justify-between items-center mb-8">
               {currentUser?.type === 'seller' && (
                 <button 

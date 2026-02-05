@@ -116,35 +116,81 @@ const FAQPage: React.FC<FAQPageProps> = ({ onBack }) => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <div style={{ maxWidth: '56rem', margin: '0 auto', padding: '2rem 1rem' }}>
       <button 
         onClick={onBack}
-        className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 mb-6"
+        style={{
+          backgroundColor: '#2563eb',
+          color: 'white',
+          padding: '0.5rem 1.5rem',
+          borderRadius: '0.5rem',
+          border: 'none',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          marginBottom: '1.5rem',
+          transition: 'background-color 0.2s'
+        }}
+        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1d4ed8'}
+        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
       >
-        <ArrowLeft className="h-5 w-5" />
+        <ArrowLeft style={{ height: '1.25rem', width: '1.25rem' }} />
         <span>Back to Home</span>
       </button>
 
-      <div className="bg-white rounded-lg shadow-sm p-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">Frequently Asked Questions</h1>
-        <p className="text-lg text-gray-600 mb-8">
+      <div style={{
+        backgroundColor: 'white',
+        borderRadius: '0.5rem',
+        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+        padding: '2rem'
+      }}>
+        <h1 style={{ fontSize: '2.25rem', fontWeight: 'bold', color: '#111827', marginBottom: '1rem' }}>
+          Frequently Asked Questions
+        </h1>
+        <p style={{ fontSize: '1.125rem', color: '#4B5563', marginBottom: '2rem' }}>
           Find answers to common questions about FYC Marketplace. Can't find what you're looking for? 
-          Contact us on WhatsApp at <a href="https://wa.me/27711126204" className="text-blue-600 hover:underline font-semibold">+27 71 112 6204</a>.
+          Contact us on WhatsApp at <a href="https://wa.me/27711126204" style={{ color: '#2563eb', textDecoration: 'underline', fontWeight: '600' }}>+27 71 112 6204</a>.
         </p>
 
-        {/* Category Filter */}
-        <div className="mb-8">
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">Filter by Category:</h3>
-          <div className="flex flex-wrap gap-2">
+        {/* Category Filter - FIXED FOR MOBILE */}
+        <div style={{ marginBottom: '2rem' }}>
+          <h3 style={{ fontSize: '0.875rem', fontWeight: '600', color: '#374151', marginBottom: '0.75rem' }}>
+            Filter by Category:
+          </h3>
+          <div style={{ 
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+            gap: '0.5rem'
+          }}>
             {categories.map(category => (
               <button
                 key={category.id}
                 onClick={() => setSelectedCategory(category.id)}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  selectedCategory === category.id
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+                style={{
+                  padding: '0.5rem 1rem',
+                  borderRadius: '0.5rem',
+                  border: 'none',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  backgroundColor: selectedCategory === category.id ? '#2563eb' : '#f3f4f6',
+                  color: selectedCategory === category.id ? 'white' : '#374151',
+                  fontSize: '0.875rem',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
+                }}
+                onMouseEnter={(e) => {
+                  if (selectedCategory !== category.id) {
+                    e.currentTarget.style.backgroundColor = '#e5e7eb';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (selectedCategory !== category.id) {
+                    e.currentTarget.style.backgroundColor = '#f3f4f6';
+                  }
+                }}
               >
                 {category.name}
               </button>
@@ -152,29 +198,71 @@ const FAQPage: React.FC<FAQPageProps> = ({ onBack }) => {
           </div>
         </div>
 
-        {/* FAQ Items */}
-        <div className="space-y-4">
+        {/* FAQ Items - FIXED WITH GRAY BACKGROUND */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {filteredFaqs.map((faq, index) => (
             <div
               key={index}
-              className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow"
+              style={{
+                border: '1px solid #e5e7eb',
+                borderRadius: '0.5rem',
+                overflow: 'hidden',
+                transition: 'box-shadow 0.2s',
+                backgroundColor: 'white'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.boxShadow = 'none';
+              }}
             >
               <button
                 onClick={() => toggleFaq(index)}
-                className="w-full flex items-center justify-between p-5 text-left bg-white hover:bg-gray-50 transition-colors"
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '1.25rem',
+                  textAlign: 'left',
+                  backgroundColor: 'white',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'background-color 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#f9fafb';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'white';
+                }}
               >
-                <h3 className="text-lg font-semibold text-gray-900 pr-4">
+                <h3 style={{
+                  fontSize: '1.125rem',
+                  fontWeight: '600',
+                  color: '#111827',
+                  paddingRight: '1rem',
+                  flex: 1
+                }}>
                   {faq.question}
                 </h3>
                 {openIndex === index ? (
-                  <ChevronUp className="h-5 w-5 text-blue-600 flex-shrink-0" />
+                  <ChevronUp style={{ height: '1.25rem', width: '1.25rem', color: '#2563eb', flexShrink: 0 }} />
                 ) : (
-                  <ChevronDown className="h-5 w-5 text-gray-400 flex-shrink-0" />
+                  <ChevronDown style={{ height: '1.25rem', width: '1.25rem', color: '#9ca3af', flexShrink: 0 }} />
                 )}
               </button>
               {openIndex === index && (
-                <div className="px-5 pb-5 bg-gray-50">
-                  <p className="text-gray-700 leading-relaxed">
+                <div style={{
+                  padding: '0 1.25rem 1.25rem',
+                  backgroundColor: '#f9fafb' // GRAY BACKGROUND FOR ANSWER
+                }}>
+                  <p style={{
+                    color: '#374151',
+                    lineHeight: '1.75',
+                    margin: 0
+                  }}>
                     {faq.answer}
                   </p>
                 </div>
@@ -184,9 +272,17 @@ const FAQPage: React.FC<FAQPageProps> = ({ onBack }) => {
         </div>
 
         {/* Still have questions */}
-        <div className="mt-12 bg-gradient-to-r from-blue-50 to-orange-50 border border-blue-200 rounded-lg p-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-3">Still Have Questions?</h2>
-          <p className="text-gray-700 mb-4">
+        <div style={{
+          marginTop: '3rem',
+          background: 'linear-gradient(to right, #eff6ff, #fff7ed)',
+          border: '1px solid #bfdbfe',
+          borderRadius: '0.5rem',
+          padding: '1.5rem'
+        }}>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#111827', marginBottom: '0.75rem' }}>
+            Still Have Questions?
+          </h2>
+          <p style={{ color: '#374151', marginBottom: '1rem' }}>
             Our support team is here to help! Reach out to us on WhatsApp for quick assistance 
             with any issues or questions about FYC Marketplace.
           </p>
@@ -194,7 +290,24 @@ const FAQPage: React.FC<FAQPageProps> = ({ onBack }) => {
             href="https://wa.me/27711126204?text=Hi%2C%20I%20have%20a%20question%20about%20FYC%20Marketplace"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 font-semibold"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              backgroundColor: '#16a34a',
+              color: 'white',
+              padding: '0.75rem 1.5rem',
+              borderRadius: '0.5rem',
+              fontWeight: '600',
+              textDecoration: 'none',
+              transition: 'background-color 0.2s'
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLAnchorElement).style.backgroundColor = '#15803d';
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLAnchorElement).style.backgroundColor = '#16a34a';
+            }}
           >
             Contact Support on WhatsApp
           </a>
