@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingBag, Plus, Search, User as Useric, Star, Filter, Locate, TrendingUp } from 'lucide-react';
+import { Analytics } from "@vercel/analytics/react";
 import { User, Product, Message, MessageMap, Category, Campus, getImageUrl as getProductImageUrl, normalizeSAPhoneNumber } from './types';
 
 import './App.css';
@@ -451,6 +452,7 @@ const App = () => {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-4">
+        <Analytics/>
         {chatWith ? (
           <ChatWindow
             currentUser={currentUser}
