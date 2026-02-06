@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingBag, Plus, Search, User as Useric, Star, Filter, Locate, TrendingUp } from 'lucide-react';
 import { User, Product, Message, MessageMap, Category, Campus, getImageUrl as getProductImageUrl, normalizeSAPhoneNumber } from './types';
+import { Analytics } from '@vercel/analytics/react';
 
 import './App.css';
 import {
@@ -352,6 +353,7 @@ const App = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Analytics />
       <header className="bg-white shadow-sm border-b sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
