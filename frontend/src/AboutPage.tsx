@@ -7,31 +7,47 @@ interface AboutPageProps {
 
 const AboutPage: React.FC<AboutPageProps> = ({ onBack }) => {
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <div style={{ maxWidth: '56rem', margin: '0 auto', padding: '2rem 1rem' }}>
       <button 
         onClick={onBack}
-        className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 mb-6"
+        style={{
+          backgroundColor: '#2563eb',
+          color: 'white',
+          padding: '0.5rem 1.5rem',
+          borderRadius: '0.5rem',
+          border: 'none',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          marginBottom: '1.5rem',
+          transition: 'background-color 0.2s'
+        }}
+        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1d4ed8'}
+        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
       >
-        <ArrowLeft className="h-5 w-5" />
+        <ArrowLeft style={{ height: '1.25rem', width: '1.25rem' }} />
         <span>Back to Home</span>
       </button>
 
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <h1 className="text-4xl font-bold text-gray-900 mb-6">About FYC Marketplace</h1>
+      <div style={{ backgroundColor: 'white', borderRadius: '0.5rem', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)', padding: '1.5rem' }}>
+        <h1 style={{ fontSize: '2.25rem', fontWeight: 'bold', color: '#111827', marginBottom: '1.5rem' }}>
+          About FYC Marketplace
+        </h1>
         
-        <div className="prose max-w-none">
-          <p className="text-lg text-gray-700 mb-6">
+        <div style={{ maxWidth: 'none' }}>
+          <p style={{ fontSize: '1.125rem', color: '#374151', marginBottom: '1.5rem' }}>
             Welcome to FYC Marketplace, the official First Year Council marketplace designed specifically 
             for all students across South Africa. Our platform connects students who need to buy 
             and sell textbooks, stationery, electronics, and other student essentials in a safe, convenient, 
             and affordable way.
           </p>
 
-          <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <Users className="h-6 w-6 text-blue-600" />
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#111827', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Users style={{ height: '1.5rem', width: '1.5rem', color: '#2563eb' }} />
             Our Mission
           </h2>
-          <p className="text-gray-700 mb-6">
+          <p style={{ color: '#374151', marginBottom: '1.5rem' }}>
             At FYC Marketplace, we understand the financial challenges that first-year students face. 
             Textbooks can be expensive, and finding affordable second-hand materials can be difficult. 
             That's why we created this platform – to help students save money while ensuring they have 
@@ -39,105 +55,122 @@ const AboutPage: React.FC<AboutPageProps> = ({ onBack }) => {
             thriving student community where buying and selling is easy, secure, and beneficial for everyone.
           </p>
 
-          <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <ShoppingBag className="h-6 w-6 text-orange-600" />
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#111827', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <ShoppingBag style={{ height: '1.5rem', width: '1.5rem', color: '#ea580c' }} />
             What We Offer
           </h2>
-          <div className="bg-gray-50 rounded-lg p-6 mb-6">
-            <ul className="space-y-3 text-gray-700">
-              <li className="flex items-start">
-                <span className="text-orange-600 font-bold mr-2">•</span>
-                <span><strong>Textbooks & Study Materials:</strong> Find affordable textbooks for all your courses, from previous students who've completed the modules.</span>
+          <div style={{ backgroundColor: '#f9fafb', borderRadius: '0.5rem', padding: '1.5rem', marginBottom: '1.5rem' }}>
+            <ul style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', color: '#374151', paddingLeft: '1.25rem', margin: 0 }}>
+              <li>
+                <strong>Textbooks & Study Materials:</strong> Find affordable textbooks for all your courses, from previous students who've completed the modules.
               </li>
-              <li className="flex items-start">
-                <span className="text-orange-600 font-bold mr-2">•</span>
-                <span><strong>Electronics & Tech:</strong> Buy and sell laptops, calculators, tablets, and other technology essentials at student-friendly prices.</span>
+              <li>
+                <strong>Electronics & Tech:</strong> Buy and sell laptops, calculators, tablets, and other technology essentials at student-friendly prices.
               </li>
-              <li className="flex items-start">
-                <span className="text-orange-600 font-bold mr-2">•</span>
-                <span><strong>Stationery & Supplies:</strong> Get notebooks, pens, folders, and all the supplies you need for a successful academic year.</span>
+              <li>
+                <strong>Stationery & Supplies:</strong> Get notebooks, pens, folders, and all the supplies you need for a successful academic year.
               </li>
-              <li className="flex items-start">
-                <span className="text-orange-600 font-bold mr-2">•</span>
-                <span><strong>Services:</strong> Connect with fellow students offering tutoring, typing services, printing, and other helpful services.</span>
+              <li>
+                <strong>Services:</strong> Connect with fellow students offering tutoring, typing services, printing, and other helpful services.
               </li>
-              <li className="flex items-start">
-                <span className="text-orange-600 font-bold mr-2">•</span>
-                <span><strong>Campus-Specific Listings:</strong> Filter items by your campus location for easy meet-ups and quick transactions.</span>
+              <li>
+                <strong>Campus-Specific Listings:</strong> Filter items by your campus location for easy meet-ups and quick transactions.
               </li>
             </ul>
           </div>
 
-          <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <Shield className="h-6 w-6 text-green-600" />
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#111827', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Shield style={{ height: '1.5rem', width: '1.5rem', color: '#16a34a' }} />
             Why Choose FYC Marketplace?
           </h2>
-          <p className="text-gray-700 mb-4">
+          <p style={{ color: '#374151', marginBottom: '1rem' }}>
             Unlike general marketplace platforms, FYC Marketplace is built exclusively for students, 
             by students. We prioritize safety, affordability, and community. Here's what makes us different:
           </p>
-          <div className="grid md:grid-cols-2 gap-4 mb-6">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h3 className="font-bold text-blue-900 mb-2">Student-Focused</h3>
-              <p className="text-sm text-blue-800">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+            <div style={{ backgroundColor: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '0.5rem', padding: '1rem' }}>
+              <h3 style={{ fontWeight: 'bold', color: '#1e3a8a', marginBottom: '0.5rem' }}>Student-Focused</h3>
+              <p style={{ fontSize: '0.875rem', color: '#1e40af' }}>
                 Every feature is designed with first-year students in mind, from campus filters to 
                 affordable subscription pricing for sellers.
               </p>
             </div>
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <h3 className="font-bold text-green-900 mb-2">Safe & Verified</h3>
-              <p className="text-sm text-green-800">
+            <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '0.5rem', padding: '1rem' }}>
+              <h3 style={{ fontWeight: 'bold', color: '#14532d', marginBottom: '0.5rem' }}>Safe & Verified</h3>
+              <p style={{ fontSize: '0.875rem', color: '#15803d' }}>
                 Verified seller badges help you identify trustworthy sellers, and direct WhatsApp 
                 communication keeps transactions transparent.
               </p>
             </div>
-            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-              <h3 className="font-bold text-orange-900 mb-2">Campus Convenience</h3>
-              <p className="text-sm text-orange-800">
+            <div style={{ backgroundColor: '#fff7ed', border: '1px solid #fed7aa', borderRadius: '0.5rem', padding: '1rem' }}>
+              <h3 style={{ fontWeight: 'bold', color: '#7c2d12', marginBottom: '0.5rem' }}>Campus Convenience</h3>
+              <p style={{ fontSize: '0.875rem', color: '#9a3412' }}>
                 Find items available on your campus for easy pick-up and avoid expensive shipping costs.
               </p>
             </div>
-            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-              <h3 className="font-bold text-purple-900 mb-2">Affordable for Everyone</h3>
-              <p className="text-sm text-purple-800">
+            <div style={{ backgroundColor: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: '0.5rem', padding: '1rem' }}>
+              <h3 style={{ fontWeight: 'bold', color: '#581c87', marginBottom: '0.5rem' }}>Affordable for Everyone</h3>
+              <p style={{ fontSize: '0.875rem', color: '#7e22ce' }}>
                 Buyers browse for free, and sellers pay just R25/month to list unlimited items – 
                 far cheaper than other platforms.
               </p>
             </div>
           </div>
 
-          <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <TrendingUp className="h-6 w-6 text-blue-600" />
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#111827', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <TrendingUp style={{ height: '1.5rem', width: '1.5rem', color: '#2563eb' }} />
             Join Our Growing Community
           </h2>
-          <p className="text-gray-700 mb-6">
+          <p style={{ color: '#374151', marginBottom: '1.5rem' }}>
             FYC Marketplace is more than just a buying and selling platform – it's a community of 
             first-year students helping each other succeed. Whether you're looking to save money on 
             textbooks, make some extra cash by selling items you no longer need, or find essential 
             study materials, FYC Marketplace is here to support your academic journey.
           </p>
 
-          <div className="bg-gradient-to-r from-orange-50 to-blue-50 border border-orange-200 rounded-lg p-6 mb-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-3">Start Saving Today!</h3>
-            <p className="text-gray-700 mb-4">
+          <div style={{
+            background: 'linear-gradient(to right, #fff7ed, #eff6ff)',
+            border: '1px solid #fed7aa',
+            borderRadius: '0.5rem',
+            padding: '1.5rem',
+            marginBottom: '1.5rem'
+          }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#111827', marginBottom: '0.75rem' }}>
+              Start Saving Today!
+            </h3>
+            <p style={{ color: '#374151', marginBottom: '1rem' }}>
               Create your free account now and discover thousands of student listings across South 
               African campuses. Whether you're at Pretoria Central, Soshanguve, Ga-Rankuwa, or any 
               other campus, you'll find what you need right here.
             </p>
-            <div className="flex gap-3">
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
               <button 
                 onClick={onBack}
-                className="bg-orange-600 text-white px-6 py-3 rounded-lg hover:bg-orange-700 font-semibold"
+                style={{
+                  backgroundColor: '#ea580c',
+                  color: 'white',
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '0.5rem',
+                  border: 'none',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'background-color 0.2s'
+                }}
+                onMouseEnter={(e) => (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#c2410c'}
+                onMouseLeave={(e) => (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#ea580c'}
               >
                 Browse Marketplace
               </button>
             </div>
           </div>
 
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Contact Us</h2>
-          <p className="text-gray-700">
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#111827', marginBottom: '1rem' }}>Contact Us</h2>
+          <p style={{ color: '#374151' }}>
             Have questions or need support? We're here to help! Reach out to us on WhatsApp at{' '}
-            <a href="https://wa.me/27711126204" className="text-blue-600 hover:underline font-semibold">
+            <a 
+              href="https://wa.me/27711126204" 
+              style={{ color: '#2563eb', textDecoration: 'underline', fontWeight: '600' }}
+            >
               +27 71 112 6204
             </a>{' '}
             or email us. Our team is dedicated to making your FYC Marketplace experience smooth 

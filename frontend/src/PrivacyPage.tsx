@@ -7,34 +7,48 @@ interface PrivacyPageProps {
 
 const PrivacyPage: React.FC<PrivacyPageProps> = ({ onBack }) => {
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <div style={{ maxWidth: '56rem', margin: '0 auto', padding: '2rem 1rem' }}>
       <button 
         onClick={onBack}
-        className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 mb-6"
+        style={{
+          backgroundColor: '#2563eb',
+          color: 'white',
+          padding: '0.5rem 1.5rem',
+          borderRadius: '0.5rem',
+          border: 'none',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          marginBottom: '1.5rem',
+          transition: 'background-color 0.2s'
+        }}
+        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1d4ed8'}
+        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
       >
-        <ArrowLeft className="h-5 w-5" />
+        <ArrowLeft style={{ height: '1.25rem', width: '1.25rem' }} />
         <span>Back to Home</span>
       </button>
 
-      <div className="bg-white rounded-lg shadow-sm p-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4 flex items-center gap-3">
-          <Shield className="h-10 w-10 text-blue-600" />
+      <div style={{ backgroundColor: 'white', borderRadius: '0.5rem', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)', padding: '2rem' }}>
+        <h1 style={{ fontSize: '2.25rem', fontWeight: 'bold', color: '#111827', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <Shield style={{ height: '2.5rem', width: '2.5rem', color: '#2563eb' }} />
           Privacy Policy
         </h1>
-        <p className="text-sm text-gray-600 mb-8">Last Updated: February 4, 2026</p>
+        <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '2rem' }}>Last Updated: February 4, 2026</p>
         
-        <div className="prose max-w-none space-y-6 text-gray-700">
-          <p className="text-lg">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', color: '#374151' }}>
+          <p style={{ fontSize: '1.125rem' }}>
             At FYC Marketplace, we value your privacy and are committed to protecting your personal information. 
             This Privacy Policy explains how we collect, use, store, and safeguard your data when you use our platform.
           </p>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-2 flex items-center gap-2">
-              <Eye className="h-5 w-5 text-blue-600" />
+          <div style={{ backgroundColor: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '0.5rem', padding: '1.5rem' }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#111827', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Eye style={{ height: '1.25rem', width: '1.25rem', color: '#2563eb' }} />
               Quick Summary
             </h3>
-            <ul className="space-y-2 text-sm">
+            <ul style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.875rem', paddingLeft: '1.25rem', margin: 0 }}>
               <li>✓ We collect only essential information to operate the marketplace</li>
               <li>✓ We never sell your personal data to third parties</li>
               <li>✓ You control your profile visibility and can delete your account anytime</li>
@@ -44,41 +58,49 @@ const PrivacyPage: React.FC<PrivacyPageProps> = ({ onBack }) => {
           </div>
 
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <Database className="h-6 w-6 text-green-600" />
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#111827', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Database style={{ height: '1.5rem', width: '1.5rem', color: '#16a34a' }} />
               1. Information We Collect
             </h2>
             
-            <h3 className="text-xl font-semibold text-gray-900 mb-2 mt-4">Account Information</h3>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#111827', marginBottom: '0.5rem', marginTop: '1rem' }}>
+              Account Information
+            </h3>
             <p>When you register on FYC Marketplace, we collect:</p>
-            <ul className="list-disc ml-6 space-y-1 mt-2">
+            <ul style={{ paddingLeft: '1.5rem', marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
               <li><strong>Personal Details:</strong> Name, email address, campus location</li>
               <li><strong>Contact Information:</strong> WhatsApp number (for buyer-seller communication)</li>
               <li><strong>Account Type:</strong> Whether you're a buyer, seller, or admin</li>
               <li><strong>Password:</strong> Encrypted and stored securely</li>
             </ul>
 
-            <h3 className="text-xl font-semibold text-gray-900 mb-2 mt-4">Seller-Specific Information</h3>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#111827', marginBottom: '0.5rem', marginTop: '1rem' }}>
+              Seller-Specific Information
+            </h3>
             <p>If you subscribe as a seller, we additionally collect:</p>
-            <ul className="list-disc ml-6 space-y-1 mt-2">
+            <ul style={{ paddingLeft: '1.5rem', marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
               <li><strong>Subscription Status:</strong> Active, expired, or inactive</li>
               <li><strong>Payment References:</strong> Your payment reference (email + FYC) for verification</li>
               <li><strong>Verification Documents:</strong> Student ID photo (if you request verification)</li>
               <li><strong>Subscription History:</strong> Start dates, end dates, renewal status</li>
             </ul>
 
-            <h3 className="text-xl font-semibold text-gray-900 mb-2 mt-4">Listing Information</h3>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#111827', marginBottom: '0.5rem', marginTop: '1rem' }}>
+              Listing Information
+            </h3>
             <p>When you create product or service listings, we collect:</p>
-            <ul className="list-disc ml-6 space-y-1 mt-2">
+            <ul style={{ paddingLeft: '1.5rem', marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
               <li><strong>Product Details:</strong> Title, description, price, category</li>
               <li><strong>Images:</strong> Photos you upload of your items</li>
               <li><strong>Location:</strong> Campus location for the listing</li>
               <li><strong>Analytics:</strong> Number of views, WhatsApp clicks (anonymous)</li>
             </ul>
 
-            <h3 className="text-xl font-semibold text-gray-900 mb-2 mt-4">Usage Data</h3>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#111827', marginBottom: '0.5rem', marginTop: '1rem' }}>
+              Usage Data
+            </h3>
             <p>We automatically collect certain technical information:</p>
-            <ul className="list-disc ml-6 space-y-1 mt-2">
+            <ul style={{ paddingLeft: '1.5rem', marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
               <li><strong>Device Information:</strong> Browser type, operating system, device type (mobile/desktop)</li>
               <li><strong>Log Data:</strong> IP address, access times, pages viewed</li>
               <li><strong>Cookies:</strong> Authentication tokens to keep you logged in</li>
@@ -87,13 +109,15 @@ const PrivacyPage: React.FC<PrivacyPageProps> = ({ onBack }) => {
           </div>
 
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-3">2. How We Use Your Information</h2>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#111827', marginBottom: '0.75rem' }}>
+              2. How We Use Your Information
+            </h2>
             <p>We use your personal data for the following purposes:</p>
             
-            <div className="space-y-3 mt-3">
-              <div className="bg-green-50 border-l-4 border-green-600 p-4 rounded">
-                <p className="font-semibold text-green-900">Platform Operations</p>
-                <ul className="list-disc ml-6 mt-2 text-sm">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.75rem' }}>
+              <div style={{ backgroundColor: '#f0fdf4', borderLeft: '4px solid #16a34a', padding: '1rem', borderRadius: '0.25rem' }}>
+                <p style={{ fontWeight: '600', color: '#14532d' }}>Platform Operations</p>
+                <ul style={{ paddingLeft: '1.5rem', marginTop: '0.5rem', fontSize: '0.875rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                   <li>Create and manage your account</li>
                   <li>Process seller subscriptions and verify payments</li>
                   <li>Display your listings to potential buyers</li>
@@ -101,9 +125,9 @@ const PrivacyPage: React.FC<PrivacyPageProps> = ({ onBack }) => {
                 </ul>
               </div>
 
-              <div className="bg-blue-50 border-l-4 border-blue-600 p-4 rounded">
-                <p className="font-semibold text-blue-900">Safety & Security</p>
-                <ul className="list-disc ml-6 mt-2 text-sm">
+              <div style={{ backgroundColor: '#eff6ff', borderLeft: '4px solid #2563eb', padding: '1rem', borderRadius: '0.25rem' }}>
+                <p style={{ fontWeight: '600', color: '#1e3a8a' }}>Safety & Security</p>
+                <ul style={{ paddingLeft: '1.5rem', marginTop: '0.5rem', fontSize: '0.875rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                   <li>Verify seller identities through student ID photos</li>
                   <li>Detect and prevent fraud, spam, and abuse</li>
                   <li>Enforce our Terms of Service</li>
@@ -111,18 +135,18 @@ const PrivacyPage: React.FC<PrivacyPageProps> = ({ onBack }) => {
                 </ul>
               </div>
 
-              <div className="bg-orange-50 border-l-4 border-orange-600 p-4 rounded">
-                <p className="font-semibold text-orange-900">Communication</p>
-                <ul className="list-disc ml-6 mt-2 text-sm">
+              <div style={{ backgroundColor: '#fff7ed', borderLeft: '4px solid #ea580c', padding: '1rem', borderRadius: '0.25rem' }}>
+                <p style={{ fontWeight: '600', color: '#7c2d12' }}>Communication</p>
+                <ul style={{ paddingLeft: '1.5rem', marginTop: '0.5rem', fontSize: '0.875rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                   <li>Send account notifications (subscription renewals, verification updates)</li>
                   <li>Provide customer support responses</li>
                   <li>Notify you of important platform updates or policy changes</li>
                 </ul>
               </div>
 
-              <div className="bg-purple-50 border-l-4 border-purple-600 p-4 rounded">
-                <p className="font-semibold text-purple-900">Analytics & Improvement</p>
-                <ul className="list-disc ml-6 mt-2 text-sm">
+              <div style={{ backgroundColor: '#faf5ff', borderLeft: '4px solid #9333ea', padding: '1rem', borderRadius: '0.25rem' }}>
+                <p style={{ fontWeight: '600', color: '#581c87' }}>Analytics & Improvement</p>
+                <ul style={{ paddingLeft: '1.5rem', marginTop: '0.5rem', fontSize: '0.875rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                   <li>Analyze platform usage to improve features and user experience</li>
                   <li>Track listing performance (views, clicks) to help sellers optimize</li>
                   <li>Identify popular categories and trends to enhance search results</li>
@@ -132,35 +156,41 @@ const PrivacyPage: React.FC<PrivacyPageProps> = ({ onBack }) => {
           </div>
 
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <Lock className="h-6 w-6 text-blue-600" />
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#111827', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Lock style={{ height: '1.5rem', width: '1.5rem', color: '#2563eb' }} />
               3. Information Sharing and Disclosure
             </h2>
             
-            <h3 className="text-xl font-semibold text-gray-900 mb-2 mt-4">What We Share Publicly</h3>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#111827', marginBottom: '0.5rem', marginTop: '1rem' }}>
+              What We Share Publicly
+            </h3>
             <p>When you create a listing, the following information is visible to all users:</p>
-            <ul className="list-disc ml-6 space-y-1 mt-2">
+            <ul style={{ paddingLeft: '1.5rem', marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
               <li>Your name (as seller)</li>
               <li>Campus location</li>
               <li>Product/service details and images</li>
               <li>Verification status (if you're a verified seller)</li>
               <li>WhatsApp number (so buyers can contact you)</li>
             </ul>
-            <p className="mt-2 text-sm italic">
+            <p style={{ marginTop: '0.5rem', fontSize: '0.875rem', fontStyle: 'italic' }}>
               Important: Do not include sensitive personal information in your listing descriptions.
             </p>
 
-            <h3 className="text-xl font-semibold text-gray-900 mb-2 mt-4">What We Never Share</h3>
-            <ul className="list-disc ml-6 space-y-1 mt-2">
+            <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#111827', marginBottom: '0.5rem', marginTop: '1rem' }}>
+              What We Never Share
+            </h3>
+            <ul style={{ paddingLeft: '1.5rem', marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
               <li><strong>We never sell your data:</strong> Your information is never sold to advertisers or third parties</li>
               <li><strong>Private contact details:</strong> Your email address is never shared publicly</li>
               <li><strong>Payment information:</strong> We don't store credit card numbers or banking details</li>
               <li><strong>Passwords:</strong> Stored encrypted and never shared with anyone, including our staff</li>
             </ul>
 
-            <h3 className="text-xl font-semibold text-gray-900 mb-2 mt-4">When We May Share Information</h3>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#111827', marginBottom: '0.5rem', marginTop: '1rem' }}>
+              When We May Share Information
+            </h3>
             <p>We may share your information only in these limited circumstances:</p>
-            <ul className="list-disc ml-6 space-y-1 mt-2">
+            <ul style={{ paddingLeft: '1.5rem', marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
               <li><strong>Legal Requirements:</strong> If required by law, court order, or government request</li>
               <li><strong>Safety & Security:</strong> To prevent fraud, abuse, or protect users' safety</li>
               <li><strong>Service Providers:</strong> With trusted partners who help operate the platform (e.g., hosting providers) under strict confidentiality agreements</li>
@@ -169,25 +199,29 @@ const PrivacyPage: React.FC<PrivacyPageProps> = ({ onBack }) => {
           </div>
 
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-3">4. Data Security</h2>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#111827', marginBottom: '0.75rem' }}>
+              4. Data Security
+            </h2>
             <p>We implement industry-standard security measures to protect your information:</p>
-            <ul className="list-disc ml-6 space-y-2 mt-2">
+            <ul style={{ paddingLeft: '1.5rem', marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <li><strong>Encryption:</strong> All passwords are hashed using bcrypt encryption</li>
               <li><strong>HTTPS:</strong> Secure connections for all data transmission</li>
               <li><strong>Access Controls:</strong> Limited employee access to user data (admin accounts only)</li>
               <li><strong>Regular Updates:</strong> Security patches and software updates applied promptly</li>
               <li><strong>Authentication:</strong> JWT tokens with expiration for secure sessions</li>
             </ul>
-            <p className="mt-3 text-sm bg-yellow-50 border border-yellow-200 rounded p-3">
+            <p style={{ marginTop: '0.75rem', fontSize: '0.875rem', backgroundColor: '#fefce8', border: '1px solid #fde047', borderRadius: '0.25rem', padding: '0.75rem' }}>
               <strong>Note:</strong> While we take security seriously, no online platform can guarantee 100% security. 
               You are responsible for keeping your password confidential and logging out of shared devices.
             </p>
           </div>
 
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-3">5. Data Retention</h2>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#111827', marginBottom: '0.75rem' }}>
+              5. Data Retention
+            </h2>
             <p>We retain your personal data as follows:</p>
-            <ul className="list-disc ml-6 space-y-1 mt-2">
+            <ul style={{ paddingLeft: '1.5rem', marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
               <li><strong>Active Accounts:</strong> Data retained while your account remains active</li>
               <li><strong>Deleted Accounts:</strong> Personal data deleted within 30 days of account deletion (except as legally required)</li>
               <li><strong>Listings:</strong> Deleted immediately when you remove them or upon account deletion</li>
@@ -196,53 +230,55 @@ const PrivacyPage: React.FC<PrivacyPageProps> = ({ onBack }) => {
           </div>
 
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <UserX className="h-6 w-6 text-orange-600" />
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#111827', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <UserX style={{ height: '1.5rem', width: '1.5rem', color: '#ea580c' }} />
               6. Your Privacy Rights
             </h2>
             <p>You have the following rights regarding your personal data:</p>
             
-            <div className="space-y-3 mt-3">
-              <div className="bg-white border border-gray-300 p-4 rounded">
-                <p className="font-semibold text-gray-900">Access</p>
-                <p className="text-sm mt-1">You can view and edit your profile information anytime through your account settings.</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.75rem' }}>
+              <div style={{ backgroundColor: 'white', border: '1px solid #d1d5db', padding: '1rem', borderRadius: '0.25rem' }}>
+                <p style={{ fontWeight: '600', color: '#111827' }}>Access</p>
+                <p style={{ fontSize: '0.875rem', marginTop: '0.25rem' }}>You can view and edit your profile information anytime through your account settings.</p>
               </div>
 
-              <div className="bg-white border border-gray-300 p-4 rounded">
-                <p className="font-semibold text-gray-900">Correction</p>
-                <p className="text-sm mt-1">Update incorrect or outdated information in your profile at any time.</p>
+              <div style={{ backgroundColor: 'white', border: '1px solid #d1d5db', padding: '1rem', borderRadius: '0.25rem' }}>
+                <p style={{ fontWeight: '600', color: '#111827' }}>Correction</p>
+                <p style={{ fontSize: '0.875rem', marginTop: '0.25rem' }}>Update incorrect or outdated information in your profile at any time.</p>
               </div>
 
-              <div className="bg-white border border-gray-300 p-4 rounded">
-                <p className="font-semibold text-gray-900">Deletion</p>
-                <p className="text-sm mt-1">Request account deletion by contacting support. We'll delete your data within 30 days.</p>
+              <div style={{ backgroundColor: 'white', border: '1px solid #d1d5db', padding: '1rem', borderRadius: '0.25rem' }}>
+                <p style={{ fontWeight: '600', color: '#111827' }}>Deletion</p>
+                <p style={{ fontSize: '0.875rem', marginTop: '0.25rem' }}>Request account deletion by contacting support. We'll delete your data within 30 days.</p>
               </div>
 
-              <div className="bg-white border border-gray-300 p-4 rounded">
-                <p className="font-semibold text-gray-900">Data Portability</p>
-                <p className="text-sm mt-1">Request a copy of your personal data in a machine-readable format.</p>
+              <div style={{ backgroundColor: 'white', border: '1px solid #d1d5db', padding: '1rem', borderRadius: '0.25rem' }}>
+                <p style={{ fontWeight: '600', color: '#111827' }}>Data Portability</p>
+                <p style={{ fontSize: '0.875rem', marginTop: '0.25rem' }}>Request a copy of your personal data in a machine-readable format.</p>
               </div>
 
-              <div className="bg-white border border-gray-300 p-4 rounded">
-                <p className="font-semibold text-gray-900">Opt-Out</p>
-                <p className="text-sm mt-1">Unsubscribe from marketing emails (though essential account notifications will still be sent).</p>
+              <div style={{ backgroundColor: 'white', border: '1px solid #d1d5db', padding: '1rem', borderRadius: '0.25rem' }}>
+                <p style={{ fontWeight: '600', color: '#111827' }}>Opt-Out</p>
+                <p style={{ fontSize: '0.875rem', marginTop: '0.25rem' }}>Unsubscribe from marketing emails (though essential account notifications will still be sent).</p>
               </div>
             </div>
 
-            <p className="mt-4">
+            <p style={{ marginTop: '1rem' }}>
               To exercise any of these rights, contact us at{' '}
-              <a href="mailto:support@firstyearcouncil.co.za" className="text-blue-600 hover:underline">
+              <a href="mailto:support@firstyearcouncil.co.za" style={{ color: '#2563eb', textDecoration: 'underline' }}>
                 support@firstyearcouncil.co.za
               </a>{' '}
               or WhatsApp{' '}
-              <a href="https://wa.me/27711126204" className="text-blue-600 hover:underline">
+              <a href="https://wa.me/27711126204" style={{ color: '#2563eb', textDecoration: 'underline' }}>
                 +27 71 112 6204
               </a>.
             </p>
           </div>
 
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-3">7. Cookies and Tracking</h2>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#111827', marginBottom: '0.75rem' }}>
+              7. Cookies and Tracking
+            </h2>
             <p>
               We use cookies and similar technologies to keep you logged in, remember your preferences, 
               and analyze platform usage. You can control cookies through your browser settings, but 
@@ -251,7 +287,9 @@ const PrivacyPage: React.FC<PrivacyPageProps> = ({ onBack }) => {
           </div>
 
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-3">8. Third-Party Links</h2>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#111827', marginBottom: '0.75rem' }}>
+              8. Third-Party Links
+            </h2>
             <p>
               FYC Marketplace may contain links to third-party websites (e.g., WhatsApp, payment providers). 
               We are not responsible for the privacy practices of these external sites. Please review their 
@@ -260,7 +298,9 @@ const PrivacyPage: React.FC<PrivacyPageProps> = ({ onBack }) => {
           </div>
 
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-3">9. Children's Privacy</h2>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#111827', marginBottom: '0.75rem' }}>
+              9. Children's Privacy
+            </h2>
             <p>
               FYC Marketplace is intended for users aged 18 and older. We do not knowingly collect personal 
               information from children under 18. If we discover that a child has provided personal data, 
@@ -270,7 +310,9 @@ const PrivacyPage: React.FC<PrivacyPageProps> = ({ onBack }) => {
           </div>
 
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-3">10. Changes to This Privacy Policy</h2>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#111827', marginBottom: '0.75rem' }}>
+              10. Changes to This Privacy Policy
+            </h2>
             <p>
               We may update this Privacy Policy from time to time to reflect changes in our practices or 
               legal requirements. We will notify users of significant changes via email or platform notification. 
@@ -279,20 +321,30 @@ const PrivacyPage: React.FC<PrivacyPageProps> = ({ onBack }) => {
           </div>
 
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-3">11. Contact Us</h2>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#111827', marginBottom: '0.75rem' }}>
+              11. Contact Us
+            </h2>
             <p>
               If you have questions or concerns about this Privacy Policy or how we handle your data, please contact us:
             </p>
-            <ul className="list-none ml-0 space-y-1 mt-2">
+            <ul style={{ listStyle: 'none', paddingLeft: 0, marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
               <li><strong>WhatsApp:</strong> +27 71 112 6204</li>
               <li><strong>Email:</strong> support@firstyearcouncil.co.za</li>
               <li><strong>Website:</strong> www.firstyearcouncil.co.za</li>
             </ul>
           </div>
 
-          <div className="bg-gradient-to-r from-blue-50 to-green-50 border border-blue-200 rounded-lg p-6 mt-8">
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Your Privacy Matters</h3>
-            <p className="text-gray-700">
+          <div style={{
+            background: 'linear-gradient(to right, #eff6ff, #f0fdf4)',
+            border: '1px solid #bfdbfe',
+            borderRadius: '0.5rem',
+            padding: '1.5rem',
+            marginTop: '2rem'
+          }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#111827', marginBottom: '0.5rem' }}>
+              Your Privacy Matters
+            </h3>
+            <p style={{ color: '#374151' }}>
               We are committed to protecting your privacy and handling your data responsibly. If you have 
               any concerns or questions about how we use your information, please don't hesitate to reach out. 
               Your trust is important to us.
