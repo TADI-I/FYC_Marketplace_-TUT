@@ -383,7 +383,6 @@ const App = () => {
             
             {currentUser ? (
               <div className="flex items-center space-x-2 md:space-x-4">
-                <span className="text-gray-600 text-sm md:text-base">Welcome, {currentUser.name}</span>
                 <button 
                   onClick={() => setCurrentView('my-profile')}
                   className="p-2 md:p-2 rounded-lg hover:bg-gray-100 transition-colors group"

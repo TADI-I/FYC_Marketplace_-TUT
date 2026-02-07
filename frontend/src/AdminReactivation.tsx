@@ -107,10 +107,35 @@ const AdminReactivation: React.FC = () => {
 
     try {
       await processVerificationRequest(requestId, action, verificationNote);
+      
+      // Get the user's phone number from the request
+      const request = verificationRequests.find(r => r._id === requestId);
+      const userPhone = request?.user?.whatsapp;
+      
+      if (userPhone) {
+        // Normalize phone number for WhatsApp (remove spaces, dashes, etc.)
+        const normalizedPhone = userPhone.replace(/\D/g, '');
+        
+        // Create appropriate message based on action
+        let message = '';
+        if (action === 'approve') {
+          message = `🎉 Congratulations! Your seller verification has been approved. You are now a verified seller on FYC Marketplace. Thank you for your patience!`;
+        } else {
+          message = `Your seller verification request has been reviewed. Unfortunately, we cannot approve your verification at this time.\n\nReason: ${verificationNote}\n\nYou may resubmit your verification request with the required documentation.`;
+        }
+        
+        // Encode message for URL
+        const encodedMessage = encodeURIComponent(message);
+        
+        // Open WhatsApp
+        const whatsappUrl = `https://wa.me/${normalizedPhone}?text=${encodedMessage}`;
+        window.open(whatsappUrl, '_blank');
+      }
+      
       await loadVerification();
       setVerificationProcessingId(null);
       setVerificationNote('');
-      alert(`Verification ${action}d successfully`);
+      alert(`Verification ${action}d successfully${userPhone ? '. WhatsApp message opened in new tab.' : ''}`);
     } catch (err: any) {
       alert(err.message || `Failed to ${action} verification`);
     }
@@ -588,6 +613,9 @@ const AdminReactivation: React.FC = () => {
                             </h4>
                             <p style={{ fontSize: '0.875rem', color: '#6b7280' }}>{request.user?.email}</p>
                             <p style={{ fontSize: '0.875rem', color: '#6b7280' }}>Campus: {request.user?.campus}</p>
+                            {request.user?.whatsapp && (
+                              <p style={{ fontSize: '0.875rem', color: '#6b7280' }}>WhatsApp: {request.user?.whatsapp}</p>
+                            )}
                           </div>
                           {getStatusBadge(request.status)}
                         </div>
@@ -618,7 +646,7 @@ const AdminReactivation: React.FC = () => {
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                                 <div>
                                   <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.25rem' }}>
-                                    Admin Note *
+                                    Admin Note * (Will be sent via WhatsApp if rejected)
                                   </label>
                                   <textarea
                                     value={verificationNote}
