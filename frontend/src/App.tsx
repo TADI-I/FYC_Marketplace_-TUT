@@ -653,7 +653,15 @@ const App = () => {
                 {currentUser?.type === 'seller' && (
                   <button 
                     onClick={() => setCurrentView('my-products')}
-                    className="bg-orange-500 text-white px-6 py-3 rounded-lg hover:bg-orange-600 font-medium shadow-sm"
+                    style={{
+                    backgroundColor: '#ef8b44ff',
+                    color: 'white',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '0.5rem',
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.3s ease'
+                  }}
                   >
                     My Products
                   </button>
