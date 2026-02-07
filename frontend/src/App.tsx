@@ -363,22 +363,36 @@ const App = () => {
 
       return (
         <div key={product.id} className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-xl transition-shadow duration-300">
-          <div className="relative overflow-hidden" style={{ height: '20rem' }}>
+          <div className="relative overflow-hidden group" style={{ height: '20rem' }}>
             {imageUrl ? (
-              <img
-                src={imageUrl}
-                alt={product.title}
-                loading="lazy"
-                decoding="async"
-                className="absolute inset-0 w-full h-full object-cover object-center hover:scale-105 transition-transform duration-300 cursor-pointer z-0"
-                style={{ maxHeight: '400px' }}
-                onClick={() => setMaximizedImage(imageUrl)}
-                onError={(e) => {
-                  const imgElement = e.currentTarget as HTMLImageElement;
-                  imgElement.src = 'https://via.placeholder.com/400x400?text=No+Image';
-                  imgElement.className = 'absolute inset-0 w-full h-full object-cover object-center bg-gray-200';
-                }}
-              />
+              <>
+                <img
+                  src={imageUrl}
+                  alt={product.title}
+                  loading="lazy"
+                  decoding="async"
+                  className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300 cursor-pointer z-0"
+                  style={{ maxHeight: '400px' }}
+                  onClick={() => setMaximizedImage(imageUrl)}
+                  onError={(e) => {
+                    const imgElement = e.currentTarget as HTMLImageElement;
+                    imgElement.src = 'https://via.placeholder.com/400x400?text=No+Image';
+                    imgElement.className = 'absolute inset-0 w-full h-full object-cover object-center bg-gray-200';
+                  }}
+                />
+                {/* Click to enlarge overlay */}
+                <div 
+                  className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-300 flex items-center justify-center cursor-pointer z-10"
+                  onClick={() => setMaximizedImage(imageUrl)}
+                >
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center gap-2 bg-white opacity-80 px-4 py-2 rounded-lg shadow-lg">
+                    <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                    </svg>
+                    <span className="text-sm font-semibold text-gray-700">Click to enlarge</span>
+                  </div>
+                </div>
+              </>
             ) : (
               <div className="absolute inset-0 w-full h-full bg-gray-200 flex items-center justify-center">
                 <svg className="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -389,7 +403,7 @@ const App = () => {
 
             {whatsappRedirects > 0 && (
               <div 
-                className="absolute top-3 right-3 z-10 bg-green-600 text-white px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5"
+                className="absolute top-3 right-3 z-20 bg-green-600 text-white px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5"
                 title={`${whatsappRedirects} WhatsApp ${whatsappRedirects === 1 ? 'click' : 'clicks'}`}
               >
                 <TrendingUp className="h-3.5 w-3.5" />
@@ -399,7 +413,7 @@ const App = () => {
 
             {product.sellerVerified && (
               <div 
-                className="absolute top-14 right-3 z-10 bg-blue-600 text-white px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1"
+                className="absolute top-14 right-3 z-20 bg-blue-600 text-white px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1"
               >
                 <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
