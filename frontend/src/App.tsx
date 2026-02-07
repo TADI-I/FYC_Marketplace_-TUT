@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingBag, Plus, Search, User as Useric, Star, Filter, Locate, TrendingUp } from 'lucide-react';
+import { ShoppingBag, Plus, Search, User as Useric, Star, Filter, Locate, TrendingUp, MessageCircle } from 'lucide-react';
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import { User, Product, Message, MessageMap, Category, Campus, getImageUrl as getProductImageUrl, normalizeSAPhoneNumber } from './types';
@@ -87,42 +87,42 @@ const App = () => {
   const [hasPrev, setHasPrev] = useState(false);
 
   const fetchProducts = async (page = 1, filters = {}) => {
-  try {
-    setLoading(true);
-    
-    const response = await getProducts({
-      page,
-      limit: 12,
-      category: selectedCategory !== 'all' ? selectedCategory : '',
-      campus: selectedCampus !== 'all' ? selectedCampus : '',
-      search: searchTerm || '',
-      ...filters
-    });
+    try {
+      setLoading(true);
+      
+      const response = await getProducts({
+        page,
+        limit: 9, // Reduced from 12 for better initial load
+        category: selectedCategory !== 'all' ? selectedCategory : '',
+        campus: selectedCampus !== 'all' ? selectedCampus : '',
+        search: searchTerm || '',
+        ...filters
+      });
 
-    // Sort products: verified sellers first, then by title
-    const sortedProducts = Array.isArray(response.products) 
-      ? response.products.sort((a: Product, b: Product) => {
-          // First sort by verification status (verified first)
-          if (a.sellerVerified && !b.sellerVerified) return -1;
-          if (!a.sellerVerified && b.sellerVerified) return 1;
-          // Then sort alphabetically by title
-          return a.title.localeCompare(b.title);
-        })
-      : [];
-    setProducts(sortedProducts);
-    setCurrentPage(response.pagination.currentPage);
-    setTotalPages(response.pagination.totalPages);
-    setTotalProducts(response.pagination.totalProducts);
-    setHasNext(response.pagination.hasNext);
-    setHasPrev(response.pagination.hasPrev);
-    setError('');
-  } catch (err: any) {
-    setError(err.message || 'Failed to fetch products');
-    console.error('Error fetching products:', err);
-  } finally {
-    setLoading(false);
-  }
-};
+      // Sort products: verified sellers first, then by title
+      const sortedProducts = Array.isArray(response.products) 
+        ? response.products.sort((a: Product, b: Product) => {
+            // First sort by verification status (verified first)
+            if (a.sellerVerified && !b.sellerVerified) return -1;
+            if (!a.sellerVerified && b.sellerVerified) return 1;
+            // Then sort alphabetically by title
+            return a.title.localeCompare(b.title);
+          })
+        : [];
+      setProducts(sortedProducts);
+      setCurrentPage(response.pagination.currentPage);
+      setTotalPages(response.pagination.totalPages);
+      setTotalProducts(response.pagination.totalProducts);
+      setHasNext(response.pagination.hasNext);
+      setHasPrev(response.pagination.hasPrev);
+      setError('');
+    } catch (err: any) {
+      setError(err.message || 'Failed to fetch products');
+      console.error('Error fetching products:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Scroll to top when page changes
   useEffect(() => {
@@ -148,15 +148,15 @@ const App = () => {
 
   const campuses = [
     { id: 'all', name: 'All Locations' },
-    { id: 'pretoria-main', name: 'Pretoria Central ' },
-    { id: 'soshanguve-S', name: 'Soshanguve South' },
+    { id: 'pretoria-main', name: '🔥 Pretoria Central' },
+    { id: 'soshanguve-S', name: '🔥 Soshanguve South' },
     { id: 'soshanguve-N', name: 'Soshanguve North' },
-    { id: 'ga-rankuwa', name: 'Ga-Rankuwa ' },
-    { id: 'pretoria-west', name: 'Pretoria Arcadia ' },
-    { id: 'arts', name: 'Arts ' },
-    { id: 'emalahleni', name: 'eMalahleni ' },
-    { id: 'mbombela', name: 'Mbombela ' },
-    { id: 'polokwane', name: 'Polokwane ' }
+    { id: 'ga-rankuwa', name: 'Ga-Rankuwa' },
+    { id: 'pretoria-west', name: 'Pretoria Arcadia' },
+    { id: 'arts', name: 'Arts' },
+    { id: 'emalahleni', name: 'eMalahleni' },
+    { id: 'mbombela', name: 'Mbombela' },
+    { id: 'polokwane', name: 'Polokwane' }
   ];
 
   const handleUpgrade = async () => {
@@ -279,8 +279,8 @@ const App = () => {
   };
 
   const UpgradeModal = () => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-96">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md">
         <h2 className="text-xl font-bold mb-4">Upgrade to Seller Account</h2>
         <div className="mb-4">
           <h3 className="font-semibold mb-2">Seller Benefits:</h3>
@@ -324,29 +324,48 @@ const App = () => {
     }));
   };
 
- const getImageUrl = (product: Product) => {
+  const getImageUrl = (product: Product) => {
     return getProductImageUrl(product, API_BASE || '');
   };
 
+  // Product Skeleton Component - matches new product card design
   const ProductSkeleton = () => (
-    <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-      <div className="h-96 shimmer rounded-t-lg" />
+    <div className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-xl transition-shadow duration-300">
+      {/* Image skeleton with badges */}
+      <div className="relative overflow-hidden" style={{ height: '20rem' }}>
+        <div className="absolute inset-0 w-full h-full shimmer bg-gray-200" />
+        
+        {/* Badge skeletons on top right - showing both positions */}
+        <div className="absolute top-3 right-3 z-10 h-7 w-20 shimmer rounded-full" />
+        <div className="absolute top-14 right-3 z-10 h-7 w-24 shimmer rounded-full" />
+      </div>
 
-      <div className="p-6 space-y-4">
-        <div className="flex justify-between">
-          <div className="h-5 w-2/3 shimmer rounded" />
-          <div className="h-5 w-16 shimmer rounded" />
+      <div className="p-5 space-y-4">
+        {/* Title and Price */}
+        <div className="flex justify-between items-start gap-3">
+          <div className="h-6 shimmer rounded flex-1" />
+          <div className="h-6 w-16 shimmer rounded" />
         </div>
 
+        {/* Description */}
         <div className="space-y-2">
           <div className="h-4 shimmer rounded w-full" />
-          <div className="h-4 shimmer rounded w-5/6" />
-          <div className="h-4 shimmer rounded w-4/6" />
+          <div className="h-4 shimmer rounded w-4/5" />
         </div>
 
-        <div className="flex justify-between items-center pt-2">
-          <div className="h-4 w-32 shimmer rounded" />
-          <div className="h-8 w-24 shimmer rounded" />
+        {/* Seller info */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="h-4 w-24 shimmer rounded" />
+            <div className="h-4 w-28 shimmer rounded" />
+          </div>
+          <div className="h-4 w-8 shimmer rounded" />
+        </div>
+
+        {/* CTA Buttons */}
+        <div className="space-y-2 pt-2">
+          <div className="h-12 shimmer rounded-lg w-full" />
+          <div className="h-10 shimmer rounded-lg w-full" />
         </div>
       </div>
     </div>
@@ -357,77 +376,46 @@ const App = () => {
       <header className="bg-white shadow-sm border-b sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-4 cursor-pointer" onClick={() => setCurrentView('home')}>
               <img className="h-8 w-8" src={logo} alt="FYC Marketplace Logo" />
-              <h1 className="text-2xl font-bold text-gray-900">FYC Marketplace</h1>
+              <h1 className="text-xl md:text-2xl font-bold text-gray-900">FYC Marketplace</h1>
             </div>
             
             {currentUser ? (
-              <div className="flex items-center space-x-4">
-                <span className="text-gray-600 hidden md:inline">Welcome, {currentUser.name}</span>
+              <div className="flex items-center space-x-2 md:space-x-4">
+                <span className="text-gray-600 text-sm md:text-base">Welcome, {currentUser.name}</span>
                 <button 
                   onClick={() => setCurrentView('my-profile')}
-                  className="p-2 rounded-lg hover:bg-gray-100 transition-colors group"
+                  className="p-2 md:p-2 rounded-lg hover:bg-gray-100 transition-colors group"
                   title="My Profile"
                 >
-                  <Useric className="h-6 w-6 text-gray-600 group-hover:text-blue-600 transition-colors" />
+                  <Useric className="h-5 w-5 md:h-6 md:w-6 text-gray-600 group-hover:text-blue-600 transition-colors" />
                 </button>
 
                 {currentUser.type === 'seller' && currentUser.subscribed && (
                   <button 
                     onClick={() => setCurrentView('add-product')}
-                    className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 flex items-center space-x-2"
+                    className="bg-orange-600 text-white px-3 py-2 md:px-4 md:py-2 rounded-lg hover:bg-orange-700 flex items-center space-x-2 text-sm md:text-base"
                   >
                     <Plus className="h-4 w-4" />
-                    <span className="hidden md:inline">Add Listing</span>
+                    <span className="hidden sm:inline">Add Listing</span>
+                    <span className="sm:hidden">Add</span>
                   </button>
                 )}
-              
 
-                {/* Admin button: visible only for admin users */}
                 {currentUser.type === 'admin' && (
                   <button
                     onClick={() => setCurrentView('admin-reactivation')}
-                    style={{
-                      backgroundColor: '#166534',   // Tailwind's green-800 hex
-                      color: 'white',
-                      padding: '0.5rem 0.75rem',    // px-3 py-2 equivalent
-                      borderRadius: '0.25rem',      // rounded equivalent
-                      border: 'none',
-                      cursor: 'pointer',
-                      transition: 'background-color 0.3s ease'
-                    }}
-                    onMouseEnter={(e) => {
-                      (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#15803d'; // Tailwind green-700
-                    }}
-                    onMouseLeave={(e) => {
-                      (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#166534'; // back to green-800
-                    }}
+                    className="bg-green-800 text-white px-3 py-2 rounded hover:bg-green-700 text-sm md:text-base"
                     title="Admin: Reactivation Requests"
                   >
                     Admin
                   </button>
-
                 )}
                 
-                {/* FIXED: Now calls handleLogout instead of inline function */}
                 <button 
                   onClick={handleLogout}
-                  style={{
-                    backgroundColor: '#ef4444',
-                    color: 'white',
-                    padding: '0.5rem 1rem',
-                    borderRadius: '0.5rem',
-                    border: 'none',
-                    cursor: 'pointer',
-                    transition: 'background-color 0.3s ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#ff0000ff';
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#e01111ff';
-                  }}
+                  className="bg-red-500 text-white px-3 py-2 md:px-4 md:py-2 rounded-lg hover:bg-red-600 text-sm md:text-base"
                 >
                   Logout
                 </button>
@@ -436,13 +424,13 @@ const App = () => {
               <div className="space-x-2">
                 <button 
                   onClick={() => setShowLogin(true)}
-                  className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700"
+                  className="bg-orange-600 text-white px-4 py-2 md:px-6 md:py-3 rounded-lg hover:bg-orange-700 text-sm md:text-base font-medium"
                 >
                   Login
                 </button>
                 <button 
                   onClick={() => setShowRegister(true)}
-                  className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700"
+                  className="bg-orange-600 text-white px-4 py-2 md:px-6 md:py-3 rounded-lg hover:bg-orange-700 text-sm md:text-base font-medium"
                 >
                   Register
                 </button>
@@ -505,56 +493,48 @@ const App = () => {
           />
         ) : currentView === 'admin-reactivation' && currentUser?.type === 'admin' ? (
           <AdminReactivation />
-     ) : currentView === 'about' ? (
-            <AboutPage onBack={() => setCurrentView('home')} />
-          ) : currentView === 'how-it-works' ? (
-            <HowItWorksPage onBack={() => setCurrentView('home')} />
-          ) : currentView === 'faq' ? (
-            <FAQPage onBack={() => setCurrentView('home')} />
-          ) : currentView === 'contact' ? (
-            <ContactPage onBack={() => setCurrentView('home')} />
-          ) : currentView === 'terms' ? (
-            <TermsPage onBack={() => setCurrentView('home')} />
-          ) : currentView === 'privacy' ? (
-            <PrivacyPage onBack={() => setCurrentView('home')} />
-          ) : currentView === 'about' ? (
-            <AboutPage onBack={() => setCurrentView('home')} />
-          ) : (
-            <>
+        ) : currentView === 'about' ? (
+          <AboutPage onBack={() => setCurrentView('home')} />
+        ) : currentView === 'how-it-works' ? (
+          <HowItWorksPage onBack={() => setCurrentView('home')} />
+        ) : currentView === 'faq' ? (
+          <FAQPage onBack={() => setCurrentView('home')} />
+        ) : currentView === 'contact' ? (
+          <ContactPage onBack={() => setCurrentView('home')} />
+        ) : currentView === 'terms' ? (
+          <TermsPage onBack={() => setCurrentView('home')} />
+        ) : currentView === 'privacy' ? (
+          <PrivacyPage onBack={() => setCurrentView('home')} />
+        ) : (
+          <>
+
+
             <div className="flex justify-between items-center mb-8">
               {currentUser?.type === 'seller' && (
                 <button 
                   onClick={() => setCurrentView('my-products')}
-                  style={{
-                    backgroundColor: 'orange',
-                    color: 'white',
-                    padding: '0.5rem 1rem',
-                    borderRadius: '0.5rem',
-                    border: 'none',
-                    cursor: 'pointer',
-                    transition: 'background-color 0.3s ease'
-                  }}
+                  className="bg-orange-500 text-white px-6 py-3 rounded-lg hover:bg-orange-600 font-medium shadow-sm"
                 >
                   My Products
                 </button>
               )}
             </div>
 
-            <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
+            <div className="bg-white rounded-lg shadow-sm p-4 md:p-6 mb-8">
               <div className="flex flex-col gap-4">
                 <div className="flex flex-col md:flex-row gap-4">
                   <div className="flex-1 relative">
-                    <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                     <input
                       type="text"
                       placeholder="Search products and services..."
-                      className="w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-base"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                     />
                   </div>
                   <select 
-                    className="px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-base"
                     value={selectedCategory}
                     onChange={(e) => setSelectedCategory(e.target.value)}
                   >
@@ -563,11 +543,11 @@ const App = () => {
                     ))}
                   </select>
                 </div>
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <Filter className="h-4 w-4 text-gray-400" />
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <Filter className="h-5 w-5 text-gray-400 flex-shrink-0" />
                     <select 
-                      className="px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="flex-1 sm:flex-initial px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-base"
                       value={selectedCampus}
                       onChange={(e) => setSelectedCampus(e.target.value)}
                     >
@@ -575,26 +555,27 @@ const App = () => {
                         <option key={campus.id} value={campus.id}>{campus.name}</option>
                       ))}
                     </select>
-                    <span className="text-sm text-gray-500 hidden md:inline">
-                      Filter by campus location
+                    <span className="text-sm text-gray-500 hidden lg:inline whitespace-nowrap">
+                      Filter by campus
                     </span>
                   </div>
-                  <div className="text-sm font-semibold text-gray-700 bg-gray-100 px-4 py-2 rounded-lg">
-                    {_totalProducts} {_totalProducts === 1 ? 'product' : 'products'} found
+                  <div className="text-sm font-semibold text-gray-700 bg-orange-50 px-4 py-2 rounded-lg border border-orange-200 w-full sm:w-auto text-center">
+                    {_totalProducts} {_totalProducts === 1 ? 'product' : 'products'} available
                   </div>
                 </div>
               </div>
             </div>
-              {_loading ? (
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {Array.from({ length: 12 }).map((_, i) => (
-                    <ProductSkeleton key={i} />
-                  ))}
-                </div>
-              ) : products.length > 0 ? (
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {products.map(product => {
-                const imageUrl = getImageUrl(product);
+
+            {_loading ? (
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {Array.from({ length: 9 }).map((_, i) => (
+                  <ProductSkeleton key={i} />
+                ))}
+              </div>
+            ) : products.length > 0 ? (
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {products.map(product => {
+                  const imageUrl = getImageUrl(product);
                   const raw = (product as any).sellerWhatsApp || (product as any).seller?.whatsapp || (product as any).whatsapp || '';
                   const normalized = normalizeSAPhoneNumber(raw);
                   const waMessage = encodeURIComponent(`Hi ${product.sellerName || ''}, I'm interested in your listing "${product.title}".`);
@@ -603,209 +584,179 @@ const App = () => {
                   // Get WhatsApp redirect count
                   const whatsappRedirects = (product as any).whatsappRedirects || 0;
 
-                return (
-                  <div key={product.id} className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-                    <div className="relative overflow-hidden" style={{ height: '25rem' }}>
+                  return (
+                    <div key={product.id} className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-xl transition-shadow duration-300">
+                      <div className="relative overflow-hidden" style={{ height: '20rem' }}>
+                        {imageUrl ? (
+                          <img
+                            src={imageUrl}
+                            alt={product.title}
+                            loading="lazy"
+                            className="absolute inset-0 w-full h-full object-cover object-center hover:scale-105 transition-transform duration-300 cursor-pointer z-0"
+                            style={{ maxHeight: '400px' }}
+                            onClick={() => setMaximizedImage(imageUrl)}
+                            onError={(e) => {
+                              const imgElement = e.currentTarget as HTMLImageElement;
+                              imgElement.src = 'https://via.placeholder.com/400x400?text=No+Image';
+                              imgElement.className = 'absolute inset-0 w-full h-full object-cover object-center bg-gray-200';
+                            }}
+                          />
+                        ) : (
+                          <div className="absolute inset-0 w-full h-full bg-gray-200 flex items-center justify-center">
+                            <svg className="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                          </div>
+                        )}
 
-                      {imageUrl ? (
-                        <img
-                          src={imageUrl}
-                          alt={product.title}
-                          className="absolute inset-0 w-full h-full object-cover object-center hover:scale-105 transition-transform duration-300 cursor-pointer z-0"
-                          onClick={() => setMaximizedImage(imageUrl)}
-                          onError={(e) => {
-                            const imgElement = e.currentTarget as HTMLImageElement;
-                            imgElement.src = 'https://via.placeholder.com/560x420?text=No+Image';
-                            imgElement.className = 'absolute inset-0 w-full h-full object-cover object-center bg-gray-200';
-                          }}
-                        />
-                      ) : (
-                        <div className="absolute inset-0 w-full h-full bg-gray-200 flex items-center justify-center">
-                          <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                        </div>
-                      )}
-                           {/* WhatsApp Redirect Counter Badge - NEW */}
-                      {whatsappRedirects > 0 && (
-                        <div 
-                          className="absolute top-3 right-3 z-10 bg-green-600 text-white px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5"
-                          title={`${whatsappRedirects} WhatsApp ${whatsappRedirects === 1 ? 'click' : 'clicks'}`}
-                        >
-                          <TrendingUp className="h-3.5 w-3.5" />
-                          <span className="text-xs font-semibold">{whatsappRedirects}</span>
-                        </div>
-                      )}
-                    </div>
-                 
+                        {/* WhatsApp Redirect Counter Badge */}
+                        {whatsappRedirects > 0 && (
+                          <div 
+                            className="absolute top-3 right-3 z-10 bg-green-600 text-white px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5"
+                            title={`${whatsappRedirects} WhatsApp ${whatsappRedirects === 1 ? 'click' : 'clicks'}`}
+                          >
+                            <TrendingUp className="h-3.5 w-3.5" />
+                            <span className="text-xs font-semibold">{whatsappRedirects}</span>
+                          </div>
+                        )}
 
-                    <div className="p-6">
-                      <div className="flex justify-between items-start mb-2">
-                        <h3 className="text-lg font-semibold text-gray-900 line-clamp-2">{product.title}</h3>
-                        <span className="text-lg font-bold text-green-600">R{product.price}</span>
+                        {/* Verified Badge - consistent position */}
+                        {product.sellerVerified && (
+                          <div 
+                            className="absolute top-14 right-3 z-10 bg-blue-600 text-white px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1"
+                          >
+                            <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                            <span className="text-xs font-semibold">Verified</span>
+                          </div>
+                        )}
                       </div>
 
-                      <p className="text-gray-600 text-sm mb-4 line-clamp-3">{product.description}</p>
-                        <div className="flex items-center space-x-2 mb-3">
-                          {product.sellerVerified ? (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                              Verified Seller
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-                              Unverified Seller
-                            </span>
-                          )}
-                        </div>
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center text-sm text-gray-500 space-x-6">
-                        <div className="flex items-center">
-                          <Useric className="h-4 w-4 mr-1" />
-                          <span>{product.sellerName}</span>
-                          {product.sellerVerified && (
-                            <svg 
-                              className="h-4 w-4 ml-1 text-blue-600" 
-                              fill="currentColor" 
-                              viewBox="0 0 20 20"
-                            >
-                              <path 
-                                fillRule="evenodd" 
-                                d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" 
-                                clipRule="evenodd" 
-                              />
-                            </svg>
-                          )}
-                        </div>
-                          <div className="flex items-center">
-                            <Locate className="h-4 w-4 mr-1" />
-                            <span>{product.sellerCampus}</span>
-                          </div>
+                      <div className="p-5">
+                        <div className="flex justify-between items-start mb-3">
+                          <h3 className="text-lg font-semibold text-gray-900 line-clamp-2 flex-1">{product.title}</h3>
+                          <span className="text-xl font-bold text-green-600 ml-3 whitespace-nowrap">R{product.price}</span>
                         </div>
 
-                        <div className="flex items-center space-x-3">
+                        <p className="text-gray-600 text-sm mb-4 line-clamp-2">{product.description}</p>
+
+                        <div className="flex items-center justify-between mb-4 text-sm text-gray-500">
+                          <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-1">
+                              <Useric className="h-4 w-4" />
+                              <span className="truncate max-w-[100px]">{product.sellerName}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Locate className="h-4 w-4" />
+                              <span className="truncate max-w-[100px]">{product.sellerCampus}</span>
+                            </div>
+                          </div>
+
                           {product.rating > 0 && (
-                            <div className="flex items-center">
+                            <div className="flex items-center gap-1">
                               <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                              <span className="text-sm text-gray-600 ml-1">{product.rating}</span>
+                              <span className="font-medium">{product.rating}</span>
                             </div>
                           )}
+                        </div>
 
-                          <div className="flex items-center space-x-2">
-                             {waLink && (
-                                <a
-                                  href={waLink}
-                                  target="_blank"
-                                  rel="noreferrer noopener"
-                                  onClick={async (e) => {
-                                    // Track the click before redirecting
-                                    const productId = product._id?.toString() || product.id?.toString();
-                                    if (productId) {
-                                      // Don't await - let it happen in background
-                                      trackWhatsAppClick(productId).catch(err => 
-                                        console.warn('Analytics tracking failed:', err)
-                                      );
-                                    }
-                                  }}
-                                  style={{
-                                    backgroundColor: '#16a34a',
-                                    color: 'white',
-                                    padding: '0.5rem 0.75rem',
-                                    borderRadius: '0.25rem',
-                                    border: 'none',
-                                    cursor: 'pointer',
-                                    fontSize: '0.875rem',
-                                    fontWeight: 500,
-                                    textDecoration: 'none',
-                                    transition: 'background-color 0.3s ease'
-                                  }}
-                                  onMouseEnter={(e) => {
-                                    (e.currentTarget as HTMLAnchorElement).style.backgroundColor = '#15803d';
-                                  }}
-                                  onMouseLeave={(e) => {
-                                    (e.currentTarget as HTMLAnchorElement).style.backgroundColor = '#16a34a';
-                                  }}
-                                  title="Contact seller on WhatsApp"
-                                >
-                                  WhatsApp Me
-                                </a>
-                              )}
-                            
+                        {/* Improved CTA Section */}
+                        <div className="space-y-2">
+                          {waLink && (
+                            <a
+                              href={waLink}
+                              target="_blank"
+                              rel="noreferrer noopener"
+                              onClick={async (e) => {
+                                const productId = product._id?.toString() || product.id?.toString();
+                                if (productId) {
+                                  trackWhatsAppClick(productId).catch(err => 
+                                    console.warn('Analytics tracking failed:', err)
+                                  );
+                                }
+                              }}
+                              className="w-full bg-green-600 text-white px-4 py-3 rounded-lg font-semibold text-center hover:bg-green-700 flex items-center justify-center gap-2 transition-colors shadow-sm"
+                            >
+                              <MessageCircle className="h-5 w-5" />
+                              Whatsapp Seller
+                            </a>
+                          )}
 
-                           {product?.id && (
-                                <button
-                                  type="button"
-                                  onClick={async () => {
-                                    try {
-                                      const shareUrl = `${window.location.origin}/product/${product.id}`;
-                                      const shareData = {
-                                        title: product.title,
-                                        text: `Check out this listing: ${product.title}`,
-                                        url: shareUrl
-                                      };
-                                      if (navigator.share) {
-                                        await navigator.share(shareData);
-                                      } else {
-                                        await navigator.clipboard.writeText(shareUrl);
-                                        alert('Product link copied to clipboard');
-                                      }
-                                    } catch (err) {
-                                      console.error('Share failed', err);
-                                      alert('Unable to share this product right now.');
-                                    }
-                                  }}
-                                  className="inline-flex items-center gap-2 bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700"
-                                  title="Share listing"
-                                >
-                                  Share
-                                </button>
-                              )}
-
-                          </div>
+                          {product?.id && (
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                try {
+                                  const shareUrl = `${window.location.origin}/product/${product.id}`;
+                                  const shareData = {
+                                    title: product.title,
+                                    text: `Check out this listing: ${product.title}`,
+                                    url: shareUrl
+                                  };
+                                  if (navigator.share) {
+                                    await navigator.share(shareData);
+                                  } else {
+                                    await navigator.clipboard.writeText(shareUrl);
+                                    alert('Product link copied to clipboard');
+                                  }
+                                } catch (err) {
+                                  console.error('Share failed', err);
+                                }
+                              }}
+                              className="w-full bg-blue-600 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-blue-700 transition-colors text-sm"
+                            >
+                              Share Listing
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
             ) : (
               <div className="text-center py-20">
-                <ShoppingBag className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                <p className="text-xl text-gray-500">No products found matching your search.</p>
+                <ShoppingBag className="h-20 w-20 text-gray-300 mx-auto mb-4" />
+                <p className="text-xl text-gray-500 font-medium">No products found matching your search.</p>
+                <p className="text-gray-400 mt-2">Try adjusting your filters or search terms</p>
               </div>
             )}
 
             {totalPages > 1 && (
-              <div className="flex justify-center items-center mt-8 space-x-4">
+              <div className="flex flex-col sm:flex-row justify-center items-center mt-12 gap-4">
                 <button
-                  className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+                  className="w-full sm:w-auto px-6 py-3 rounded-lg bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
                   onClick={() => fetchProducts(currentPage - 1)}
                   disabled={!hasPrev}
                 >
-                  Previous
+                  ← Previous
                 </button>
-                <span className="font-semibold">
+                <span className="font-semibold text-gray-700 bg-orange-50 px-6 py-3 rounded-lg border border-orange-200">
                   Page {currentPage} of {totalPages}
                 </span>
                 <button
-                  className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+                  className="w-full sm:w-auto px-6 py-3 rounded-lg bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
                   onClick={() => fetchProducts(currentPage + 1)}
                   disabled={!hasNext}
                 >
-                  Next
+                  Next →
                 </button>
               </div>
             )}
-
           </>
         )}
       </main>
-       <Footer onNavigate={(view) => setCurrentView(view)} />
+
+      <Footer onNavigate={(view) => setCurrentView(view)} />
 
       {showLogin && (
         <LoginForm
           onLoginSuccess={handleLoginSuccess}
-          onShowRegister={() => setShowRegister(true)}
+          onShowRegister={() => {
+            setShowLogin(false);
+            setShowRegister(true);
+          }}
           onClose={() => setShowLogin(false)}
         />
       )}
@@ -838,27 +789,27 @@ const App = () => {
                 e.stopPropagation();
                 setMaximizedImage(null);
               }}
-              className="absolute flex items-center justify-center text-white rounded-full transition-all z-50"
+              className="absolute flex items-center justify-center text-white rounded-full transition-all z-50 hover:scale-110"
               aria-label="Close"
               style={{ 
                 cursor: 'pointer',
                 top: '-20px',
                 right: '-20px',
-                width: '30px',
-                height: '30px',
+                width: '40px',
+                height: '40px',
                 backgroundColor: '#dc2626',
                 border: '3px solid white',
                 boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3)'
               }}
             >
-              <svg style={{ width: '40px', height: '40px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
+              <svg style={{ width: '24px', height: '24px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
             <img
               src={maximizedImage ?? undefined}
               alt="Maximized view"
-              className="object-contain"
+              className="object-contain rounded-lg"
               style={{ 
                 maxWidth: '90vw', 
                 maxHeight: '90vh',
