@@ -406,7 +406,15 @@ const App = () => {
                 {currentUser.type === 'admin' && (
                   <button
                     onClick={() => setCurrentView('admin-reactivation')}
-                    className="bg-green-800 text-white px-3 py-2 rounded hover:bg-green-700 text-sm md:text-base"
+                     style={{
+                    backgroundColor: '#029002ff',
+                    color: 'white',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '0.5rem',
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.3s ease'
+                  }}
                     title="Admin: Reactivation Requests"
                   >
                     Admin
@@ -415,7 +423,21 @@ const App = () => {
                 
                 <button 
                   onClick={handleLogout}
-                  className="bg-red-500 text-white px-3 py-2 md:px-4 md:py-2 rounded-lg hover:bg-red-600 text-sm md:text-base"
+                  style={{
+                    backgroundColor: '#ef4444',
+                    color: 'white',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '0.5rem',
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.3s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#dc2626';
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#ef4444';
+                  }}
                 >
                   Logout
                 </button>
