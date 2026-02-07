@@ -7,8 +7,6 @@ import { getVerificationRequests, processVerificationRequest } from './api';
 const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001';
 
 // DEBUGGING - This should print in console when component loads
-console.log('🚨 AdminVerification loaded with API_BASE:', API_BASE);
-console.log('🚨 Window location:', window.location.href);
 
 const FALLBACK_IMAGE = 'data:image/svg+xml;utf8,' + encodeURIComponent(
   `<svg xmlns='http://www.w3.org/2000/svg' width='800' height='600'>
@@ -34,7 +32,6 @@ const AdminVerification: React.FC = () => {
     setLoading(true);
     try {
       const data = await getVerificationRequests(filter);
-      console.log('✅ Verification requests loaded:', data.requests?.length || 0);
       setRequests(data.requests || []);
       setCounts(data.counts || {});
     } catch (err) {
@@ -102,8 +99,6 @@ const AdminVerification: React.FC = () => {
     // Add cache-busting timestamp
     const cacheBuster = `?t=${Date.now()}`;
     const fullUrl = `${cleanBase}/${cleanPath}${cacheBuster}`;
-    
-    console.log('🔗 Built image URL:', fullUrl);
     return fullUrl;
   };
 
