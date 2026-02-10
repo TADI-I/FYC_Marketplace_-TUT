@@ -1,12 +1,10 @@
 // AdminVerification.tsx - Fixed with proper API_BASE and WhatsApp redirect
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, XCircle, Clock, Eye } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Eye, MessageCircle } from 'lucide-react';
 import { getVerificationRequests, processVerificationRequest } from './api';
 
 // CRITICAL: Must match the API_BASE in api.js
 const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001';
-
-// DEBUGGING - This should print in console when component loads
 
 const FALLBACK_IMAGE = 'data:image/svg+xml;utf8,' + encodeURIComponent(
   `<svg xmlns='http://www.w3.org/2000/svg' width='800' height='600'>
@@ -14,6 +12,31 @@ const FALLBACK_IMAGE = 'data:image/svg+xml;utf8,' + encodeURIComponent(
      <text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='#9ca3af' font-family='Arial, Helvetica, sans-serif' font-size='22'>Image unavailable</text>
    </svg>`
 );
+
+// Helper function to normalize South African phone numbers
+const normalizeSAPhoneNumber = (phoneNumber: string): string | null => {
+  if (!phoneNumber) return null;
+  
+  // Remove all non-digit characters
+  let cleaned = phoneNumber.replace(/\D/g, '');
+  
+  // Handle South African numbers
+  if (cleaned.startsWith('0')) {
+    // Replace leading 0 with 27 (South Africa country code)
+    cleaned = '27' + cleaned.substring(1);
+  } else if (!cleaned.startsWith('27')) {
+    // If it doesn't start with 27, assume it's a local number and add 27
+    cleaned = '27' + cleaned;
+  }
+  
+  // Validate length (SA numbers should be 11 digits with country code: 27 + 9 digits)
+  if (cleaned.length < 10 || cleaned.length > 15) {
+    console.warn('Invalid phone number length:', cleaned);
+    return null;
+  }
+  
+  return cleaned;
+};
 
 const AdminVerification: React.FC = () => {
   const [requests, setRequests] = useState<any[]>([]);
@@ -41,57 +64,39 @@ const AdminVerification: React.FC = () => {
     }
   };
 
-  // Helper function to extract phone number and open WhatsApp
-  const openWhatsApp = (phoneNumber: string, action: 'approve' | 'reject', note: string) => {
-    // Clean phone number - remove spaces, dashes, parentheses
-    let cleanPhone = phoneNumber.replace(/[\s\-\(\)]/g, '');
-    
-    // Remove leading zeros and add country code if needed
-    // Assuming South African numbers (+27)
-    if (cleanPhone.startsWith('0')) {
-      cleanPhone = '27' + cleanPhone.substring(1);
-    } else if (!cleanPhone.startsWith('27') && !cleanPhone.startsWith('+')) {
-      cleanPhone = '27' + cleanPhone;
-    }
-    
-    // Remove + if present
-    cleanPhone = cleanPhone.replace('+', '');
-    
-    // Create message based on action
-    const message = action === 'approve'
-      ? `Hi! Your seller verification request has been APPROVED ✅\n\nReason: ${note}\n\nYou can now start selling on the platform. Thank you!`
-      : `Hi! Your seller verification request has been REJECTED ❌\n\nReason: ${note}\n\nPlease review the requirements and submit a new request if you'd like to try again.`;
-    
-    // Encode message for URL
-    const encodedMessage = encodeURIComponent(message);
-    
-    // Open WhatsApp in new tab
-    const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodedMessage}`;
-    window.open(whatsappUrl, '_blank');
-  };
-
-  const handleProcess = async (requestId: string, action: 'approve' | 'reject') => {
+  const handleProcess = async (requestId: string, action: 'approve' | 'reject', whatsappNumber: string, userName: string) => {
     if (!verificationNote.trim()) {
       alert('Please enter a note before processing the verification');
       return;
     }
 
     try {
+      // First, process the verification in the backend
       await processVerificationRequest(requestId, action, verificationNote);
       
-      // Find the request to get user's phone number
-      const request = requests.find(r => r._id === requestId);
-      if (request?.user?.phoneNumber) {
-        // Open WhatsApp with the notification message
-        openWhatsApp(request.user.phoneNumber, action, verificationNote);
+      // Then open WhatsApp with pre-filled message
+      const normalized = normalizeSAPhoneNumber(whatsappNumber);
+      
+      if (normalized) {
+        const message = action === 'approve'
+          ? `Hi ${userName}! ✅\n\nYour seller verification request has been APPROVED!\n\nAdmin Note: ${verificationNote}\n\nYou can now start selling on FYC Marketplace. Welcome aboard! 🎉`
+          : `Hi ${userName},\n\nYour seller verification request has been REJECTED.\n\nReason: ${verificationNote}\n\nYou can submit a new request with the correct documentation. If you have questions, please contact support.`;
+        
+        const encodedMessage = encodeURIComponent(message);
+        const whatsappUrl = `https://wa.me/${normalized}?text=${encodedMessage}`;
+        
+        console.log('📱 Opening WhatsApp:', whatsappUrl);
+        window.open(whatsappUrl, '_blank');
       } else {
-        console.warn('No phone number found for user');
+        console.warn('⚠️ Invalid phone number, cannot open WhatsApp');
+        alert(`Verification ${action}d, but couldn't open WhatsApp (invalid phone number). Please contact the user manually.`);
       }
       
+      // Refresh requests and reset form
       await fetchRequests();
       setProcessing(null);
       setVerificationNote('');
-      alert(`Verification ${action}d successfully. WhatsApp opened to notify user.`);
+      
     } catch (err: any) {
       alert(err.message || `Failed to ${action} verification`);
     }
@@ -295,6 +300,8 @@ const AdminVerification: React.FC = () => {
           <div className="space-y-4">
             {requests.map((request) => {
               const imageUrl = buildImageUrl(request.imageUrl);
+              const whatsappNumber = request.user?.whatsapp || request.user?.phoneNumber || '';
+              const userName = request.user?.name || 'User';
               
               return (
                 <div key={request._id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
@@ -323,11 +330,14 @@ const AdminVerification: React.FC = () => {
                     <div className="flex-1">
                       <div className="flex items-start justify-between mb-2">
                         <div>
-                          <h3 className="text-lg font-semibold text-gray-900">{request.user?.name || 'Unknown'}</h3>
+                          <h3 className="text-lg font-semibold text-gray-900">{userName}</h3>
                           <p className="text-sm text-gray-600">{request.user?.email}</p>
                           <p className="text-sm text-gray-500">Campus: {request.user?.campus}</p>
-                          {request.user?.phoneNumber && (
-                            <p className="text-sm text-gray-500">Phone: {request.user.phoneNumber}</p>
+                          {whatsappNumber && (
+                            <p className="text-sm text-gray-500 flex items-center gap-1 mt-1">
+                              <MessageCircle className="h-3 w-3" />
+                              WhatsApp: {whatsappNumber}
+                            </p>
                           )}
                         </div>
                         {getStatusBadge(request.status)}
@@ -354,12 +364,12 @@ const AdminVerification: React.FC = () => {
                             <div className="flex flex-col gap-3">
                               <div>
                                 <label className="block text-sm font-medium mb-1">
-                                  Admin Note * (will be sent via WhatsApp)
+                                  Message to send via WhatsApp *
                                 </label>
                                 <textarea
                                   value={verificationNote}
                                   onChange={(e) => setVerificationNote(e.target.value)}
-                                  placeholder="Enter reason for approval/rejection... This will be sent to the user via WhatsApp."
+                                  placeholder="This message will be sent to the seller via WhatsApp..."
                                   className="w-full p-2 border border-gray-300 rounded resize-none"
                                   rows={3}
                                 />
@@ -367,18 +377,24 @@ const AdminVerification: React.FC = () => {
 
                               <div className="flex space-x-2">
                                 <button
-                                  onClick={() => handleProcess(request._id, 'approve')}
-                                  className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center justify-center space-x-2"
+                                  onClick={() => handleProcess(request._id, 'approve', whatsappNumber, userName)}
+                                  disabled={!whatsappNumber}
+                                  className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                                  title={!whatsappNumber ? 'No WhatsApp number available' : ''}
                                 >
                                   <CheckCircle className="h-4 w-4" />
-                                  <span>Approve & Notify</span>
+                                  <MessageCircle className="h-4 w-4" />
+                                  <span>Approve & Send</span>
                                 </button>
                                 <button
-                                  onClick={() => handleProcess(request._id, 'reject')}
-                                  className="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 flex items-center justify-center space-x-2"
+                                  onClick={() => handleProcess(request._id, 'reject', whatsappNumber, userName)}
+                                  disabled={!whatsappNumber}
+                                  className="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                                  title={!whatsappNumber ? 'No WhatsApp number available' : ''}
                                 >
                                   <XCircle className="h-4 w-4" />
-                                  <span>Reject & Notify</span>
+                                  <MessageCircle className="h-4 w-4" />
+                                  <span>Reject & Send</span>
                                 </button>
                                 <button
                                   onClick={cancelProcessing}
@@ -387,13 +403,20 @@ const AdminVerification: React.FC = () => {
                                   Cancel
                                 </button>
                               </div>
+
+                              {!whatsappNumber && (
+                                <div className="bg-yellow-50 border border-yellow-200 rounded p-2 text-xs text-yellow-800">
+                                  ⚠️ No WhatsApp number found for this user. You'll need to contact them manually.
+                                </div>
+                              )}
                             </div>
                           ) : (
                             <button
                               onClick={() => startProcessing(request._id)}
-                              className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+                              className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2"
                             >
-                              Process Request
+                              <MessageCircle className="h-4 w-4" />
+                              Process & Notify via WhatsApp
                             </button>
                           )}
                         </div>
