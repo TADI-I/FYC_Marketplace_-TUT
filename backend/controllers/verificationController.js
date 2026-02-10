@@ -217,7 +217,6 @@ exports.getVerificationRequests = async (req, res, db) => {
     // Build the payload with FULL image URLs
     const payload = requests.map(r => {
       const imageUrl = `/api/verification/image/${r.imageId}`;
-      console.log('🖼️ Generated imageUrl for request:', r._id, '→', imageUrl);
       
       return {
         ...r,

@@ -1,4 +1,4 @@
-// AdminVerification.tsx - Fixed with proper API_BASE
+// AdminVerification.tsx - Fixed with proper API_BASE and WhatsApp redirect
 import React, { useState, useEffect } from 'react';
 import { CheckCircle, XCircle, Clock, Eye } from 'lucide-react';
 import { getVerificationRequests, processVerificationRequest } from './api';
@@ -41,6 +41,35 @@ const AdminVerification: React.FC = () => {
     }
   };
 
+  // Helper function to extract phone number and open WhatsApp
+  const openWhatsApp = (phoneNumber: string, action: 'approve' | 'reject', note: string) => {
+    // Clean phone number - remove spaces, dashes, parentheses
+    let cleanPhone = phoneNumber.replace(/[\s\-\(\)]/g, '');
+    
+    // Remove leading zeros and add country code if needed
+    // Assuming South African numbers (+27)
+    if (cleanPhone.startsWith('0')) {
+      cleanPhone = '27' + cleanPhone.substring(1);
+    } else if (!cleanPhone.startsWith('27') && !cleanPhone.startsWith('+')) {
+      cleanPhone = '27' + cleanPhone;
+    }
+    
+    // Remove + if present
+    cleanPhone = cleanPhone.replace('+', '');
+    
+    // Create message based on action
+    const message = action === 'approve'
+      ? `Hi! Your seller verification request has been APPROVED ✅\n\nReason: ${note}\n\nYou can now start selling on the platform. Thank you!`
+      : `Hi! Your seller verification request has been REJECTED ❌\n\nReason: ${note}\n\nPlease review the requirements and submit a new request if you'd like to try again.`;
+    
+    // Encode message for URL
+    const encodedMessage = encodeURIComponent(message);
+    
+    // Open WhatsApp in new tab
+    const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodedMessage}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
   const handleProcess = async (requestId: string, action: 'approve' | 'reject') => {
     if (!verificationNote.trim()) {
       alert('Please enter a note before processing the verification');
@@ -49,10 +78,20 @@ const AdminVerification: React.FC = () => {
 
     try {
       await processVerificationRequest(requestId, action, verificationNote);
+      
+      // Find the request to get user's phone number
+      const request = requests.find(r => r._id === requestId);
+      if (request?.user?.phoneNumber) {
+        // Open WhatsApp with the notification message
+        openWhatsApp(request.user.phoneNumber, action, verificationNote);
+      } else {
+        console.warn('No phone number found for user');
+      }
+      
       await fetchRequests();
       setProcessing(null);
       setVerificationNote('');
-      alert(`Verification ${action}d successfully`);
+      alert(`Verification ${action}d successfully. WhatsApp opened to notify user.`);
     } catch (err: any) {
       alert(err.message || `Failed to ${action} verification`);
     }
@@ -287,6 +326,9 @@ const AdminVerification: React.FC = () => {
                           <h3 className="text-lg font-semibold text-gray-900">{request.user?.name || 'Unknown'}</h3>
                           <p className="text-sm text-gray-600">{request.user?.email}</p>
                           <p className="text-sm text-gray-500">Campus: {request.user?.campus}</p>
+                          {request.user?.phoneNumber && (
+                            <p className="text-sm text-gray-500">Phone: {request.user.phoneNumber}</p>
+                          )}
                         </div>
                         {getStatusBadge(request.status)}
                       </div>
@@ -312,12 +354,12 @@ const AdminVerification: React.FC = () => {
                             <div className="flex flex-col gap-3">
                               <div>
                                 <label className="block text-sm font-medium mb-1">
-                                  Admin Note *
+                                  Admin Note * (will be sent via WhatsApp)
                                 </label>
                                 <textarea
                                   value={verificationNote}
                                   onChange={(e) => setVerificationNote(e.target.value)}
-                                  placeholder="Enter reason for approval/rejection..."
+                                  placeholder="Enter reason for approval/rejection... This will be sent to the user via WhatsApp."
                                   className="w-full p-2 border border-gray-300 rounded resize-none"
                                   rows={3}
                                 />
@@ -329,14 +371,14 @@ const AdminVerification: React.FC = () => {
                                   className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center justify-center space-x-2"
                                 >
                                   <CheckCircle className="h-4 w-4" />
-                                  <span>Approve</span>
+                                  <span>Approve & Notify</span>
                                 </button>
                                 <button
                                   onClick={() => handleProcess(request._id, 'reject')}
                                   className="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 flex items-center justify-center space-x-2"
                                 >
                                   <XCircle className="h-4 w-4" />
-                                  <span>Reject</span>
+                                  <span>Reject & Notify</span>
                                 </button>
                                 <button
                                   onClick={cancelProcessing}

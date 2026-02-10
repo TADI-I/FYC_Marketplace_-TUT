@@ -161,8 +161,6 @@ app.get('/api/test-db', (req, res) => healthController.testDbConnection(req, res
 app.get('/api/verification/image/:imageId', async (req, res) => {
   try {
     const imageId = req.params.imageId;
-    
-    console.log('🖼️ IMAGE REQUEST - imageId:', imageId);
 
     if (!ObjectId.isValid(imageId)) {
       return res.status(400).send('Invalid image ID');
@@ -516,8 +514,6 @@ app.get('/api/images/:id', async (req, res) => {
   try {
     const fileId = req.params.id;
     
-    console.log('🖼️ Image request for:', fileId);
-    
     if (!ObjectId.isValid(fileId)) {
       console.log('❌ Invalid image ID');
       return res.status(400).json({ 
@@ -580,9 +576,7 @@ app.get('/api/images/:id', async (req, res) => {
 app.get('/api/products/:id/image', async (req, res) => {
   try {
     const productId = req.params.id;
-    
-    console.log('🖼️ Product image request for product:', productId);
-    
+
     if (!ObjectId.isValid(productId)) {
       return res.status(400).json({ 
         error: 'Invalid product ID',
