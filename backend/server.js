@@ -6,6 +6,8 @@ const { MongoClient, ServerApiVersion, ObjectId, GridFSBucket } = require('mongo
 const multer = require('multer');
 const path = require('path');
 const verificationController = require('./controllers/verificationController');
+const productPageController = require('./controllers/productPageController');
+
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -509,11 +511,15 @@ app.delete('/api/products/:id', authenticateToken, validateObjectId('id'), withO
 });
 
 // Image retrieval endpoints
+// Image retrieval endpoints
 app.get('/api/images/:id', async (req, res) => {
   try {
     const fileId = req.params.id;
     
+    console.log('🖼️ Image request for:', fileId);
+    
     if (!ObjectId.isValid(fileId)) {
+      console.log('❌ Invalid image ID');
       return res.status(400).json({ 
         error: 'Invalid image ID',
         success: false
@@ -525,6 +531,7 @@ app.get('/api/images/:id', async (req, res) => {
     }).toArray();
     
     if (!files || files.length === 0) {
+      console.log('❌ Image not found in database');
       return res.status(404).json({ 
         error: 'Image not found',
         success: false
@@ -533,15 +540,18 @@ app.get('/api/images/:id', async (req, res) => {
 
     const file = files[0];
     
-    res.set('Content-Type', file.contentType);
+    console.log('✅ Image found:', file.filename, 'Type:', file.contentType);
+    
+    // IMPORTANT: Set CORS headers for images
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'GET');
+    res.set('Content-Type', file.contentType || 'image/jpeg');
     res.set('Cache-Control', 'public, max-age=31536000');
     
-    const downloadStream = req.gridfsBucket.openDownloadStream(new ObjectId(fileId));
-    
-    downloadStream.pipe(res);
+    const downloadStream = gridfsBucket.openDownloadStream(new ObjectId(fileId));
     
     downloadStream.on('error', (error) => {
-      console.error('GridFS stream error:', error);
+      console.error('❌ GridFS stream error:', error);
       if (!res.headersSent) {
         res.status(500).json({ 
           error: 'Error streaming image',
@@ -550,18 +560,28 @@ app.get('/api/images/:id', async (req, res) => {
       }
     });
 
+    downloadStream.on('data', (chunk) => {
+      console.log('📦 Streaming chunk:', chunk.length, 'bytes');
+    });
+
+    downloadStream.pipe(res);
+
   } catch (error) {
     console.error('❌ Get image error:', error);
-    res.status(500).json({ 
-      error: 'Failed to retrieve image',
-      success: false
-    });
+    if (!res.headersSent) {
+      res.status(500).json({ 
+        error: 'Failed to retrieve image',
+        success: false
+      });
+    }
   }
 });
 
 app.get('/api/products/:id/image', async (req, res) => {
   try {
     const productId = req.params.id;
+    
+    console.log('🖼️ Product image request for product:', productId);
     
     if (!ObjectId.isValid(productId)) {
       return res.status(400).json({ 
@@ -576,12 +596,16 @@ app.get('/api/products/:id/image', async (req, res) => {
     );
 
     if (!product || !product.image) {
+      console.log('❌ Product or image not found');
       return res.status(404).json({ 
         error: 'Image not found',
         success: false
       });
     }
 
+    console.log('✅ Redirecting to image:', product.image.id);
+
+    // Redirect to the actual image endpoint
     res.redirect(`/api/images/${product.image.id}`);
 
   } catch (error) {
@@ -600,6 +624,11 @@ app.post('/api/messages', authenticateToken, (req, res) => messageController.sen
 // Reference data routes
 app.get('/api/campuses', referenceController.getCampuses);
 app.get('/api/categories', referenceController.getCategories);
+
+app.get('/p/:id', validateObjectId('id'), (req, res) => {
+  productPageController.serveProductPage(req, res, req.db);
+});
+
 
 // Error handling
 app.use((err, req, res, next) => {
@@ -624,6 +653,8 @@ const startServer = async () => {
   
   app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
+    console.log('✅ /p/:id share route registered');
+
   });
 };
 

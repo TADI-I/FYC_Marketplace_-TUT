@@ -83,17 +83,36 @@ export const getProductId = (product: Product): string => {
 };
 
 // Helper function to get image URL from product
+// Helper function to get image URL from product
 export const getImageUrl = (product: Product, apiBase: string): string | null => {
-  if (product.imageUrl) return product.imageUrl;
+  console.group(`🖼️ Image URL for: ${product.title}`);
+  console.log('Product ID:', (product as any)._id || product.id);
+  console.log('Image object:', product.image);
+  console.log('API Base:', apiBase);
+  
+  if (product.imageUrl) {
+    console.log('✅ Using product.imageUrl:', product.imageUrl);
+    console.groupEnd();
+    return product.imageUrl;
+  }
   
   if (typeof product.image === 'object' && product.image?.id) {
-    return `${apiBase}/images/${product.image.id}`;
+    // FIX: Add /api/ to the path
+    const url = `${apiBase}/api/images/${product.image.id}`;
+    console.log('✅ Using GridFS ID:', product.image.id);
+    console.log('📍 Full URL:', url);
+    console.groupEnd();
+    return url;
   }
   
   if (typeof product.image === 'string') {
+    console.log('✅ Using string image:', product.image);
+    console.groupEnd();
     return product.image;
   }
   
+  console.log('❌ No valid image found');
+  console.groupEnd();
   return null;
 };
 
