@@ -714,6 +714,123 @@ const ProductCard = useCallback(({ product, isHighlighted = false }: { product: 
     </div>
   );
 }, [getImageUrl]);
+
+  // Pagination Component
+  const PaginationControls = useCallback(() => {
+    const getPageNumbers = () => {
+      const pages: (number | string)[] = [];
+      const maxVisible = 6; // Maximum number of page buttons to show
+      
+      if (totalPages <= maxVisible + 2) {
+        // Show all pages if total is small
+        for (let i = 1; i <= totalPages; i++) {
+          pages.push(i);
+        }
+      } else {
+        // Always show first page
+        pages.push(1);
+        
+        // Calculate range around current page
+        let start = Math.max(2, currentPage - 1);
+        let end = Math.min(totalPages - 1, currentPage + 1);
+        
+        // Adjust if at the beginning
+        if (currentPage <= 3) {
+          end = Math.min(maxVisible - 1, totalPages - 1);
+        }
+        
+        // Adjust if at the end
+        if (currentPage >= totalPages - 2) {
+          start = Math.max(2, totalPages - (maxVisible - 2));
+        }
+        
+        // Add ellipsis if needed
+        if (start > 2) {
+          pages.push('...');
+        }
+        
+        // Add middle pages
+        for (let i = start; i <= end; i++) {
+          pages.push(i);
+        }
+        
+        // Add ellipsis if needed
+        if (end < totalPages - 1) {
+          pages.push('...');
+        }
+        
+        // Always show last page
+        pages.push(totalPages);
+      }
+      
+      return pages;
+    };
+
+    const handlePageClick = (page: number) => {
+      const params = new URLSearchParams(window.location.search);
+      const productId = params.get('product');
+      fetchProducts(page, {}, productId || null);
+    };
+
+    return (
+      <div className="flex flex-col items-center gap-4 py-4">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-center">
+          {/* Page Numbers */}
+          {getPageNumbers().map((page, index) => (
+            typeof page === 'number' ? (
+              <button
+                key={`page-${page}`}
+                className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full font-bold text-sm sm:text-base transition-all duration-200 ${
+                  currentPage === page
+                    ? 'bg-orange-600 text-white shadow-lg transform scale-110'
+                    : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                }`}
+                onClick={() => handlePageClick(page)}
+                aria-label={currentPage === page ? `page ${page}` : `Go to page ${page}`}
+                aria-current={currentPage === page ? 'page' : undefined}
+              >
+                {page}
+              </button>
+            ) : (
+              <span key={`ellipsis-${index}`} className="px-1 sm:px-2 text-gray-500 font-medium">
+                {page}
+              </span>
+            )
+          ))}
+
+          {/* Next Button */}
+          <button
+            className="w-10 h-10 sm:w-12 sm:h-12 rounded-full hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed font-bold transition-all duration-200 bg-white border border-gray-300"
+            onClick={() => handlePageClick(currentPage + 1)}
+            disabled={!hasNext}
+            aria-label="Go to next page"
+          >
+            <svg className="w-5 h-5 sm:w-6 sm:h-6 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+
+          {/* Last Page Button */}
+          <button
+            className="w-10 h-10 sm:w-12 sm:h-12 rounded-full hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed font-bold transition-all duration-200 bg-white border border-gray-300"
+            onClick={() => handlePageClick(totalPages)}
+            disabled={currentPage === totalPages}
+            aria-label="Go to last page"
+          >
+            <svg className="w-5 h-5 sm:w-6 sm:h-6 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Show range info */}
+        <div className="text-xs sm:text-sm text-gray-600 font-medium">
+          (Showing {((currentPage - 1) * 9) + 1} - {Math.min(currentPage * 9, _totalProducts)} of {_totalProducts})
+        </div>
+      </div>
+    );
+  }, [currentPage, totalPages, hasPrev, hasNext, _totalProducts, fetchProducts]);
+
   // Render product cards
   const renderProductCards = () => {
     return products.map(product => (
@@ -957,6 +1074,13 @@ const ProductCard = useCallback(({ product, isHighlighted = false }: { product: 
                 </div>
               </div>
 
+              {/* Pagination - Top */}
+              {totalPages > 1 && (
+                <div className="mb-8">
+                  <PaginationControls />
+                </div>
+              )}
+
               {_loading ? (
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {Array.from({ length: 9 }).map((_, i) => (
@@ -975,35 +1099,12 @@ const ProductCard = useCallback(({ product, isHighlighted = false }: { product: 
                 </div>
               )}
 
-                {totalPages > 1 && (
-              <div className="flex flex-col sm:flex-row justify-center items-center mt-12 gap-4">
-                <button
-                  className="w-full sm:w-auto px-6 py-3 rounded-lg bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
-                  onClick={() => {
-                    const params = new URLSearchParams(window.location.search);
-                    const productId = params.get('product');
-                    fetchProducts(currentPage - 1, {}, productId || null);
-                  }}
-                  disabled={!hasPrev}
-                >
-                  ← Previous
-                </button>
-                <span className="font-semibold text-gray-700 bg-orange-50 px-6 py-3 rounded-lg border border-orange-200">
-                  Page {currentPage} of {totalPages}
-                </span>
-                <button
-                  className="w-full sm:w-auto px-6 py-3 rounded-lg bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
-                  onClick={() => {
-                    const params = new URLSearchParams(window.location.search);
-                    const productId = params.get('product');
-                    fetchProducts(currentPage + 1, {}, productId || null);
-                  }}
-                  disabled={!hasNext}
-                >
-                  Next →
-                </button>
-              </div>
-            )}
+              {/* Pagination - Bottom */}
+              {totalPages > 1 && (
+                <div className="mt-12">
+                  <PaginationControls />
+                </div>
+              )}
             </>
           )}
         </Suspense>
