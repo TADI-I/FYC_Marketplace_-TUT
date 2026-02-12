@@ -86,12 +86,13 @@ const App = () => {
   const [users, _setUsers] = useState<User[]>([]);
   const [maximizedImage, setMaximizedImage] = useState<string | null>(null);
 
+  // Infinite scroll state
   const [products, setProducts] = useState<Product[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [_totalProducts, setTotalProducts] = useState(0);
-  const [hasNext, setHasNext] = useState(false);
-  const [hasPrev, setHasPrev] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
   // Memoize categories and campuses
   const categories = useMemo(() => [
@@ -117,211 +118,164 @@ const App = () => {
     { id: 'polokwane', name: 'Polokwane' }
   ], []);
 
-// Handle URL parameter for shared product links
-// Handle URL parameter for shared product links
-useEffect(() => {
-  const params = new URLSearchParams(window.location.search);
-  const productId = params.get('product');
-  
-  if (productId && API_BASE) {
-    console.log('🔗 Detected shared product link:', productId);
-    setHighlightedProduct(null); // Clear first
+  // Handle URL parameter for shared product links
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const productId = params.get('product');
     
-    // Fetch products with the shared product ID
-    fetchProducts(1, {}, productId);
-    
-    // Also fetch the shared product details for highlighting
-    fetchAndHighlightProduct(productId);
-    
-    // Clean up URL without page reload
-    window.history.replaceState({}, '', '/');
-  }
-}, [API_BASE]);
-
-// Fetch and highlight a specific product
-// Fetch and highlight a specific product
-const fetchAndHighlightProduct = useCallback(async (productId: string) => {
-  if (!API_BASE) return;
-  
-  try {
-    console.log('🔍 Fetching shared product:', productId);
-    const response = await fetch(`${API_BASE}/api/products/${productId}`);
-    const data = await response.json();
-    
-    console.log('📦 Product data:', data);
-    
-    if (data.success || data._id) {
-      const product = data.success ? data : { ...data, id: data._id };
-      console.log('✅ Product found:', product.title);
+    if (productId && API_BASE) {
+      console.log('🔗 Detected shared product link:', productId);
+      setHighlightedProduct(null);
       
-      setHighlightedProduct(product);
+      fetchAndHighlightProduct(productId);
       
-      // Scroll to highlighted product after render
-      setTimeout(() => {
-        const element = document.getElementById('highlighted-product');
-        if (element) {
-          const headerOffset = 100;
-          const elementPosition = element.getBoundingClientRect().top;
-          const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-          
-          window.scrollTo({
-            top: offsetPosition,
-            behavior: 'smooth'
-          });
-        }
-      }, 500);
+      // Clean up URL without page reload
+      window.history.replaceState({}, '', '/');
     }
-  } catch (err) {
-    console.error('❌ Failed to fetch product:', err);
-  }
-}, [API_BASE]);
+  }, [API_BASE]);
 
-  // Find which page contains the product and load it
-  const findAndLoadProductPage = async (product: Product) => {
+  // Fetch and highlight a specific product
+  const fetchAndHighlightProduct = useCallback(async (productId: string) => {
+    if (!API_BASE) return;
+    
     try {
-      console.log('🔎 Searching for product across all pages...');
+      console.log('🔍 Fetching shared product:', productId);
+      const response = await fetch(`${API_BASE}/api/products/${productId}`);
+      const data = await response.json();
       
-      // Fetch all products without pagination to find the product
-      const response = await getProducts({
-        page: 1,
-        limit: 1000, // Get all products
-        category: selectedCategory !== 'all' ? selectedCategory : '',
-        campus: selectedCampus !== 'all' ? selectedCampus : '',
-        search: searchTerm || ''
-      });
-
-      const allProducts = Array.isArray(response.products) ? response.products : [];
+      console.log('📦 Product data:', data);
       
-      // Sort products the same way as in fetchProducts
-      const sortedProducts = allProducts.sort((a: Product, b: Product) => {
-        if (a.sellerVerified && !b.sellerVerified) return -1;
-        if (!a.sellerVerified && b.sellerVerified) return 1;
-        return a.title.localeCompare(b.title);
-      });
-
-      // Find the index of the product
-      const productIndex = sortedProducts.findIndex((p: Product) => {
-        const pId = (p as any)._id?.toString() || p.id?.toString();
-        const productIdFromMongo = (product as any)._id?.toString();
-        const productIdNormal = product.id?.toString();
+      if (data.success || data._id) {
+        const product = data.success ? data : { ...data, id: data._id };
+        console.log('✅ Product found:', product.title);
         
-        return pId === productIdFromMongo || pId === productIdNormal;
-      });
-
-      if (productIndex !== -1) {
-        // Calculate which page this product is on (9 products per page)
-        const pageNumber = Math.floor(productIndex / 9) + 1;
-        console.log(`✅ Found product at index ${productIndex}, loading page ${pageNumber}`);
-        
-        // Load that specific page
-        await fetchProducts(pageNumber);
-        
-        // Set highlighted product after a brief delay to ensure page is loaded
-        setTimeout(() => {
-          setHighlightedProduct(product);
-        }, 300);
-      } else {
-        console.warn('❌ Product not found in any page');
-        // Still set it as highlighted, it will appear at the top
         setHighlightedProduct(product);
+        
+        // Scroll to highlighted product after render
+        setTimeout(() => {
+          const element = document.getElementById('highlighted-product');
+          if (element) {
+            const headerOffset = 100;
+            const elementPosition = element.getBoundingClientRect().top;
+            const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+            
+            window.scrollTo({
+              top: offsetPosition,
+              behavior: 'smooth'
+            });
+          }
+        }, 500);
       }
     } catch (err) {
-      console.error('❌ Failed to find product page:', err);
-      // Fallback: just highlight the product
-      setHighlightedProduct(product);
+      console.error('❌ Failed to fetch product:', err);
     }
-  };
+  }, [API_BASE]);
 
   // Scroll to highlighted product when it's rendered
   useEffect(() => {
     if (highlightedProduct) {
       console.log('🎯 Highlighted product set, attempting to scroll...');
-      console.log('📦 Highlighted product:', highlightedProduct);
       
       const scrollToProduct = (attempts = 0, maxAttempts = 50) => {
         const element = document.getElementById('highlighted-product');
         
-        console.log(`🔍 Scroll attempt ${attempts + 1}/${maxAttempts}:`, element ? 'Element FOUND ✅' : 'Element NOT FOUND ❌');
-        
         if (element) {
           console.log('✅ Found highlighted product, scrolling NOW!');
-          console.log('📏 Element position:', element.getBoundingClientRect());
           
-          // Calculate position with offset for header
           const headerOffset = 120;
           const elementPosition = element.getBoundingClientRect().top;
           const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-          
-          console.log('🎯 Scrolling to position:', offsetPosition);
           
           window.scrollTo({
             top: offsetPosition,
             behavior: 'smooth'
           });
           
-          // Also try scrollIntoView as backup
-          setTimeout(() => {
-            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }, 100);
-          
         } else if (attempts < maxAttempts) {
-          console.log(`⏳ Element not ready, trying again in 100ms...`);
           setTimeout(() => scrollToProduct(attempts + 1, maxAttempts), 100);
         } else {
-          console.error('❌ Max scroll attempts reached! Element never appeared in DOM.');
-          console.log('🔍 Current products count:', products.length);
-          console.log('🔍 Looking for product with ID:', (highlightedProduct as any)._id || highlightedProduct.id);
+          console.error('❌ Max scroll attempts reached!');
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }
       };
       
-      // Start scroll attempts immediately (no delay)
       scrollToProduct();
     }
   }, [highlightedProduct, products]);
 
-  // Memoize fetchProducts with useCallback
-// Memoize fetchProducts with useCallback
-const fetchProducts = useCallback(async (page = 1, filters = {}, sharedProductId: string | null = null) => {
-  try {
-    setLoading(true);
-    
-    const response = await getProducts({
-      page,
-      limit: 9,
-      category: selectedCategory !== 'all' ? selectedCategory : '',
-      campus: selectedCampus !== 'all' ? selectedCampus : '',
-      search: searchTerm || '',
-      ...filters
-    });
+  // Fetch products with infinite scroll support
+  const fetchProducts = useCallback(async (page = 1, append = false) => {
+    try {
+      if (append) {
+        setIsLoadingMore(true);
+      } else {
+        setLoading(true);
+      }
+      
+      const response = await getProducts({
+        page,
+        limit: 12,
+        category: selectedCategory !== 'all' ? selectedCategory : '',
+        campus: selectedCampus !== 'all' ? selectedCampus : '',
+        search: searchTerm || ''
+      });
 
-    // Don't sort here - sorting should be done by the backend API
-    // so that verified products are sorted alphabetically across ALL pages
-    const products = Array.isArray(response.products) ? response.products : [];
+      const newProducts = Array.isArray(response.products) ? response.products : [];
 
-    setProducts(products);
-    setCurrentPage(response.pagination.currentPage);
-    setTotalPages(response.pagination.totalPages);
-    setTotalProducts(response.pagination.totalProducts);
-    setHasNext(response.pagination.hasNext);
-    setHasPrev(response.pagination.hasPrev);
-    setError('');
-  } catch (err: any) {
-    setError(err.message || 'Failed to fetch products');
-    console.error('Error fetching products:', err);
-  } finally {
-    setLoading(false);
-  }
-}, [selectedCategory, selectedCampus, searchTerm]);
+      if (append) {
+        setProducts(prev => [...prev, ...newProducts]);
+      } else {
+        setProducts(newProducts);
+      }
+      
+      setCurrentPage(response.pagination.currentPage);
+      setTotalProducts(response.pagination.totalProducts);
+      setHasMore(response.pagination.hasNext);
+      setError('');
+    } catch (err: any) {
+      setError(err.message || 'Failed to fetch products');
+      console.error('Error fetching products:', err);
+    } finally {
+      setLoading(false);
+      setIsLoadingMore(false);
+    }
+  }, [selectedCategory, selectedCampus, searchTerm]);
 
-  // Scroll to top when page changes
+  // Initial load and filter changes - reset to page 1
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [currentPage]);
+    setCurrentPage(1);
+    setHasMore(true);
+    fetchProducts(1, false);
+  }, [selectedCategory, selectedCampus, searchTerm]);
 
+  // Intersection Observer for infinite scroll
   useEffect(() => {
-    fetchProducts(1);
-  }, [fetchProducts]);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const target = entries[0];
+        if (target.isIntersecting && hasMore && !isLoadingMore && !_loading) {
+          console.log('📜 Loading more products...');
+          fetchProducts(currentPage + 1, true);
+        }
+      },
+      {
+        root: null,
+        rootMargin: '200px', // Start loading 200px before reaching the bottom
+        threshold: 0.1
+      }
+    );
+
+    const currentRef = loadMoreRef.current;
+    if (currentRef) {
+      observer.observe(currentRef);
+    }
+
+    return () => {
+      if (currentRef) {
+        observer.unobserve(currentRef);
+      }
+    };
+  }, [hasMore, isLoadingMore, _loading, currentPage, fetchProducts]);
 
   const handleUpgrade = useCallback(async () => {
     if (!currentUser) {
@@ -514,311 +468,191 @@ const fetchProducts = useCallback(async (page = 1, filters = {}, sharedProductId
     </div>
   ), []);
 
-  // Product Card Component (extracted for highlighted product)
-// Product Card Component - with share button repositioned
-// Product Card Component - with share button repositioned
-const ProductCard = useCallback(({ product, isHighlighted = false }: { product: Product; isHighlighted?: boolean }) => {
-  const imageUrl = getImageUrl(product);
-  const raw = (product as any).sellerWhatsApp || (product as any).seller?.whatsapp || (product as any).whatsapp || '';
-  const normalized = normalizeSAPhoneNumber(raw);
-  const waMessage = encodeURIComponent(`Hi ${product.sellerName || ''}, I'm interested in your listing "${product.title}".`);
-  const waLink = normalized ? `https://wa.me/${normalized}?text=${waMessage}` : null;
-  const whatsappRedirects = (product as any).whatsappRedirects || 0;
-  
-  // Get clean product ID
-  const productIdRaw = (product as any)._id || product.id;
-  const cleanProductId = productIdRaw ? String(productIdRaw) : '';
-
- const handleShare = async () => {
-  try {
-    const backendUrl = API_BASE;
-    const shareUrl = `${backendUrl}/p/${cleanProductId}`;
+  // Product Card Component
+  const ProductCard = useCallback(({ product, isHighlighted = false }: { product: Product; isHighlighted?: boolean }) => {
+    const imageUrl = getImageUrl(product);
+    const raw = (product as any).sellerWhatsApp || (product as any).seller?.whatsapp || (product as any).whatsapp || '';
+    const normalized = normalizeSAPhoneNumber(raw);
+    const waMessage = encodeURIComponent(`Hi ${product.sellerName || ''}, I'm interested in your listing "${product.title}".`);
+    const waLink = normalized ? `https://wa.me/${normalized}?text=${waMessage}` : null;
+    const whatsappRedirects = (product as any).whatsappRedirects || 0;
     
-    console.log('📤 Sharing URL:', shareUrl);
-    
-    if (navigator.share) {
-      await navigator.share({
-        url: shareUrl,
-        title: `${product.title} - R${product.price}`,
-        text: `Check out "${product.title}" on FYC Marketplace (Shared via FYC Marketplace)`
-      });
-    } else {
-      await navigator.clipboard.writeText(shareUrl);
-      alert('Link copied! Share it on WhatsApp, Facebook, or anywhere.');
-    }
-  } catch (err: any) {
-    if (err.name !== 'AbortError') {
-      console.error('Share failed', err);
-    }
-  }
-};
+    const productIdRaw = (product as any)._id || product.id;
+    const cleanProductId = productIdRaw ? String(productIdRaw) : '';
 
-  return (
-    <div 
-      className={`bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-xl transition-shadow duration-300 ${
-        isHighlighted ? 'ring-4 ring-orange-500 shadow-2xl' : ''
-      }`}
-      id={isHighlighted ? 'highlighted-product' : undefined}
-    >
-      {isHighlighted && (
-        <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-4 py-2 flex items-center justify-between">
-          <span className="text-sm font-semibold flex items-center gap-2">
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-            </svg>
-            Shared Product
-          </span>
-          <button
-            onClick={() => setHighlightedProduct(null)}
-            className="hover:bg-white hover:bg-opacity-20 rounded-full p-1 transition-colors"
-            aria-label="Close highlight"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      )}
-      
-      <div className="relative overflow-hidden group" style={{ height: '20rem' }}>
-        {imageUrl ? (
-          <>
-            <img
-              src={imageUrl}
-              alt={product.title}
-              loading="lazy"
-              decoding="async"
-              className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300 cursor-pointer z-0"
-              onClick={() => setMaximizedImage(imageUrl)}
-              onError={(e) => {
-                const imgElement = e.currentTarget as HTMLImageElement;
-                console.log('❌ Image failed to load:', imageUrl);
-                console.log('📦 Product image data:', (product as any).image);
-                
-                // Prevent infinite loop
-                if (imgElement.src.includes('data:image')) {
-                  return;
-                }
-                
-                // Use a data URI instead of external placeholder
-                imgElement.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400"%3E%3Crect fill="%23e5e7eb" width="400" height="400"/%3E%3Ctext fill="%239ca3af" font-family="Arial" font-size="16" x="50%25" y="50%25" text-anchor="middle" dominant-baseline="middle"%3ENo Image%3C/text%3E%3C/svg%3E';
-              }}
-
-            />
-            <div 
-              className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-300 flex items-center justify-center cursor-pointer z-10"
-              onClick={() => setMaximizedImage(imageUrl)}
-            >
-              <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center gap-2 bg-white bg-opacity-90 px-4 py-2 rounded-lg shadow-lg">
-                <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
-                </svg>
-                <span className="text-sm font-semibold text-gray-700">Click to enlarge</span>
-              </div>
-            </div>
-          </>
-        ) : (
-          <div className="absolute inset-0 w-full h-full bg-gray-200 flex items-center justify-center">
-            <svg className="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-          </div>
-        )}
-
-        {whatsappRedirects > 0 && (
-          <div 
-            className="absolute top-3 right-3 z-20 bg-green-600 text-white px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5"
-            title={`${whatsappRedirects} WhatsApp ${whatsappRedirects === 1 ? 'click' : 'clicks'}`}
-          >
-            <TrendingUp className="h-3.5 w-3.5" />
-            <span className="text-xs font-semibold">{whatsappRedirects}</span>
-          </div>
-        )}
-
-        {product.sellerVerified && (
-          <div className="absolute top-14 right-3 z-20 bg-blue-600 text-white px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1">
-            <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-            </svg>
-            <span className="text-xs font-semibold">Verified</span>
-          </div>
-        )}
-      </div>
-
-      <div className="p-5">
-        <div className="flex justify-between items-start mb-3">
-          <h3 className="text-lg font-semibold text-gray-900 line-clamp-2 flex-1">{product.title}</h3>
-          <span className="text-xl font-bold text-green-600 ml-3 whitespace-nowrap">R{product.price}</span>
-        </div>
-
-        <p className="text-gray-600 text-sm mb-4 line-clamp-2">{product.description}</p>
-
-        <div className="flex items-center justify-between mb-4 text-sm text-gray-500">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1">
-              <Useric className="h-4 w-4" />
-              <span className="truncate max-w-[100px]">{product.sellerName}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Locate className="h-4 w-4" />
-              <span className="truncate max-w-[100px]">{product.sellerCampus}</span>
-            </div>
-          </div>
-
-          {product.rating > 0 && (
-            <div className="flex items-center gap-1">
-              <Star className="h-4 w-4 text-yellow-400 fill-current" />
-              <span className="font-medium">{product.rating}</span>
-            </div>
-          )}
-        </div>
-
-        {/* BUTTONS SIDE BY SIDE */}
-        <div className="flex gap-2">
-          {waLink && (
-            <a
-              href={waLink}
-              target="_blank"
-              rel="noreferrer noopener"
-              onClick={async () => {
-                if (cleanProductId) {
-                  trackWhatsAppClick(cleanProductId).catch(err => 
-                    console.warn('Analytics tracking failed:', err)
-                  );
-                }
-              }}
-              className="flex-1 bg-green-600 text-white px-4 py-3 rounded-lg font-semibold text-center hover:bg-green-700 flex items-center justify-center gap-2 transition-colors shadow-sm"
-            >
-              <MessageCircle className="h-5 w-5" />
-              <span className="hidden sm:inline">WhatsApp</span>
-              <span className="sm:hidden">Chat</span>
-            </a>
-          )}
-
-          {cleanProductId && (
-            <button
-              type="button"
-              onClick={handleShare}
-              className="flex-1 bg-blue-600 text-white px-4 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 shadow-sm"
-            >
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-              </svg>
-              <span className="hidden sm:inline">Share</span>
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}, [getImageUrl]);
-
-  // Pagination Component
-  const PaginationControls = useCallback(() => {
-    const getPageNumbers = () => {
-      const pages: number[] = [];
-      const maxVisible = 4; // Show maximum 4 page numbers
-      
-      if (totalPages <= maxVisible) {
-        // Show all pages if total is 4 or less
-        for (let i = 1; i <= totalPages; i++) {
-          pages.push(i);
-        }
-      } else {
-        // Calculate the range of pages to show
-        let startPage = Math.max(1, currentPage - 1);
-        let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+    const handleShare = async () => {
+      try {
+        const backendUrl = API_BASE;
+        const shareUrl = `${backendUrl}/p/${cleanProductId}`;
         
-        // Adjust if we're near the end
-        if (endPage - startPage < maxVisible - 1) {
-          startPage = Math.max(1, endPage - maxVisible + 1);
-        }
+        console.log('📤 Sharing URL:', shareUrl);
         
-        for (let i = startPage; i <= endPage; i++) {
-          pages.push(i);
+        if (navigator.share) {
+          await navigator.share({
+            url: shareUrl,
+            title: `${product.title} - R${product.price}`,
+            text: `Check out "${product.title}" on FYC Marketplace (Shared via FYC Marketplace)`
+          });
+        } else {
+          await navigator.clipboard.writeText(shareUrl);
+          alert('Link copied! Share it on WhatsApp, Facebook, or anywhere.');
+        }
+      } catch (err: any) {
+        if (err.name !== 'AbortError') {
+          console.error('Share failed', err);
         }
       }
-      
-      return pages;
-    };
-
-    const handlePageClick = (page: number) => {
-      const params = new URLSearchParams(window.location.search);
-      const productId = params.get('product');
-      fetchProducts(page, {}, productId || null);
     };
 
     return (
-      <div className="flex flex-col items-center gap-4 py-4">
-        <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-center">
-          {/* First Page Button « */}
-          <button
-            className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed font-bold transition-all duration-200 bg-white border border-gray-300"
-            onClick={() => handlePageClick(1)}
-            disabled={currentPage === 1}
-            aria-label="Go to first page"
-            style={{ minWidth: '2.5rem', minHeight: '2.5rem' }}
-          >
-            <span className="text-lg">«</span>
-          </button>
-
-          {/* Previous Button ‹ */}
-          <button
-            className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed font-bold transition-all duration-200 bg-white border border-gray-300"
-            onClick={() => handlePageClick(currentPage - 1)}
-            disabled={!hasPrev}
-            aria-label="Go to previous page"
-            style={{ minWidth: '2.5rem', minHeight: '2.5rem' }}
-          >
-            <span className="text-lg">‹</span>
-          </button>
-
-          {/* Page Numbers - Show 4 at a time */}
-          {getPageNumbers().map((page) => (
+      <div 
+        className={`bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-xl transition-shadow duration-300 ${
+          isHighlighted ? 'ring-4 ring-orange-500 shadow-2xl' : ''
+        }`}
+        id={isHighlighted ? 'highlighted-product' : undefined}
+      >
+        {isHighlighted && (
+          <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-4 py-2 flex items-center justify-between">
+            <span className="text-sm font-semibold flex items-center gap-2">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              Shared Product
+            </span>
             <button
-              key={`page-${page}`}
-              className={`flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full font-bold text-sm sm:text-base transition-all duration-200 ${
-                currentPage === page
-                  ? 'bg-orange-600 text-white shadow-lg transform scale-110'
-                  : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
-              }`}
-              onClick={() => handlePageClick(page)}
-              aria-label={currentPage === page ? `page ${page}` : `Go to page ${page}`}
-              aria-current={currentPage === page ? 'page' : undefined}
-              style={{ minWidth: '2.5rem', minHeight: '2.5rem' }}
+              onClick={() => setHighlightedProduct(null)}
+              className="hover:bg-white hover:bg-opacity-20 rounded-full p-1 transition-colors"
+              aria-label="Close highlight"
             >
-              {page}
+              <X className="h-4 w-4" />
             </button>
-          ))}
+          </div>
+        )}
+        
+        <div className="relative overflow-hidden group" style={{ height: '20rem' }}>
+          {imageUrl ? (
+            <>
+              <img
+                src={imageUrl}
+                alt={product.title}
+                loading="lazy"
+                decoding="async"
+                className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300 cursor-pointer z-0"
+                onClick={() => setMaximizedImage(imageUrl)}
+                onError={(e) => {
+                  const imgElement = e.currentTarget as HTMLImageElement;
+                  if (imgElement.src.includes('data:image')) {
+                    return;
+                  }
+                  imgElement.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400"%3E%3Crect fill="%23e5e7eb" width="400" height="400"/%3E%3Ctext fill="%239ca3af" font-family="Arial" font-size="16" x="50%25" y="50%25" text-anchor="middle" dominant-baseline="middle"%3ENo Image%3C/text%3E%3C/svg%3E';
+                }}
+              />
+              <div 
+                className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-300 flex items-center justify-center cursor-pointer z-10"
+                onClick={() => setMaximizedImage(imageUrl)}
+              >
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center gap-2 bg-white bg-opacity-90 px-4 py-2 rounded-lg shadow-lg">
+                  <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                  </svg>
+                  <span className="text-sm font-semibold text-gray-700">Click to enlarge</span>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="absolute inset-0 w-full h-full bg-gray-200 flex items-center justify-center">
+              <svg className="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+          )}
 
-          {/* Next Button › */}
-          <button
-            className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed font-bold transition-all duration-200 bg-white border border-gray-300"
-            onClick={() => handlePageClick(currentPage + 1)}
-            disabled={!hasNext}
-            aria-label="Go to next page"
-            style={{ minWidth: '2.5rem', minHeight: '2.5rem' }}
-          >
-            <span className="text-lg">›</span>
-          </button>
+          {whatsappRedirects > 0 && (
+            <div 
+              className="absolute top-3 right-3 z-20 bg-green-600 text-white px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5"
+              title={`${whatsappRedirects} WhatsApp ${whatsappRedirects === 1 ? 'click' : 'clicks'}`}
+            >
+              <TrendingUp className="h-3.5 w-3.5" />
+              <span className="text-xs font-semibold">{whatsappRedirects}</span>
+            </div>
+          )}
 
-          {/* Last Page Button » */}
-          <button
-            className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed font-bold transition-all duration-200 bg-white border border-gray-300"
-            onClick={() => handlePageClick(totalPages)}
-            disabled={currentPage === totalPages}
-            aria-label="Go to last page"
-            style={{ minWidth: '2.5rem', minHeight: '2.5rem' }}
-          >
-            <span className="text-lg">»</span>
-          </button>
+          {product.sellerVerified && (
+            <div className="absolute top-14 right-3 z-20 bg-blue-600 text-white px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1">
+              <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              <span className="text-xs font-semibold">Verified</span>
+            </div>
+          )}
         </div>
 
-        {/* Show range info */}
-        <div className="text-xs sm:text-sm text-gray-600 font-medium">
-          (Showing {((currentPage - 1) * 9) + 1} - {Math.min(currentPage * 9, _totalProducts)} of {_totalProducts})
+        <div className="p-5">
+          <div className="flex justify-between items-start mb-3">
+            <h3 className="text-lg font-semibold text-gray-900 line-clamp-2 flex-1">{product.title}</h3>
+            <span className="text-xl font-bold text-green-600 ml-3 whitespace-nowrap">R{product.price}</span>
+          </div>
+
+          <p className="text-gray-600 text-sm mb-4 line-clamp-2">{product.description}</p>
+
+          <div className="flex items-center justify-between mb-4 text-sm text-gray-500">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-1">
+                <Useric className="h-4 w-4" />
+                <span className="truncate max-w-[100px]">{product.sellerName}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Locate className="h-4 w-4" />
+                <span className="truncate max-w-[100px]">{product.sellerCampus}</span>
+              </div>
+            </div>
+
+            {product.rating > 0 && (
+              <div className="flex items-center gap-1">
+                <Star className="h-4 w-4 text-yellow-400 fill-current" />
+                <span className="font-medium">{product.rating}</span>
+              </div>
+            )}
+          </div>
+
+          <div className="flex gap-2">
+            {waLink && (
+              <a
+                href={waLink}
+                target="_blank"
+                rel="noreferrer noopener"
+                onClick={async () => {
+                  if (cleanProductId) {
+                    trackWhatsAppClick(cleanProductId).catch(err => 
+                      console.warn('Analytics tracking failed:', err)
+                    );
+                  }
+                }}
+                className="flex-1 bg-green-600 text-white px-4 py-3 rounded-lg font-semibold text-center hover:bg-green-700 flex items-center justify-center gap-2 transition-colors shadow-sm"
+              >
+                <MessageCircle className="h-5 w-5" />
+                <span className="hidden sm:inline">WhatsApp</span>
+                <span className="sm:hidden">Chat</span>
+              </a>
+            )}
+
+            {cleanProductId && (
+              <button
+                type="button"
+                onClick={handleShare}
+                className="flex-1 bg-blue-600 text-white px-4 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 shadow-sm"
+              >
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                </svg>
+                <span className="hidden sm:inline">Share</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
     );
-  }, [currentPage, totalPages, hasPrev, hasNext, _totalProducts, fetchProducts]);
+  }, [getImageUrl, API_BASE]);
 
   // Render product cards
   const renderProductCards = () => {
@@ -935,7 +769,7 @@ const ProductCard = useCallback(({ product, isHighlighted = false }: { product: 
               <AddProductForm 
                 currentUser={currentUser}
                 onProductAdded={(newProduct) => {
-                  setProducts(prev => [...prev, newProduct]);
+                  setProducts(prev => [newProduct, ...prev]);
                   setCurrentView('home');
                 }}
                 onCancel={() => setCurrentView('home')}
@@ -1008,7 +842,7 @@ const ProductCard = useCallback(({ product, isHighlighted = false }: { product: 
               {highlightedProduct && (
                 <div className="mb-8 scroll-mt-20">
                   <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                   <svg className="w-4 h-4 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
+                   <svg className="w-6 h-6 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                   </svg>
                     Shared Product
@@ -1063,35 +897,47 @@ const ProductCard = useCallback(({ product, isHighlighted = false }: { product: 
                 </div>
               </div>
 
-              {/* Pagination - Top */}
-              {totalPages > 1 && (
-                <div className="mb-8">
-                  <PaginationControls />
-                </div>
-              )}
-
-              {_loading ? (
+              {_loading && products.length === 0 ? (
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {Array.from({ length: 9 }).map((_, i) => (
+                  {Array.from({ length: 12 }).map((_, i) => (
                     <ProductSkeleton key={i} />
                   ))}
                 </div>
               ) : products.length > 0 ? (
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {renderProductCards()}
-                </div>
+                <>
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {renderProductCards()}
+                  </div>
+                  
+                  {/* Infinite scroll trigger */}
+                  {hasMore && (
+                    <div ref={loadMoreRef} className="py-8">
+                      {isLoadingMore && (
+                        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                          {Array.from({ length: 3 }).map((_, i) => (
+                            <ProductSkeleton key={`loading-${i}`} />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* End of results message */}
+                  {!hasMore && products.length > 0 && (
+                    <div className="text-center py-12">
+                      <div className="inline-block bg-gray-100 text-gray-600 px-6 py-3 rounded-full">
+                        <span className="font-medium">You've reached the end</span>
+                        <span className="mx-2">•</span>
+                        <span>{_totalProducts} total {_totalProducts === 1 ? 'product' : 'products'}</span>
+                      </div>
+                    </div>
+                  )}
+                </>
               ) : (
                 <div className="text-center py-20">
                   <ShoppingBag className="h-20 w-20 text-gray-300 mx-auto mb-4" />
                   <p className="text-xl text-gray-500 font-medium">No products found matching your search.</p>
                   <p className="text-gray-400 mt-2">Try adjusting your filters or search terms</p>
-                </div>
-              )}
-
-              {/* Pagination - Bottom */}
-              {totalPages > 1 && (
-                <div className="mt-12">
-                  <PaginationControls />
                 </div>
               )}
             </>

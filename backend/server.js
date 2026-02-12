@@ -536,7 +536,7 @@ app.get('/api/images/:id', async (req, res) => {
 
     const file = files[0];
     
-    console.log('✅ Image found:', file.filename, 'Type:', file.contentType);
+    //console.log('✅ Image found:', file.filename, 'Type:', file.contentType);
     
     // IMPORTANT: Set CORS headers for images
     res.set('Access-Control-Allow-Origin', '*');
