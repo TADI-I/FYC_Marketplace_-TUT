@@ -295,20 +295,11 @@ const fetchProducts = useCallback(async (page = 1, filters = {}, sharedProductId
       ...filters
     });
 
-    let sortedProducts = Array.isArray(response.products) 
-      ? response.products.sort((a: Product, b: Product) => {
-          // First priority: Verified sellers come first
-          if (a.sellerVerified && !b.sellerVerified) return -1;
-          if (!a.sellerVerified && b.sellerVerified) return 1;
-          
-          // Second priority: Alphabetical order by title (case-insensitive)
-          const titleA = a.title.toLowerCase();
-          const titleB = b.title.toLowerCase();
-          return titleA.localeCompare(titleB);
-        })
-      : [];
+    // Don't sort here - sorting should be done by the backend API
+    // so that verified products are sorted alphabetically across ALL pages
+    const products = Array.isArray(response.products) ? response.products : [];
 
-    setProducts(sortedProducts);
+    setProducts(products);
     setCurrentPage(response.pagination.currentPage);
     setTotalPages(response.pagination.totalPages);
     setTotalProducts(response.pagination.totalProducts);
@@ -724,16 +715,16 @@ const ProductCard = useCallback(({ product, isHighlighted = false }: { product: 
   const PaginationControls = useCallback(() => {
     const getPageNumbers = () => {
       const pages: number[] = [];
-      const maxVisible = 5; // Show maximum 5 page numbers
+      const maxVisible = 4; // Show maximum 4 page numbers
       
       if (totalPages <= maxVisible) {
-        // Show all pages if total is 5 or less
+        // Show all pages if total is 4 or less
         for (let i = 1; i <= totalPages; i++) {
           pages.push(i);
         }
       } else {
         // Calculate the range of pages to show
-        let startPage = Math.max(1, currentPage - 2);
+        let startPage = Math.max(1, currentPage - 1);
         let endPage = Math.min(totalPages, startPage + maxVisible - 1);
         
         // Adjust if we're near the end
@@ -758,7 +749,7 @@ const ProductCard = useCallback(({ product, isHighlighted = false }: { product: 
     return (
       <div className="flex flex-col items-center gap-4 py-4">
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-center">
-          {/* First Page Button << */}
+          {/* First Page Button « */}
           <button
             className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed font-bold transition-all duration-200 bg-white border border-gray-300"
             onClick={() => handlePageClick(1)}
@@ -769,7 +760,7 @@ const ProductCard = useCallback(({ product, isHighlighted = false }: { product: 
             <span className="text-lg">«</span>
           </button>
 
-          {/* Previous Button < */}
+          {/* Previous Button ‹ */}
           <button
             className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed font-bold transition-all duration-200 bg-white border border-gray-300"
             onClick={() => handlePageClick(currentPage - 1)}
@@ -780,7 +771,7 @@ const ProductCard = useCallback(({ product, isHighlighted = false }: { product: 
             <span className="text-lg">‹</span>
           </button>
 
-          {/* Page Numbers */}
+          {/* Page Numbers - Show 4 at a time */}
           {getPageNumbers().map((page) => (
             <button
               key={`page-${page}`}
@@ -798,7 +789,7 @@ const ProductCard = useCallback(({ product, isHighlighted = false }: { product: 
             </button>
           ))}
 
-          {/* Next Button > */}
+          {/* Next Button › */}
           <button
             className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed font-bold transition-all duration-200 bg-white border border-gray-300"
             onClick={() => handlePageClick(currentPage + 1)}
@@ -809,7 +800,7 @@ const ProductCard = useCallback(({ product, isHighlighted = false }: { product: 
             <span className="text-lg">›</span>
           </button>
 
-          {/* Last Page Button >> */}
+          {/* Last Page Button » */}
           <button
             className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed font-bold transition-all duration-200 bg-white border border-gray-300"
             onClick={() => handlePageClick(totalPages)}
