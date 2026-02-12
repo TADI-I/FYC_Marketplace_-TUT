@@ -78,8 +78,8 @@ exports.getProducts = async (req, res, db) => {
       {
         $facet: {
           data: [
-            // Sort by verified status first (verified sellers first), then by date
-            { $sort: { sellerVerified: -1, createdAt: -1 } },
+            // Sort by verified status first (verified sellers first), then alphabetically by title
+            { $sort: { sellerVerified: -1, title: 1 } },
             { $skip: skip },
             { $limit: pageLimit }
           ],

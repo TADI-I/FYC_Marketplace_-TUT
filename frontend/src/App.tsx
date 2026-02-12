@@ -297,9 +297,14 @@ const fetchProducts = useCallback(async (page = 1, filters = {}, sharedProductId
 
     let sortedProducts = Array.isArray(response.products) 
       ? response.products.sort((a: Product, b: Product) => {
+          // First priority: Verified sellers come first
           if (a.sellerVerified && !b.sellerVerified) return -1;
           if (!a.sellerVerified && b.sellerVerified) return 1;
-          return a.title.localeCompare(b.title);
+          
+          // Second priority: Alphabetical order by title (case-insensitive)
+          const titleA = a.title.toLowerCase();
+          const titleB = b.title.toLowerCase();
+          return titleA.localeCompare(titleB);
         })
       : [];
 
@@ -718,49 +723,27 @@ const ProductCard = useCallback(({ product, isHighlighted = false }: { product: 
   // Pagination Component
   const PaginationControls = useCallback(() => {
     const getPageNumbers = () => {
-      const pages: (number | string)[] = [];
-      const maxVisible = 6; // Maximum number of page buttons to show
+      const pages: number[] = [];
+      const maxVisible = 5; // Show maximum 5 page numbers
       
-      if (totalPages <= maxVisible + 2) {
-        // Show all pages if total is small
+      if (totalPages <= maxVisible) {
+        // Show all pages if total is 5 or less
         for (let i = 1; i <= totalPages; i++) {
           pages.push(i);
         }
       } else {
-        // Always show first page
-        pages.push(1);
+        // Calculate the range of pages to show
+        let startPage = Math.max(1, currentPage - 2);
+        let endPage = Math.min(totalPages, startPage + maxVisible - 1);
         
-        // Calculate range around current page
-        let start = Math.max(2, currentPage - 1);
-        let end = Math.min(totalPages - 1, currentPage + 1);
-        
-        // Adjust if at the beginning
-        if (currentPage <= 3) {
-          end = Math.min(maxVisible - 1, totalPages - 1);
+        // Adjust if we're near the end
+        if (endPage - startPage < maxVisible - 1) {
+          startPage = Math.max(1, endPage - maxVisible + 1);
         }
         
-        // Adjust if at the end
-        if (currentPage >= totalPages - 2) {
-          start = Math.max(2, totalPages - (maxVisible - 2));
-        }
-        
-        // Add ellipsis if needed
-        if (start > 2) {
-          pages.push('...');
-        }
-        
-        // Add middle pages
-        for (let i = start; i <= end; i++) {
+        for (let i = startPage; i <= endPage; i++) {
           pages.push(i);
         }
-        
-        // Add ellipsis if needed
-        if (end < totalPages - 1) {
-          pages.push('...');
-        }
-        
-        // Always show last page
-        pages.push(totalPages);
       }
       
       return pages;
@@ -775,51 +758,66 @@ const ProductCard = useCallback(({ product, isHighlighted = false }: { product: 
     return (
       <div className="flex flex-col items-center gap-4 py-4">
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-center">
+          {/* First Page Button << */}
+          <button
+            className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed font-bold transition-all duration-200 bg-white border border-gray-300"
+            onClick={() => handlePageClick(1)}
+            disabled={currentPage === 1}
+            aria-label="Go to first page"
+            style={{ minWidth: '2.5rem', minHeight: '2.5rem' }}
+          >
+            <span className="text-lg">«</span>
+          </button>
+
+          {/* Previous Button < */}
+          <button
+            className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed font-bold transition-all duration-200 bg-white border border-gray-300"
+            onClick={() => handlePageClick(currentPage - 1)}
+            disabled={!hasPrev}
+            aria-label="Go to previous page"
+            style={{ minWidth: '2.5rem', minHeight: '2.5rem' }}
+          >
+            <span className="text-lg">‹</span>
+          </button>
+
           {/* Page Numbers */}
-          {getPageNumbers().map((page, index) => (
-            typeof page === 'number' ? (
-              <button
-                key={`page-${page}`}
-                className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full font-bold text-sm sm:text-base transition-all duration-200 ${
-                  currentPage === page
-                    ? 'bg-orange-600 text-white shadow-lg transform scale-110'
-                    : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
-                }`}
-                onClick={() => handlePageClick(page)}
-                aria-label={currentPage === page ? `page ${page}` : `Go to page ${page}`}
-                aria-current={currentPage === page ? 'page' : undefined}
-              >
-                {page}
-              </button>
-            ) : (
-              <span key={`ellipsis-${index}`} className="px-1 sm:px-2 text-gray-500 font-medium">
-                {page}
-              </span>
-            )
+          {getPageNumbers().map((page) => (
+            <button
+              key={`page-${page}`}
+              className={`flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full font-bold text-sm sm:text-base transition-all duration-200 ${
+                currentPage === page
+                  ? 'bg-orange-600 text-white shadow-lg transform scale-110'
+                  : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+              }`}
+              onClick={() => handlePageClick(page)}
+              aria-label={currentPage === page ? `page ${page}` : `Go to page ${page}`}
+              aria-current={currentPage === page ? 'page' : undefined}
+              style={{ minWidth: '2.5rem', minHeight: '2.5rem' }}
+            >
+              {page}
+            </button>
           ))}
 
-          {/* Next Button */}
+          {/* Next Button > */}
           <button
-            className="w-10 h-10 sm:w-12 sm:h-12 rounded-full hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed font-bold transition-all duration-200 bg-white border border-gray-300"
+            className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed font-bold transition-all duration-200 bg-white border border-gray-300"
             onClick={() => handlePageClick(currentPage + 1)}
             disabled={!hasNext}
             aria-label="Go to next page"
+            style={{ minWidth: '2.5rem', minHeight: '2.5rem' }}
           >
-            <svg className="w-5 h-5 sm:w-6 sm:h-6 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-            </svg>
+            <span className="text-lg">›</span>
           </button>
 
-          {/* Last Page Button */}
+          {/* Last Page Button >> */}
           <button
-            className="w-10 h-10 sm:w-12 sm:h-12 rounded-full hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed font-bold transition-all duration-200 bg-white border border-gray-300"
+            className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed font-bold transition-all duration-200 bg-white border border-gray-300"
             onClick={() => handlePageClick(totalPages)}
             disabled={currentPage === totalPages}
             aria-label="Go to last page"
+            style={{ minWidth: '2.5rem', minHeight: '2.5rem' }}
           >
-            <svg className="w-5 h-5 sm:w-6 sm:h-6 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-            </svg>
+            <span className="text-lg">»</span>
           </button>
         </div>
 
