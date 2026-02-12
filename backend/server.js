@@ -557,7 +557,7 @@ app.get('/api/images/:id', async (req, res) => {
     });
 
     downloadStream.on('data', (chunk) => {
-      console.log('📦 Streaming chunk:', chunk.length, 'bytes');
+      
     });
 
     downloadStream.pipe(res);
@@ -596,8 +596,6 @@ app.get('/api/products/:id/image', async (req, res) => {
         success: false
       });
     }
-
-    console.log('✅ Redirecting to image:', product.image.id);
 
     // Redirect to the actual image endpoint
     res.redirect(`/api/images/${product.image.id}`);
@@ -647,8 +645,6 @@ const startServer = async () => {
   
   app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
-    console.log('✅ /p/:id share route registered');
-
   });
 };
 
