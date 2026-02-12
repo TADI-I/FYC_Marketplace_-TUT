@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { registerUser } from "./api";
+import { registerUser, requestUpgrade } from "./api";
 
 type User = {
   id: number;
@@ -68,6 +68,17 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
         type: accountType,
       });
 
+      // If registering as a seller, automatically send upgrade request
+      if (accountType === "seller" && response.user._id) {
+        try {
+          await requestUpgrade(response.user._id);
+          console.log("Seller upgrade request sent automatically");
+        } catch (upgradeError) {
+          console.error("Failed to send upgrade request:", upgradeError);
+          // Don't block registration if upgrade request fails
+        }
+      }
+
       // Pass both user AND token to parent component
       onRegisterSuccess(response.user, response.token);
 
@@ -79,7 +90,11 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
       setWhatsapp("");
 
       setTimeout(() => {
-        alert(`Welcome to FYC Marketplace, ${response.user.name}!`);
+        if (accountType === "seller") {
+          alert(`Welcome to FYC Marketplace, ${response.user.name}! Your seller account request has been sent to admin. You'll be notified once approved.`);
+        } else {
+          alert(`Welcome to FYC Marketplace, ${response.user.name}!`);
+        }
       }, 100);
     } catch (error) {
       let errorMessage = "Registration failed. Please try again.";
@@ -163,6 +178,11 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
               Seller
             </label>
           </div>
+          {accountType === "seller" && (
+            <p className="text-xs text-gray-600 mt-2">
+              Your seller account request will be sent to admin for approval. Subscription: R25/month (first month free).
+            </p>
+          )}
         </div>
 
         <select
