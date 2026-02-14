@@ -46,6 +46,7 @@ const App = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [highlightedProduct, setHighlightedProduct] = useState<Product | null>(null);
   const highlightedProductRef = useRef<HTMLDivElement>(null);
+  const hasScrolledToHighlighted = useRef(false);
 
   // Restore session on mount
   useEffect(() => {
@@ -85,6 +86,7 @@ const App = () => {
   const [_newMessage, _setNewMessage] = useState('');
   const [users, _setUsers] = useState<User[]>([]);
   const [maximizedImage, setMaximizedImage] = useState<string | null>(null);
+  const [showBackToTop, setShowBackToTop] = useState(false);
 
   // Infinite scroll state
   const [products, setProducts] = useState<Product[]>([]);
@@ -118,22 +120,6 @@ const App = () => {
     { id: 'polokwane', name: 'Polokwane' }
   ], []);
 
-  // Handle URL parameter for shared product links
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const productId = params.get('product');
-    
-    if (productId && API_BASE) {
-      console.log('🔗 Detected shared product link:', productId);
-      setHighlightedProduct(null);
-      
-      fetchAndHighlightProduct(productId);
-      
-      // Clean up URL without page reload
-      window.history.replaceState({}, '', '/');
-    }
-  }, [API_BASE]);
-
   // Fetch and highlight a specific product
   const fetchAndHighlightProduct = useCallback(async (productId: string) => {
     if (!API_BASE) return;
@@ -149,34 +135,36 @@ const App = () => {
         const product = data.success ? data : { ...data, id: data._id };
         console.log('✅ Product found:', product.title);
         
+        hasScrolledToHighlighted.current = false; // Reset scroll flag for new product
         setHighlightedProduct(product);
-        
-        // Scroll to highlighted product after render
-        setTimeout(() => {
-          const element = document.getElementById('highlighted-product');
-          if (element) {
-            const headerOffset = 100;
-            const elementPosition = element.getBoundingClientRect().top;
-            const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-            
-            window.scrollTo({
-              top: offsetPosition,
-              behavior: 'smooth'
-            });
-          }
-        }, 500);
       }
     } catch (err) {
       console.error('❌ Failed to fetch product:', err);
     }
   }, [API_BASE]);
 
+  // Handle URL parameter for shared product links
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const productId = params.get('product');
+    
+    if (productId && API_BASE) {
+      console.log('🔗 Detected shared product link:', productId);
+      setHighlightedProduct(null);
+      
+      fetchAndHighlightProduct(productId);
+      
+      // Clean up URL without page reload
+      window.history.replaceState({}, '', '/');
+    }
+  }, [API_BASE, fetchAndHighlightProduct]);
+
   // Scroll to highlighted product when it's rendered
   useEffect(() => {
-    if (highlightedProduct) {
+    if (highlightedProduct && products.length > 0 && !hasScrolledToHighlighted.current) {
       console.log('🎯 Highlighted product set, attempting to scroll...');
       
-      const scrollToProduct = (attempts = 0, maxAttempts = 50) => {
+      const scrollToProduct = (attempts = 0, maxAttempts = 20) => {
         const element = document.getElementById('highlighted-product');
         
         if (element) {
@@ -191,17 +179,25 @@ const App = () => {
             behavior: 'smooth'
           });
           
+          hasScrolledToHighlighted.current = true; // Mark as scrolled
+          return true;
         } else if (attempts < maxAttempts) {
           setTimeout(() => scrollToProduct(attempts + 1, maxAttempts), 100);
+          return false;
         } else {
           console.error('❌ Max scroll attempts reached!');
-          window.scrollTo({ top: 0, behavior: 'smooth' });
+          hasScrolledToHighlighted.current = true; // Mark as attempted
+          return false;
         }
       };
       
-      scrollToProduct();
+      // Only scroll once when the highlighted product first appears
+      const timeoutId = setTimeout(() => scrollToProduct(), 300);
+      
+      // Cleanup function to prevent multiple scroll attempts
+      return () => clearTimeout(timeoutId);
     }
-  }, [highlightedProduct, products]);
+  }, [highlightedProduct?.id, products.length]); // Only depend on the product ID, not the entire object
 
   // Fetch products with infinite scroll support
   const fetchProducts = useCallback(async (page = 1, append = false) => {
@@ -246,7 +242,24 @@ const App = () => {
     setCurrentPage(1);
     setHasMore(true);
     fetchProducts(1, false);
-  }, [selectedCategory, selectedCampus, searchTerm]);
+  }, [fetchProducts, selectedCategory, selectedCampus, searchTerm]);
+
+  // Back to top button visibility
+  useEffect(() => {
+    const handleScroll = () => {
+      // Show button after scrolling past approximately 3 rows of products (12 products)
+      // Assuming header ~80px, filters ~200px, first row ~400px = ~1200px total
+      const shouldShow = window.pageYOffset > 1200;
+      console.log('📜 Scroll position:', window.pageYOffset, 'Show button:', shouldShow);
+      setShowBackToTop(shouldShow);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    // Check initial position
+    handleScroll();
+    
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Intersection Observer for infinite scroll
   useEffect(() => {
@@ -434,6 +447,14 @@ const App = () => {
   const getImageUrl = useCallback((product: Product) => {
     return getProductImageUrl(product, API_BASE || '');
   }, [API_BASE]);
+
+  const scrollToTop = () => {
+    console.log('🔝 Scrolling to top!');
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  };
 
   // Optimized Product Skeleton Component
   const ProductSkeleton = useMemo(() => () => (
@@ -1041,6 +1062,62 @@ const App = () => {
           </div>
         </div>
       )}
+
+      {/* Back to Top Button */}
+      {showBackToTop && (
+        <button
+          onClick={scrollToTop}
+          aria-label="Back to top"
+          style={{
+            position: 'fixed',
+            bottom: '2rem',
+            right: '2rem',
+            zIndex: 9999,
+            backgroundColor: '#ea580c',
+            color: 'white',
+            padding: '1rem',
+            borderRadius: '50%',
+            border: 'none',
+            cursor: 'pointer',
+            boxShadow: '0 10px 25px rgba(234, 88, 12, 0.5)',
+            transition: 'all 0.3s ease',
+            width: '56px',
+            height: '56px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = '#c2410c';
+            e.currentTarget.style.transform = 'scale(1.1)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = '#ea580c';
+            e.currentTarget.style.transform = 'scale(1)';
+          }}
+          onMouseDown={(e) => {
+            e.currentTarget.style.transform = 'scale(0.95)';
+          }}
+          onMouseUp={(e) => {
+            e.currentTarget.style.transform = 'scale(1.1)';
+          }}
+        >
+          <svg 
+            style={{ width: '24px', height: '24px' }}
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+            strokeWidth="2.5"
+          >
+            <path 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+              d="M5 10l7-7m0 0l7 7m-7-7v18" 
+            />
+          </svg>
+        </button>
+      )}
+
     </div>
   );
 };
