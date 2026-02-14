@@ -6,6 +6,10 @@ import { getVerificationRequests, processVerificationRequest } from './api';
 // CRITICAL: Must match the API_BASE in api.js
 const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001';
 
+export interface AdminVerificationProps {
+  darkMode?: boolean;
+}
+
 const FALLBACK_IMAGE = 'data:image/svg+xml;utf8,' + encodeURIComponent(
   `<svg xmlns='http://www.w3.org/2000/svg' width='800' height='600'>
      <rect width='100%' height='100%' fill='#f3f4f6'/>
@@ -38,7 +42,7 @@ const normalizeSAPhoneNumber = (phoneNumber: string): string | null => {
   return cleaned;
 };
 
-const AdminVerification: React.FC = () => {
+const AdminVerification: React.FC<AdminVerificationProps> = ({ darkMode = false }) => {
   const [requests, setRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<'pending' | 'approved' | 'rejected' | 'all'>('pending');

@@ -74,6 +74,28 @@ const App = () => {
     restore();
   }, []);
 
+  // Load dark mode preference from localStorage
+  useEffect(() => {
+    const savedDarkMode = localStorage.getItem('darkMode');
+    if (savedDarkMode === 'true') {
+      setDarkMode(true);
+      document.documentElement.classList.add('dark');
+    }
+  }, []);
+
+  // Toggle dark mode
+  const toggleDarkMode = () => {
+    const newDarkMode = !darkMode;
+    setDarkMode(newDarkMode);
+    localStorage.setItem('darkMode', String(newDarkMode));
+    
+    if (newDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  };
+
   const [currentView, setCurrentView] = useState('home');
   const [showLogin, setShowLogin] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
@@ -87,6 +109,7 @@ const App = () => {
   const [users, _setUsers] = useState<User[]>([]);
   const [maximizedImage, setMaximizedImage] = useState<string | null>(null);
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
 
   // Infinite scroll state
   const [products, setProducts] = useState<Product[]>([]);
@@ -95,6 +118,7 @@ const App = () => {
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const loadMoreRef = useRef<HTMLDivElement>(null);
+  const fetchProductsRef = useRef<((page: number, append: boolean) => Promise<void>) | null>(null);
 
   // Memoize categories and campuses
   const categories = useMemo(() => [
@@ -208,6 +232,8 @@ const App = () => {
         setLoading(true);
       }
       
+      console.log(`📦 Fetching products - Page: ${page}, Append: ${append}`);
+      
       const response = await getProducts({
         page,
         limit: 12,
@@ -217,6 +243,8 @@ const App = () => {
       });
 
       const newProducts = Array.isArray(response.products) ? response.products : [];
+
+      console.log(`✅ Received ${newProducts.length} products`);
 
       if (append) {
         setProducts(prev => [...prev, ...newProducts]);
@@ -237,12 +265,19 @@ const App = () => {
     }
   }, [selectedCategory, selectedCampus, searchTerm]);
 
+  // Keep ref updated with latest fetchProducts
+  useEffect(() => {
+    fetchProductsRef.current = fetchProducts;
+  }, [fetchProducts]);
+
   // Initial load and filter changes - reset to page 1
   useEffect(() => {
+    console.log('🔄 Filters changed, resetting to page 1');
     setCurrentPage(1);
     setHasMore(true);
+    setProducts([]); // Clear products when filters change
     fetchProducts(1, false);
-  }, [fetchProducts, selectedCategory, selectedCampus, searchTerm]);
+  }, [selectedCategory, selectedCampus, searchTerm]); // Remove fetchProducts from dependencies
 
   // Back to top button visibility
   useEffect(() => {
@@ -267,8 +302,11 @@ const App = () => {
       (entries) => {
         const target = entries[0];
         if (target.isIntersecting && hasMore && !isLoadingMore && !_loading) {
-          console.log('📜 Loading more products...');
-          fetchProducts(currentPage + 1, true);
+          console.log('📜 Intersection detected! Loading more... Current page:', currentPage);
+          // Use ref to get latest fetchProducts without adding it to dependencies
+          if (fetchProductsRef.current) {
+            fetchProductsRef.current(currentPage + 1, true);
+          }
         }
       },
       {
@@ -281,14 +319,16 @@ const App = () => {
     const currentRef = loadMoreRef.current;
     if (currentRef) {
       observer.observe(currentRef);
+      console.log('👀 Intersection observer attached to element');
     }
 
     return () => {
       if (currentRef) {
         observer.unobserve(currentRef);
+        console.log('👋 Intersection observer detached');
       }
     };
-  }, [hasMore, isLoadingMore, _loading, currentPage, fetchProducts]);
+  }, [hasMore, isLoadingMore, _loading, currentPage]); // Remove fetchProducts
 
   const handleUpgrade = useCallback(async () => {
     if (!currentUser) {
@@ -458,9 +498,9 @@ const App = () => {
 
   // Optimized Product Skeleton Component
   const ProductSkeleton = useMemo(() => () => (
-    <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+    <div className={`rounded-lg shadow-sm overflow-hidden ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
       <div className="relative overflow-hidden" style={{ height: '20rem' }}>
-        <div className="absolute inset-0 w-full h-full shimmer bg-gray-200" />
+        <div className={`absolute inset-0 w-full h-full shimmer ${darkMode ? 'bg-gray-700' : 'bg-gray-200'}`} />
         <div className="absolute top-3 right-3 z-10 h-7 w-20 shimmer rounded-full" />
         <div className="absolute top-14 right-3 z-10 h-7 w-24 shimmer rounded-full" />
       </div>
@@ -487,7 +527,7 @@ const App = () => {
         </div>
       </div>
     </div>
-  ), []);
+  ), [darkMode]);
 
   // Product Card Component
   const ProductCard = useCallback(({ product, isHighlighted = false }: { product: Product; isHighlighted?: boolean }) => {
@@ -527,7 +567,9 @@ const App = () => {
 
     return (
       <div 
-        className={`bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-xl transition-shadow duration-300 ${
+        className={`rounded-lg shadow-sm overflow-hidden hover:shadow-xl transition-shadow duration-300 ${
+          darkMode ? 'bg-gray-800' : 'bg-white'
+        } ${
           isHighlighted ? 'ring-4 ring-orange-500 shadow-2xl' : ''
         }`}
         id={isHighlighted ? 'highlighted-product' : undefined}
@@ -633,13 +675,13 @@ const App = () => {
 
         <div className="p-5">
           <div className="flex justify-between items-start mb-3">
-            <h3 className="text-lg font-semibold text-gray-900 line-clamp-2 flex-1">{product.title}</h3>
+            <h3 className={`text-lg font-semibold line-clamp-2 flex-1 ${darkMode ? 'text-white' : 'text-gray-900'}`}>{product.title}</h3>
             <span className="text-xl font-bold text-green-600 ml-3 whitespace-nowrap">R{product.price}</span>
           </div>
 
-          <p className="text-gray-600 text-sm mb-4 line-clamp-2">{product.description}</p>
+          <p className={`text-sm mb-4 line-clamp-2 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>{product.description}</p>
 
-          <div className="flex items-center justify-between mb-4 text-sm text-gray-500">
+          <div className={`flex items-center justify-between mb-4 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1">
                 <Useric className="h-4 w-4" />
@@ -696,7 +738,7 @@ const App = () => {
         </div>
       </div>
     );
-  }, [getImageUrl, API_BASE]);
+  }, [getImageUrl, API_BASE, darkMode]);
 
   // Render product cards
   const renderProductCards = () => {
@@ -706,13 +748,13 @@ const App = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b sticky top-0 z-40">
+    <div className={`min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+      <header className={`shadow-sm border-b sticky top-0 z-40 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'}`}>
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4 cursor-pointer" onClick={() => setCurrentView('home')}>
               <img className="h-8 w-8" src={logo} alt="FYC Marketplace Logo" loading="eager" />
-              <h1 className="text-xl md:text-2xl font-bold text-gray-900">FYC Marketplace</h1>
+              <h1 className={`text-xl md:text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>FYC Marketplace</h1>
             </div>
             
             {currentUser ? (
@@ -848,7 +890,7 @@ const App = () => {
               }}
             />
           ) : currentView === 'admin-reactivation' && currentUser?.type === 'admin' ? (
-            <AdminReactivation />
+            <AdminReactivation darkMode={darkMode} />
           ) : currentView === 'about' ? (
             <AboutPage onBack={() => setCurrentView('home')} />
           ) : currentView === 'how-it-works' ? (
@@ -892,21 +934,25 @@ const App = () => {
                 </div>
               )}
 
-              <div className="bg-white rounded-lg shadow-sm p-4 md:p-6 mb-8">
+              <div className={`rounded-lg shadow-sm p-4 md:p-6 mb-8 ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
                 <div className="flex flex-col gap-4">
                   <div className="flex flex-col md:flex-row gap-4">
                     <div className="flex-1 relative">
-                      <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                      <Search className={`absolute left-3 top-3 h-5 w-5 ${darkMode ? 'text-gray-400' : 'text-gray-400'}`} />
                       <input
                         type="text"
                         placeholder="Search products and services..."
-                        className="w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-base"
+                        className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-base ${
+                          darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900'
+                        }`}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                       />
                     </div>
                     <select 
-                      className="px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-base"
+                      className={`px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-base ${
+                        darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+                      }`}
                       value={selectedCategory}
                       onChange={(e) => setSelectedCategory(e.target.value)}
                     >
@@ -917,9 +963,11 @@ const App = () => {
                   </div>
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-2 w-full sm:w-auto">
-                      <Filter className="h-5 w-5 text-gray-400 flex-shrink-0" />
+                      <Filter className={`h-5 w-5 flex-shrink-0 ${darkMode ? 'text-gray-400' : 'text-gray-400'}`} />
                       <select 
-                        className="flex-1 sm:flex-initial px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-base"
+                        className={`flex-1 sm:flex-initial px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-base ${
+                          darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+                        }`}
                         value={selectedCampus}
                         onChange={(e) => setSelectedCampus(e.target.value)}
                       >
@@ -927,11 +975,13 @@ const App = () => {
                           <option key={campus.id} value={campus.id}>{campus.name}</option>
                         ))}
                       </select>
-                      <span className="text-sm text-gray-500 hidden lg:inline whitespace-nowrap">
+                      <span className={`text-sm hidden lg:inline whitespace-nowrap ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                         Filter by campus
                       </span>
                     </div>
-                    <div className="text-sm font-semibold text-gray-700 bg-orange-50 px-4 py-2 rounded-lg border border-orange-200 w-full sm:w-auto text-center">
+                    <div className={`text-sm font-semibold px-4 py-2 rounded-lg border w-full sm:w-auto text-center ${
+                      darkMode ? 'bg-orange-900 text-orange-200 border-orange-700' : 'bg-orange-50 text-gray-700 border-orange-200'
+                    }`}>
                       {_totalProducts} {_totalProducts === 1 ? 'product' : 'products'} available
                     </div>
                   </div>
@@ -966,7 +1016,9 @@ const App = () => {
                   {/* End of results message */}
                   {!hasMore && products.length > 0 && (
                     <div className="text-center py-12">
-                      <div className="inline-block bg-gray-100 text-gray-600 px-6 py-3 rounded-full">
+                      <div className={`inline-block px-6 py-3 rounded-full ${
+                        darkMode ? 'bg-gray-800 text-gray-300' : 'bg-gray-100 text-gray-600'
+                      }`}>
                         <span className="font-medium">You've reached the end</span>
                         <span className="mx-2">•</span>
                         <span>{_totalProducts} total {_totalProducts === 1 ? 'product' : 'products'}</span>
@@ -976,9 +1028,9 @@ const App = () => {
                 </>
               ) : (
                 <div className="text-center py-20">
-                  <ShoppingBag className="h-20 w-20 text-gray-300 mx-auto mb-4" />
-                  <p className="text-xl text-gray-500 font-medium">No products found matching your search.</p>
-                  <p className="text-gray-400 mt-2">Try adjusting your filters or search terms</p>
+                  <ShoppingBag className={`h-20 w-20 mx-auto mb-4 ${darkMode ? 'text-gray-600' : 'text-gray-300'}`} />
+                  <p className={`text-xl font-medium ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>No products found matching your search.</p>
+                  <p className={`mt-2 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>Try adjusting your filters or search terms</p>
                 </div>
               )}
             </>
@@ -1021,7 +1073,9 @@ const App = () => {
 
       {maximizedImage && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center z-50 p-4"
+          className={`fixed inset-0 flex items-center justify-center z-50 p-4 ${
+            darkMode ? 'bg-black bg-opacity-98' : 'bg-black bg-opacity-95'
+          }`}
           onClick={() => setMaximizedImage(null)}
           style={{ cursor: 'pointer' }}
         >
@@ -1117,7 +1171,71 @@ const App = () => {
           </svg>
         </button>
       )}
-
+      
+      {/* Dark Mode Toggle Button */}
+      <button
+        onClick={toggleDarkMode}
+        aria-label="Toggle dark mode"
+        style={{
+          position: 'fixed',
+          bottom: '2rem',
+          left: '2rem',
+          zIndex: 9999,
+          backgroundColor: darkMode ? '#fbbf24' : '#1f2937',
+          color: darkMode ? '#1f2937' : '#fbbf24',
+          padding: '1rem',
+          borderRadius: '50%',
+          border: 'none',
+          cursor: 'pointer',
+          boxShadow: darkMode 
+            ? '0 10px 25px rgba(251, 191, 36, 0.5)' 
+            : '0 10px 25px rgba(31, 41, 55, 0.5)',
+          transition: 'all 0.3s ease',
+          width: '56px',
+          height: '56px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'scale(1.1) rotate(15deg)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'scale(1) rotate(0deg)';
+        }}
+        onMouseDown={(e) => {
+          e.currentTarget.style.transform = 'scale(0.95) rotate(0deg)';
+        }}
+        onMouseUp={(e) => {
+          e.currentTarget.style.transform = 'scale(1.1) rotate(15deg)';
+        }}
+      >
+        {darkMode ? (
+          // Sun icon for light mode
+          <svg 
+            style={{ width: '24px', height: '24px' }}
+            fill="currentColor" 
+            viewBox="0 0 20 20"
+          >
+            <path 
+              fillRule="evenodd"
+              d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"
+              clipRule="evenodd"
+            />
+          </svg>
+        ) : (
+          // Moon icon for dark mode
+          <svg 
+            style={{ width: '24px', height: '24px' }}
+            fill="currentColor" 
+            viewBox="0 0 20 20"
+          >
+            <path 
+              d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"
+            />
+          </svg>
+        )}
+      </button>
     </div>
   );
 };

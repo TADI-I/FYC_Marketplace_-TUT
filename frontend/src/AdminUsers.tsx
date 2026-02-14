@@ -11,7 +11,11 @@ type User = {
   updatedAt?: string;
 };
 
-const AdminUsers: React.FC = () => {
+export interface AdminUsersProps {
+  darkMode?: boolean;
+}
+
+const AdminUsers: React.FC<AdminUsersProps> = ({ darkMode = false }) => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [filterType, setFilterType] = useState<'all'|'buyer'|'seller'>('all');

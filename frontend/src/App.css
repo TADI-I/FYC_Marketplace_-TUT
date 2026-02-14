@@ -1,4 +1,4 @@
-/* TUT Marketplace - Complete CSS Styles */
+/* TUT Marketplace - Complete CSS Styles with Dark Mode */
 
 /* CSS Variables and Base Styles */
 :root {
@@ -26,6 +26,27 @@
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Dark mode variables */
+html.dark {
+  --bg-primary: #111827;
+  --bg-secondary: #1f2937;
+  --bg-tertiary: #374151;
+  --text-primary: #f9fafb;
+  --text-secondary: #d1d5db;
+  --text-tertiary: #9ca3af;
+  --border-color: #4b5563;
+}
+
+html:not(.dark) {
+  --bg-primary: #f9fafb;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f3f4f6;
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --text-tertiary: #6b7280;
+  --border-color: #e5e7eb;
+}
+
 /* Reset and base styles */
 * {
   margin: 0;
@@ -36,16 +57,17 @@
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   line-height: 1.6;
-  color: var(--gray-800);
-  background-color: var(--gray-50);
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* App Container */
 .App {
   min-height: 100vh;
-  background-color: var(--gray-50);
+  background-color: var(--bg-primary);
 }
 
 /* Typography */
@@ -53,7 +75,7 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 700;
   line-height: 1.2;
   margin-bottom: 0.5rem;
-  color: var(--gray-900);
+  color: var(--text-primary);
 }
 
 h1 { font-size: 2.25rem; }
@@ -63,7 +85,7 @@ h4 { font-size: 1.25rem; }
 
 p {
   margin-bottom: 1rem;
-  color: var(--gray-600);
+  color: var(--text-secondary);
 }
 
 /* Layout Utilities */
@@ -136,12 +158,13 @@ p {
 
 /* Header Styles */
 header {
-  background: white;
+  background: var(--bg-secondary);
   box-shadow: var(--shadow-sm);
-  border-bottom: 1px solid var(--gray-200);
+  border-bottom: 1px solid var(--border-color);
   position: sticky;
   top: 0;
   z-index: 40;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .text-2xl {
@@ -154,15 +177,15 @@ header {
 }
 
 .text-gray-900 {
-  color: var(--gray-900);
+  color: var(--text-primary);
 }
 
 .text-gray-600 {
-  color: var(--gray-600);
+  color: var(--text-secondary);
 }
 
 .text-gray-500 {
-  color: var(--gray-500);
+  color: var(--text-tertiary);
 }
 
 .text-gray-400 {
@@ -276,10 +299,11 @@ button {
 input, select, textarea {
   font-family: inherit;
   font-size: 0.875rem;
-  border: 1px solid var(--gray-300);
+  border: 1px solid var(--border-color);
   border-radius: var(--border-radius);
   transition: var(--transition);
-  background: white;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
 }
 
 .w-full {
@@ -293,17 +317,18 @@ input:focus, select:focus, textarea:focus {
 }
 
 input::placeholder, textarea::placeholder {
-  color: var(--gray-400);
+  color: var(--text-tertiary);
 }
 
 .border {
   border-width: 1px;
-  border-color: var(--gray-300);
+  border-color: var(--border-color);
 }
 
 /* Card Styles */
 .bg-white {
-  background-color: white;
+  background-color: var(--bg-secondary);
+  transition: background-color 0.3s ease;
 }
 
 .shadow-sm {
@@ -402,11 +427,25 @@ input::placeholder, textarea::placeholder {
 }
 
 .bg-gray-50 {
-  background-color: var(--gray-50);
+  background-color: var(--bg-primary);
+  transition: background-color 0.3s ease;
 }
 
 .bg-gray-200 {
-  background-color: var(--gray-200);
+  background-color: var(--bg-tertiary);
+  transition: background-color 0.3s ease;
+}
+
+/* Dark mode specific shimmer */
+html.dark .shimmer {
+  background: linear-gradient(
+    to right,
+    #374151 0%,
+    #4b5563 20%,
+    #374151 40%,
+    #374151 100%
+  );
+  background-size: 1000px 100%;
 }
 
 /* Spacing Utilities */
@@ -530,12 +569,12 @@ input::placeholder, textarea::placeholder {
 /* Borders */
 .border-b {
   border-bottom-width: 1px;
-  border-color: var(--gray-200);
+  border-color: var(--border-color);
 }
 
 .border-t {
   border-top-width: 1px;
-  border-color: var(--gray-200);
+  border-color: var(--border-color);
 }
 
 /* Overflow */
@@ -549,7 +588,7 @@ input::placeholder, textarea::placeholder {
 }
 
 .overflow-y-auto::-webkit-scrollbar-track {
-  background: var(--gray-100);
+  background: var(--bg-tertiary);
   border-radius: 3px;
 }
 

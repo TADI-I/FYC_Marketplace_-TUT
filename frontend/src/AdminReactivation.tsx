@@ -7,6 +7,9 @@ type RequestItem = any;
 type TabKey = 'all' | 'pending' | 'approved' | 'rejected';
 type MainTabKey = 'reactivation' | 'verification' | 'users';
 
+export interface AdminReactivationProps {
+  darkMode?: boolean;
+}
 // CRITICAL: Must match backend URL
 const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001';
 
@@ -42,7 +45,7 @@ const normalizeSAPhoneNumber = (phoneNumber: string): string | null => {
   return cleaned;
 };
 
-const AdminReactivation: React.FC = () => {
+const AdminReactivation: React.FC<AdminReactivationProps> = ({ darkMode = false }) => {
   const [requests, setRequests] = useState<RequestItem[]>([]);
   const [verificationRequests, setVerificationRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
